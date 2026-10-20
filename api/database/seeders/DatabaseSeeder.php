@@ -377,6 +377,28 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        // ---------------------------------------------------------------- timetable (first 3 sections)
+        $school->update(['settings' => array_merge($school->settings ?? [], ['school_days' => [0, 1, 2, 3, 4], 'periods' => 7])]);
+        $someSections = Models\Section::where('academic_year_id', $yid)->orderBy('id')->take(6)->get();
+        foreach ($someSections as $sec) {
+            $subs = $subjects; // all common subjects apply
+            $ti = 0;
+            foreach ([0, 1, 2, 3, 4] as $day) {
+                for ($period = 1; $period <= 7; $period++) {
+                    if ($period === 4) { // break slot
+                        continue;
+                    }
+                    $sub = $subs[$ti % count($subs)];
+                    $teacher = $teachers[($ti + $sec->id) % count($teachers)];
+                    Models\TimetableEntry::create([
+                        'academic_year_id' => $yid, 'section_id' => $sec->id, 'day' => $day, 'period' => $period,
+                        'subject_id' => $sub->id, 'teacher_id' => $teacher->id, 'room' => $sec->room,
+                    ]);
+                    $ti++;
+                }
+            }
+        }
+
         // ---------------------------------------------------------------- admin affairs
         $tasks = [
             ['تسليم الإقرار الضريبي الربع سنوي', 'urgent', 'done', 100, -60, -44, $finance->id],

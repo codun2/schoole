@@ -27,7 +27,7 @@
     ['g-school', 'المدارس', 'cap', null, [
       ['schools', 'لوحة تحكم المدارس', 'school'], ['years', 'السنوات الدراسية', 'school'], ['grades', 'الصفوف', 'school'], ['sections', 'الشعب', 'school'],
       ['buses', 'الحافلات', 'school'], ['guardians', 'أولياء الأمور', 'students'], ['students', 'الطلاب', 'students'], ['applications', 'استمارة التسجيل', 'students'],
-      ['attendance', 'الحضور والغياب', 'school'], ['subjects', 'المواد الدراسية', 'school'], ['exam-terms', 'الفصول والاختبارات', 'school'], ['marks', 'الدرجات والتقييم', 'school'], ['custom-fields', 'الحقول المخصصة', 'school'], ['fee-items', 'بنود الرسوم الدراسية', 'school'],
+      ['attendance', 'الحضور والغياب', 'school'], ['subjects', 'المواد الدراسية', 'school'], ['exam-terms', 'الفصول والاختبارات', 'school'], ['marks', 'الدرجات والتقييم', 'school'], ['timetable', 'الجدول الدراسي', 'school'], ['custom-fields', 'الحقول المخصصة', 'school'], ['fee-items', 'بنود الرسوم الدراسية', 'school'],
       ['contracts', 'العقود', 'finance'], ['installments', 'الأقساط', 'finance'], ['tuition-payments', 'مدفوعات الأقساط', 'finance'],
     ]],
   ];

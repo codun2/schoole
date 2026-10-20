@@ -44,7 +44,7 @@ for (const r of routes) {
   await settle(p);
   const txt = await p.$eval('#view', (v) => v.innerText).catch(() => '');
   if (txt.includes('تعذّر تحميل')) problems.push(`[admin] page "${r}" shows load error: ${txt.slice(0, 160)}`);
-  if (['home', 'schools', 'students', 'contracts', 'installments', 'accounting', 'hr', 'admin', 'tasks', 'calendar', 'employees', 'reports', 'attendance', 'payrolls', 'subjects', 'exam-terms', 'marks'].includes(r)) await p.screenshot({ path: `${SHOTS}/app-${r}.png`, fullPage: false });
+  if (['home', 'schools', 'students', 'contracts', 'installments', 'accounting', 'hr', 'admin', 'tasks', 'calendar', 'employees', 'reports', 'attendance', 'payrolls', 'subjects', 'exam-terms', 'marks', 'timetable'].includes(r)) await p.screenshot({ path: `${SHOTS}/app-${r}.png`, fullPage: false });
 }
 console.log('visited', routes.length, 'routes');
 
@@ -123,6 +123,23 @@ const rcBtn = await p.$('#res [data-c]');
 if (rcBtn) { await rcBtn.click(); await settle(p); const rcOk = await p.$eval('.modal', (x) => x.innerText.includes('المعدل العام')).catch(() => false); console.log('report card opened:', rcOk); if (!rcOk) problems.push('report card modal missing'); await p.screenshot({ path: `${SHOTS}/app-report-card.png` }); await p.keyboard.press('Escape'); } else problems.push('no report card button in results');
 // cards tab
 await p.click('.tabs button[data-t=cards]'); await settle(p);
+
+// timetable: grid, edit a cell, save; teacher schedule; load; settings
+await p.goto(B + '/app/#/timetable'); await settle(p);
+await p.click('#ld'); await settle(p);
+const ttOk = await p.$eval('#grid', (x) => !!x.querySelector('.ttcell')).catch(() => false);
+console.log('timetable grid rendered:', ttOk); if (!ttOk) problems.push('timetable grid missing cells');
+await p.screenshot({ path: `${SHOTS}/app-timetable.png` });
+// edit an empty cell
+const emptyCell = await p.$('#grid .ttcell');
+if (emptyCell) { await emptyCell.click(); await settle(p); await p.selectOption('.modal [name=subject_id]', { index: 1 }).catch(() => {}); await p.selectOption('.modal [name=teacher_id]', { index: 1 }).catch(() => {}); await p.click('.modal [data-save]'); await settle(p); await p.click('#grid #save'); await settle(p); }
+await p.click('.tabs button[data-t=teacher]'); await settle(p);
+await p.waitForTimeout(600);
+const tsOk = await p.$eval('#body', (x) => x.innerText.includes('نصاب أسبوعي')).catch(() => false);
+console.log('teacher schedule:', tsOk); if (!tsOk) problems.push('teacher schedule not rendered');
+await p.screenshot({ path: `${SHOTS}/app-timetable-teacher.png` });
+await p.click('.tabs button[data-t=load]'); await settle(p);
+await p.click('.tabs button[data-t=settings]'); await settle(p);
 
 // payroll generate (current month)
 await p.goto(B + '/app/#/payrolls'); await settle(p);

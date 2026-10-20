@@ -9,6 +9,7 @@ use App\Models\Guardian;
 use App\Models\Installment;
 use App\Models\Student;
 use App\Models\StudentAttendance;
+use App\Models\TimetableEntry;
 use App\Http\Controllers\Api\School\MarkController;
 use App\Models\Voucher;
 use Illuminate\Http\Request;
@@ -66,6 +67,11 @@ class PortalController extends Controller
             'attendance' => StudentAttendance::where('student_id', $s->id)->orderByDesc('date')->limit(60)->get(['date', 'status', 'note']),
             'contracts'  => Contract::with('installments')->where('student_id', $s->id)->whereIn('status', ['active', 'completed'])->orderByDesc('id')->get(),
             'report'     => $report,
+            'timetable'  => $s->section_id ? [
+                'config'  => ['days' => $request->user()->company->settings['school_days'] ?? [0, 1, 2, 3, 4], 'periods' => (int) ($request->user()->company->settings['periods'] ?? 7)],
+                'entries' => TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name'])->where('section_id', $s->section_id)->get()
+                    ->mapWithKeys(fn ($e) => [$e->day.'-'.$e->period => ['subject' => $e->subject?->name_ar, 'teacher' => $e->teacher?->name, 'room' => $e->room]]),
+            ] : null,
         ]);
     }
 

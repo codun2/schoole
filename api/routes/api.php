@@ -84,6 +84,14 @@ Route::middleware(['auth:sanctum', 'staff', 'company'])->prefix('app')->group(fu
         Route::post('grades', [School\MarkController::class, 'save']);
         Route::get('grades/report-card/{student}', [School\MarkController::class, 'reportCard'])->whereNumber('student');
         Route::get('grades/class-results', [School\MarkController::class, 'classResults']);
+
+        // Timetable
+        Route::get('timetable/config', [School\TimetableController::class, 'config']);
+        Route::patch('timetable/config', [School\TimetableController::class, 'updateConfig']);
+        Route::get('timetable/section', [School\TimetableController::class, 'section']);
+        Route::post('timetable/section', [School\TimetableController::class, 'save']);
+        Route::get('timetable/teacher/{teacher}', [School\TimetableController::class, 'teacher'])->whereNumber('teacher');
+        Route::get('timetable/load', [School\TimetableController::class, 'load']);
     });
 
     // ---- Schools: people

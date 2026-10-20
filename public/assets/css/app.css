@@ -395,6 +395,11 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .demo button{color:var(--accent);font-weight:600;padding:2px 0}
 @media(max-width:900px){.auth{grid-template-columns:1fr}.auth .art{display:none}}
 
+/* timetable */
+table.tt td,table.tt th{min-width:118px}
+.ttcell{cursor:pointer;transition:.12s;vertical-align:middle;min-height:52px}
+.ttcell:hover{background:var(--accent-soft)!important;box-shadow:inset 0 0 0 2px var(--accent)}
+
 /* print */
 @media print{
   .side,.top,.footer,.no-print,.toolbar,.filters,.pager,.yearbar,.crumbs{display:none!important}

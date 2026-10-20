@@ -70,7 +70,7 @@
       const d = await S.get('/app/dashboard/school', { year: S.yearId() });
       const short = [
         ['settings', 'gear', 'إعدادات المدرسة'], ['years', 'calendar', 'السنوات الدراسية'], ['grades', 'layers', 'الصفوف'], ['sections', 'columns', 'الشعب'], ['buses', 'bus', 'الحافلات'], ['guardians', 'parents', 'أولياء الأمور'],
-        ['students', 'users', 'الطلاب'], ['applications', 'userPlus', 'استمارة التسجيل'], ['custom-fields', 'sliders', 'الحقول المخصصة'], ['attendance', 'calCheck', 'الحضور والغياب'], ['subjects', 'book', 'المواد الدراسية'], ['exam-terms', 'clipboard', 'الفصول والاختبارات'], ['marks', 'edit', 'الدرجات والتقييم'], ['fee-items', 'coins', 'بنود الرسوم الدراسية'], ['contracts', 'contract', 'العقود'],
+        ['students', 'users', 'الطلاب'], ['applications', 'userPlus', 'استمارة التسجيل'], ['custom-fields', 'sliders', 'الحقول المخصصة'], ['attendance', 'calCheck', 'الحضور والغياب'], ['subjects', 'book', 'المواد الدراسية'], ['exam-terms', 'clipboard', 'الفصول والاختبارات'], ['marks', 'edit', 'الدرجات والتقييم'], ['timetable', 'calendar', 'الجدول الدراسي'], ['fee-items', 'coins', 'بنود الرسوم الدراسية'], ['contracts', 'contract', 'العقود'],
         ['installments', 'calendar', 'الأقساط'], ['tuition-payments', 'receipt', 'مدفوعات الأقساط'],
       ];
       const att = d.attendance_today;

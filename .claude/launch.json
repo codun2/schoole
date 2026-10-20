@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "schoole-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8008", "--directory", "public"],
+      "port": 8008
+    }
+  ]
+}

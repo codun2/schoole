@@ -18,7 +18,7 @@
     ['g-hr', 'الموارد البشرية', 'users', 'hr', [
       ['hr', 'لوحة التحكم'], ['employees', 'الموظفون'], ['departments', 'الأقسام'], ['job-titles', 'المسميات الوظيفية'],
       ['emp-attendance', 'الحضور والانصراف'], ['leave-requests', 'طلبات الإجازات'], ['leave-types', 'أنواع الإجازات'], ['leave-balances', 'أرصدة الإجازات'],
-      ['payrolls', 'الرواتب الشهرية'], ['advances', 'سلف الموظفين'], ['bonuses', 'المكافآت'], ['deductions', 'الاستقطاعات'],
+      ['employee-contracts', 'عقود الموظفين'], ['payrolls', 'الرواتب الشهرية'], ['advances', 'سلف الموظفين'], ['bonuses', 'المكافآت'], ['deductions', 'الاستقطاعات'], ['evaluations', 'التقييمات'], ['evaluation-criteria', 'معايير التقييم'], ['evaluation-periods', 'فترات التقييم'],
     ]],
     ['g-admin', 'الشؤون الإدارية', 'briefcase', 'admin_affairs', [
       ['admin', 'لوحة التحكم'], ['corr-in', 'المراسلات الواردة'], ['corr-out', 'المراسلات الصادرة'], ['corr-internal', 'المراسلات الداخلية'],

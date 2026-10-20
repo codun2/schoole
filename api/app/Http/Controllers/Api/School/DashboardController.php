@@ -8,6 +8,8 @@ use App\Models\Contract;
 use App\Models\Correspondence;
 use App\Models\Employee;
 use App\Models\EmployeeAttendance;
+use App\Models\EmployeeContract;
+use App\Models\Evaluation;
 use App\Models\Expense;
 use App\Models\Installment;
 use App\Models\LeaveRequest;
@@ -157,6 +159,8 @@ class DashboardController extends Controller
             'last_payroll'     => Payroll::orderByDesc('month')->first(),
             'leave_requests'   => LeaveRequest::with(['employee:id,name', 'leaveType:id,name'])->where('status', 'pending')->orderBy('from_date')->limit(6)->get(),
             'new_hires'        => Employee::with('jobTitle:id,name')->orderByDesc('hire_date')->limit(5)->get(['id', 'name', 'number', 'hire_date', 'job_title_id']),
+            'contracts_expiring' => EmployeeContract::with('employee:id,name')->where('status', '!=', 'terminated')->whereNotNull('end_date')->whereDate('end_date', '<=', now()->addDays(45)->toDateString())->orderBy('end_date')->limit(8)->get(),
+            'recent_evaluations' => Evaluation::with(['employee:id,name', 'period:id,name'])->orderByDesc('id')->limit(6)->get(),
         ]);
     }
 

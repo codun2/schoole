@@ -44,7 +44,7 @@ for (const r of routes) {
   await settle(p);
   const txt = await p.$eval('#view', (v) => v.innerText).catch(() => '');
   if (txt.includes('تعذّر تحميل')) problems.push(`[admin] page "${r}" shows load error: ${txt.slice(0, 160)}`);
-  if (['home', 'schools', 'students', 'contracts', 'installments', 'accounting', 'hr', 'admin', 'tasks', 'calendar', 'employees', 'reports', 'attendance', 'payrolls', 'subjects', 'exam-terms', 'marks', 'timetable'].includes(r)) await p.screenshot({ path: `${SHOTS}/app-${r}.png`, fullPage: false });
+  if (['home', 'schools', 'students', 'contracts', 'installments', 'accounting', 'hr', 'admin', 'tasks', 'calendar', 'employees', 'reports', 'attendance', 'payrolls', 'subjects', 'exam-terms', 'marks', 'timetable', 'employee-contracts', 'evaluations', 'evaluation-criteria', 'evaluation-periods'].includes(r)) await p.screenshot({ path: `${SHOTS}/app-${r}.png`, fullPage: false });
 }
 console.log('visited', routes.length, 'routes');
 
@@ -140,6 +140,19 @@ console.log('teacher schedule:', tsOk); if (!tsOk) problems.push('teacher schedu
 await p.screenshot({ path: `${SHOTS}/app-timetable-teacher.png` });
 await p.click('.tabs button[data-t=load]'); await settle(p);
 await p.click('.tabs button[data-t=settings]'); await settle(p);
+
+// HR extras: contracts list + create an evaluation end-to-end
+await p.goto(B + '/app/#/employee-contracts'); await settle(p);
+if (!(await p.$eval('#tbl', (t) => t.innerText.includes('EC-')).catch(() => false))) problems.push('employee contracts not listed');
+await p.goto(B + '/app/#/evaluations'); await settle(p);
+await p.click('#add'); await p.waitForSelector('.modal [name=employee_id]');
+await p.selectOption('.modal:last-of-type [name=employee_id]', { index: 3 });
+const openPeriod = await p.$$eval('.modal:last-of-type [name=period_id] option', (os) => (os.find((o) => o.value) || {}).value);
+if (openPeriod) await p.selectOption('.modal:last-of-type [name=period_id]', openPeriod);
+await p.click('.modal:last-of-type [data-save]'); await settle(p);
+const evalFormOk = await p.$eval('.modal #eb', (x) => !!x.querySelector('input[data-s]')).catch(() => false);
+console.log('evaluation scoring form:', evalFormOk); if (!evalFormOk) problems.push('evaluation scoring form missing');
+if (evalFormOk) { for (const h of await p.$$('.modal:last-of-type #eb input[data-s]')) { await h.fill('85'); } await p.waitForTimeout(300); await p.click('.modal:last-of-type #sv'); await settle(p); console.log('evaluation saved, rows now:', await p.$eval('#list', (x) => x.innerText.includes('%')).catch(() => false)); await p.screenshot({ path: `${SHOTS}/app-evaluations.png` }); }
 
 // payroll generate (current month)
 await p.goto(B + '/app/#/payrolls'); await settle(p);

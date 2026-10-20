@@ -263,6 +263,8 @@ select.inp{padding-inline-end:28px;appearance:none;background-image:url("data:im
 .tbl-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
 .tbl-scroll{overflow-x:auto}
 table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+/* inside modals the overlay scrolls, so a sticky header would float over the footer */
+.modal .tbl th{position:static}
 .tbl th{background:var(--soft);color:var(--text-2);font-weight:600;font-size:12.3px;text-align:center;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0}
 .tbl td{padding:10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}

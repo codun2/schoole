@@ -39,6 +39,8 @@ class LookupController extends Controller
             'custom_fields'  => fn () => Models\CustomField::orderBy('sort')->get(),
             'subjects'       => fn () => Models\Subject::where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name_ar', 'grade_id', 'max_mark']),
             'exam_terms'     => fn () => Models\ExamTerm::where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name', 'weight', 'is_locked']),
+            'eval_criteria'  => fn () => Models\EvaluationCriterion::orderBy('sort')->get(['id', 'name', 'weight', 'max_score']),
+            'eval_periods'   => fn () => Models\EvaluationPeriod::orderByDesc('id')->get(['id', 'name', 'status']),
         ];
 
         $out = ['year_id' => $yearId];

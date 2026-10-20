@@ -155,6 +155,17 @@ Route::middleware(['auth:sanctum', 'staff', 'company'])->prefix('app')->group(fu
         Route::post('payrolls/{id}/approve', [Hr\PayrollController::class, 'approve']);
         Route::post('payrolls/{id}/pay', [Hr\PayrollController::class, 'pay']);
         Route::delete('payrolls/{id}', [Hr\PayrollController::class, 'destroy']);
+
+        // Employee contracts + evaluations
+        crud('employee-contracts', Hr\EmployeeContractController::class);
+        crud('evaluation-criteria', Hr\EvaluationCriterionController::class);
+        crud('evaluation-periods', Hr\EvaluationPeriodController::class);
+        Route::get('evaluations', [Hr\EvaluationController::class, 'index']);
+        Route::get('evaluations/form', [Hr\EvaluationController::class, 'form']);
+        Route::get('evaluations/{id}', [Hr\EvaluationController::class, 'show'])->whereNumber('id');
+        Route::post('evaluations', [Hr\EvaluationController::class, 'store']);
+        Route::match(['put', 'patch'], 'evaluations/{id}', [Hr\EvaluationController::class, 'update'])->whereNumber('id');
+        Route::delete('evaluations/{id}', [Hr\EvaluationController::class, 'destroy'])->whereNumber('id');
     });
 
     // ---- Administrative affairs

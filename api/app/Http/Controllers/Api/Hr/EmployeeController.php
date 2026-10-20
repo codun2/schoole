@@ -7,6 +7,8 @@ use App\Models\Employee;
 use App\Models\EmployeeAdvance;
 use App\Models\EmployeeAttendance;
 use App\Models\LeaveRequest;
+use App\Models\EmployeeContract;
+use App\Models\Evaluation;
 use App\Models\PayrollItem;
 use App\Support\Numbering;
 use Illuminate\Database\Eloquent\Model;
@@ -70,6 +72,8 @@ class EmployeeController extends ResourceController
             $record->advances = EmployeeAdvance::where('employee_id', $record->id)->orderByDesc('date')->get();
             $record->payslips = PayrollItem::where('employee_id', $record->id)->join('payrolls', 'payrolls.id', '=', 'payroll_items.payroll_id')
                 ->orderByDesc('payrolls.month')->limit(12)->get(['payrolls.month', 'payrolls.status', 'payroll_items.*']);
+            $record->contracts = EmployeeContract::where('employee_id', $record->id)->orderByDesc('id')->get();
+            $record->evaluations = Evaluation::with('period:id,name')->where('employee_id', $record->id)->orderByDesc('id')->limit(6)->get();
             $month = now()->format('Y-m');
             $record->attendance_month = EmployeeAttendance::where('employee_id', $record->id)->where('date', 'like', $month.'%')
                 ->selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status');

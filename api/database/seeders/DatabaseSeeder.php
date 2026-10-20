@@ -377,6 +377,46 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        // ---------------------------------------------------------------- employee contracts + evaluations
+        foreach ($employees as $i => $emp) {
+            $type = $i < 2 ? 'permanent' : ($i % 4 === 0 ? 'fixed' : 'permanent');
+            $end = $type === 'fixed' ? Carbon::parse($emp->hire_date)->addYears(2) : null;
+            // Make a couple of fixed contracts expire soon for the dashboard alert.
+            if ($i === 2) { $end = now()->addDays(20); }
+            if ($i === 7) { $end = now()->addDays(8); }
+            Models\EmployeeContract::create([
+                'employee_id' => $emp->id,
+                'number' => 'EC-2026-'.str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
+                'type' => $type,
+                'start_date' => $emp->hire_date,
+                'end_date' => $end?->toDateString(),
+                'basic_salary' => $emp->basic_salary,
+                'allowances' => $emp->allowances(),
+                'status' => 'active',
+            ]);
+        }
+        $critDefs = [['الالتزام والانضباط', 20], ['الأداء المهني وجودة العمل', 30], ['التعاون والعمل الجماعي', 15], ['المبادرة والتطوير', 15], ['التواصل مع أولياء الأمور', 20]];
+        $criteria = [];
+        foreach ($critDefs as $ci => [$cn, $cw]) {
+            $criteria[] = Models\EvaluationCriterion::create(['name' => $cn, 'weight' => $cw, 'max_score' => 100, 'sort' => $ci + 1]);
+        }
+        $period = Models\EvaluationPeriod::create(['name' => 'تقييم الفصل الدراسي الأول '.$current->name, 'from_date' => $current->start_date, 'to_date' => now()->toDateString(), 'status' => 'open']);
+        Models\EvaluationPeriod::create(['name' => 'تقييم العام السابق', 'status' => 'closed']);
+        foreach ($employees as $i => $emp) {
+            if ($i % 3 === 2) { continue; } // leave some un-evaluated
+            $base = 60 + ($i * 11) % 38;
+            $weighted = 0;
+            $wsum = array_sum(array_map(fn ($c) => (float) $c->weight, $criteria));
+            $eval = Models\Evaluation::create(['employee_id' => $emp->id, 'period_id' => $period->id, 'evaluator_id' => $admin->id, 'date' => now()->toDateString(), 'total_score' => 0, 'grade' => '']);
+            foreach ($criteria as $ci => $c) {
+                $score = max(40, min(100, $base + (($i * 7 + $ci * 9) % 24) - 12));
+                $eval->scores()->create(['criterion_id' => $c->id, 'score' => $score]);
+                $weighted += ($score / (float) $c->max_score) * 100 * ((float) $c->weight / $wsum);
+            }
+            $g = \App\Support\Grading::grade(round($weighted, 2));
+            $eval->update(['total_score' => round($weighted, 2), 'grade' => $g['letter']]);
+        }
+
         // ---------------------------------------------------------------- timetable (first 3 sections)
         $school->update(['settings' => array_merge($school->settings ?? [], ['school_days' => [0, 1, 2, 3, 4], 'periods' => 7])]);
         $someSections = Models\Section::where('academic_year_id', $yid)->orderBy('id')->take(6)->get();

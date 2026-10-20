@@ -340,6 +340,43 @@ class DatabaseSeeder extends Seeder
             Models\LeaveRequest::create(['employee_id' => $employees[$ei]->id, 'leave_type_id' => $types[$t], 'from_date' => now()->addDays($offset)->toDateString(), 'to_date' => now()->addDays($offset + $len - 1)->toDateString(), 'days' => $len, 'reason' => $reason, 'status' => $status, 'decided_by' => $status === 'pending' ? null : $admin->id]);
         }
 
+        // ---------------------------------------------------------------- academics (subjects, terms, marks)
+        $terms = [];
+        foreach ([['الفصل الدراسي الأول', 40, 1], ['الفصل الدراسي الثاني', 40, 2], ['اختبارات نهاية العام', 20, 3]] as [$tn, $tw, $ts]) {
+            $terms[] = Models\ExamTerm::create(['academic_year_id' => $yid, 'name' => $tn, 'weight' => $tw, 'sort' => $ts]);
+        }
+        // Common subjects for all grades + extras for the higher grades.
+        $subjectDefs = [
+            ['التربية الإسلامية', 'Islamic', null], ['اللغة العربية', 'Arabic', null], ['اللغة الإنجليزية', 'English', null],
+            ['الرياضيات', 'Math', null], ['العلوم', 'Science', null], ['الدراسات الاجتماعية', 'Social', null],
+            ['التربية الفنية', 'Art', null], ['التربية البدنية', 'PE', null], ['الحاسوب', 'ICT', null],
+        ];
+        $subjects = [];
+        foreach ($subjectDefs as $i => [$sa, $se, $gid]) {
+            $subjects[] = Models\Subject::create(['academic_year_id' => $yid, 'grade_id' => $gid, 'name_ar' => $sa, 'name_en' => $se, 'code' => strtoupper(substr($se, 0, 3)), 'max_mark' => 100, 'pass_mark' => 50, 'sort' => $i + 1]);
+        }
+        // Record marks for the first two terms (the final is still pending), for active students.
+        foreach ($students as $si => $st) {
+            if ($st->status !== 'active' || ! $st->section_id) {
+                continue;
+            }
+            // Each student has a baseline ability; marks vary a bit per subject.
+            $ability = 55 + ($si * 13) % 42; // 55..96
+            foreach ($subjects as $sub) {
+                if ($sub->grade_id && $sub->grade_id !== $st->grade_id) {
+                    continue;
+                }
+                foreach ([$terms[0], $terms[1]] as $ti => $term) {
+                    $base = $ability + (($si * 7 + $sub->id * 5 + $ti * 3) % 20) - 10; // ±10 jitter
+                    $mark = max(20, min(100, $base));
+                    Models\GradeMark::create([
+                        'academic_year_id' => $yid, 'student_id' => $st->id, 'section_id' => $st->section_id, 'grade_id' => $st->grade_id,
+                        'subject_id' => $sub->id, 'exam_term_id' => $term->id, 'mark' => $mark,
+                    ]);
+                }
+            }
+        }
+
         // ---------------------------------------------------------------- admin affairs
         $tasks = [
             ['تسليم الإقرار الضريبي الربع سنوي', 'urgent', 'done', 100, -60, -44, $finance->id],

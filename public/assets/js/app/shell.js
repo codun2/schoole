@@ -27,7 +27,7 @@
     ['g-school', 'المدارس', 'cap', null, [
       ['schools', 'لوحة تحكم المدارس', 'school'], ['years', 'السنوات الدراسية', 'school'], ['grades', 'الصفوف', 'school'], ['sections', 'الشعب', 'school'],
       ['buses', 'الحافلات', 'school'], ['guardians', 'أولياء الأمور', 'students'], ['students', 'الطلاب', 'students'], ['applications', 'استمارة التسجيل', 'students'],
-      ['attendance', 'الحضور والغياب', 'school'], ['custom-fields', 'الحقول المخصصة', 'school'], ['fee-items', 'بنود الرسوم الدراسية', 'school'],
+      ['attendance', 'الحضور والغياب', 'school'], ['subjects', 'المواد الدراسية', 'school'], ['exam-terms', 'الفصول والاختبارات', 'school'], ['marks', 'الدرجات والتقييم', 'school'], ['custom-fields', 'الحقول المخصصة', 'school'], ['fee-items', 'بنود الرسوم الدراسية', 'school'],
       ['contracts', 'العقود', 'finance'], ['installments', 'الأقساط', 'finance'], ['tuition-payments', 'مدفوعات الأقساط', 'finance'],
     ]],
   ];
@@ -224,7 +224,7 @@
           <li>حدّد <a class="acc-t" href="#/fee-items">بنود الرسوم</a> لكل صف.</li>
           <li>أضف <a class="acc-t" href="#/guardians">أولياء الأمور</a> و<a class="acc-t" href="#/students">الطلاب</a> (أو استوردهم من Excel).</li>
           <li>أنشئ <a class="acc-t" href="#/contracts">العقود</a> وفعّلها لتوليد الأقساط تلقائياً.</li>
-          <li>سجّل الدفعات من شاشة العقد أو <a class="acc-t" href="#/installments">الأقساط</a>.</li></ol></div>
+          <li>سجّل الدفعات من شاشة العقد أو <a class="acc-t" href="#/installments">الأقساط</a>.</li><li>عرّف <a class="acc-t" href="#/subjects">المواد</a> و<a class="acc-t" href="#/exam-terms">الفصول</a> ثم ارصد <a class="acc-t" href="#/marks">الدرجات</a>.</li></ol></div>
         <div class="card pad"><h3 class="mb8">رابط التسجيل الإلكتروني</h3><p class="t2 sm mb8">شارك هذا الرابط مع أولياء الأمور لتقديم طلبات التسجيل مباشرة:</p>
           <div class="row"><input class="inp ltr" readonly value="${location.origin}/apply.html?school=${esc(me.company.slug)}"><button class="btn ghost icon" id="cpy">${ic('copy')}</button></div>
           <h3 class="mb8 mt16">بوابة ولي الأمر</h3><p class="t2 sm">من شاشة أولياء الأمور عيّن كلمة مرور لولي الأمر ليدخل من <span class="ltr">${location.origin}/login.html</span> برقم جواله.</p></div>

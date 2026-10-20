@@ -16,6 +16,9 @@ use App\Models\Payroll;
 use App\Models\Section;
 use App\Models\ServiceInvoice;
 use App\Models\Student;
+use App\Models\Subject;
+use App\Models\GradeMark;
+use App\Models\ExamTerm;
 use App\Models\StudentAttendance;
 use App\Models\Task;
 use App\Models\Voucher;
@@ -117,6 +120,9 @@ class DashboardController extends Controller
                 'total'   => (clone $attToday)->count(),
             ],
             'sections_count'     => Section::where('academic_year_id', $yearId)->count(),
+            'subjects_count'     => Subject::where('academic_year_id', $yearId)->count(),
+            'terms_count'        => ExamTerm::where('academic_year_id', $yearId)->count(),
+            'marks_count'        => GradeMark::where('academic_year_id', $yearId)->whereNotNull('mark')->count(),
             'contracts_active'   => Contract::where('academic_year_id', $yearId)->where('status', 'active')->count(),
             'contracts_draft'    => Contract::where('academic_year_id', $yearId)->where('status', 'draft')->count(),
             'contracts_total'    => Finance::r((float) (clone $contracts)->sum('total')),

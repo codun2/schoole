@@ -9,6 +9,7 @@ use App\Models\Guardian;
 use App\Models\Installment;
 use App\Models\Student;
 use App\Models\StudentAttendance;
+use App\Http\Controllers\Api\School\MarkController;
 use App\Models\Voucher;
 use Illuminate\Http\Request;
 
@@ -54,10 +55,17 @@ class PortalController extends Controller
         $g = $this->guardian($request);
         $s = Student::with(['grade:id,name_ar', 'section:id,name', 'bus:id,number,driver_name,driver_phone,route'])->where('guardian_id', $g->id)->findOrFail($id);
 
+        $report = null;
+        try {
+            $report = app(MarkController::class)->reportCard($request, $s->id)->getData(true);
+        } catch (\Throwable) {
+        }
+
         return response()->json([
             'student'    => $s,
             'attendance' => StudentAttendance::where('student_id', $s->id)->orderByDesc('date')->limit(60)->get(['date', 'status', 'note']),
             'contracts'  => Contract::with('installments')->where('student_id', $s->id)->whereIn('status', ['active', 'completed'])->orderByDesc('id')->get(),
+            'report'     => $report,
         ]);
     }
 

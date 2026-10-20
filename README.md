@@ -28,6 +28,7 @@ docker exec schoole-api php artisan migrate:fresh --seed --force   # إعادة 
 - `api/` — Laravel 13 + Sanctum (PHP 8.4). عزل المدارس عبر `BelongsToCompany` + middleware `company`.
   - `app/Http/Controllers/Api/ResourceController.php` — CRUD تعريفي عام (بحث/فلاتر/ترقيم/تحقق/سجل نشاط).
   - `app/Support/Finance.php` — كل قواعد المال (العقود، الأقساط، السندات، الأرصدة).
+  - `app/Support/Grading.php` — سلّم التقديرات، وحساب النتائج الأكاديمية المرجّحة (المواد/الفصول) في `MarkController`.
 - `public/` — واجهات ثابتة بدون build: `assets/css/app.css` (نظام التصميم)، `assets/js/core.js` (API + UI kit + رسوم بيانية + Excel + طباعة)،
   `assets/js/app/` (shell + محرك الموارد `crud.js` + صفحات الوحدات).
 - `_test/e2e.mjs` — اختبار شامل في متصفح (Playwright): كل الصفحات + السيناريوهات الأساسية.

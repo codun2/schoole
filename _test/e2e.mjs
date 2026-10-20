@@ -44,7 +44,7 @@ for (const r of routes) {
   await settle(p);
   const txt = await p.$eval('#view', (v) => v.innerText).catch(() => '');
   if (txt.includes('تعذّر تحميل')) problems.push(`[admin] page "${r}" shows load error: ${txt.slice(0, 160)}`);
-  if (['home', 'schools', 'students', 'contracts', 'installments', 'accounting', 'hr', 'admin', 'tasks', 'calendar', 'employees', 'reports', 'attendance', 'payrolls'].includes(r)) await p.screenshot({ path: `${SHOTS}/app-${r}.png`, fullPage: false });
+  if (['home', 'schools', 'students', 'contracts', 'installments', 'accounting', 'hr', 'admin', 'tasks', 'calendar', 'employees', 'reports', 'attendance', 'payrolls', 'subjects', 'exam-terms', 'marks'].includes(r)) await p.screenshot({ path: `${SHOTS}/app-${r}.png`, fullPage: false });
 }
 console.log('visited', routes.length, 'routes');
 
@@ -99,6 +99,30 @@ await p.goto(B + '/app/#/attendance'); await settle(p);
 await p.click('#allp').catch(() => {});
 await p.click('#save').catch(() => problems.push('attendance save button missing'));
 await settle(p);
+
+// academic: subjects, terms, grade entry, results, report card
+await p.goto(B + '/app/#/subjects'); await settle(p);
+if (!(await p.$eval('#tbl', (t) => t.innerText.includes('الرياضيات')).catch(() => false))) problems.push('subjects not listed');
+await p.goto(B + '/app/#/exam-terms'); await settle(p);
+await p.goto(B + '/app/#/marks'); await settle(p);
+await p.click('#ld'); await settle(p);
+const sheetOk = await p.$eval('#sheet', (x) => !!x.querySelector('input[data-i]')).catch(() => false);
+console.log('grade entry sheet rendered:', sheetOk); if (!sheetOk) problems.push('grade entry sheet missing inputs');
+// fill first mark and save
+await p.$$eval('#sheet input[data-i]', (ins) => { if (ins[0]) { ins[0].value = '88'; ins[0].dispatchEvent(new Event('input', { bubbles: true })); } });
+await p.click('#sheet #save').catch(() => {});
+await settle(p);
+// results tab
+await p.click('.tabs button[data-t=results]'); await settle(p);
+await p.click('#ld'); await settle(p);
+const resOk = await p.$eval('#res', (x) => x.innerText.includes('متوسط الفصل')).catch(() => false);
+console.log('class results rendered:', resOk); if (!resOk) problems.push('class results not rendered');
+await p.screenshot({ path: `${SHOTS}/app-marks-results.png` });
+// open a report card
+const rcBtn = await p.$('#res [data-c]');
+if (rcBtn) { await rcBtn.click(); await settle(p); const rcOk = await p.$eval('.modal', (x) => x.innerText.includes('المعدل العام')).catch(() => false); console.log('report card opened:', rcOk); if (!rcOk) problems.push('report card modal missing'); await p.screenshot({ path: `${SHOTS}/app-report-card.png` }); await p.keyboard.press('Escape'); } else problems.push('no report card button in results');
+// cards tab
+await p.click('.tabs button[data-t=cards]'); await settle(p);
 
 // payroll generate (current month)
 await p.goto(B + '/app/#/payrolls'); await settle(p);

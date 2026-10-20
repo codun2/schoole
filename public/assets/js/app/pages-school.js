@@ -125,10 +125,11 @@
     { k: 'address', l: 'العنوان', full: true }, { k: 'medical_notes', l: 'ملاحظات صحية', t: 'textarea' }, { k: 'notes', l: 'ملاحظات', t: 'textarea' },
   ];
   async function studentProfile(row, ctx) {
-    const m = S.modal({ title: 'ملف الطالب', size: 'wide', body: S.spinner, foot: `<button class="btn ghost" data-close>إغلاق</button><a class="btn soft" id="nc">${ic('contract')} عقد جديد</a><button class="btn" id="ed">${ic('edit')} تعديل</button>` });
+    const m = S.modal({ title: 'ملف الطالب', size: 'wide', body: S.spinner, foot: `<button class="btn ghost" data-close>إغلاق</button><button class="btn soft" id="rc">${ic('fileText')} كشف الدرجات</button><a class="btn soft" id="nc">${ic('contract')} عقد جديد</a><button class="btn" id="ed">${ic('edit')} تعديل</button>` });
     const s = await S.get('/app/students/' + row.id);
     m.$('#ed').onclick = () => { m.close(); ctx.openForm(s); };
     m.$('#nc').onclick = () => { m.close(); S.contractBuilder(null, { student_id: s.id }); };
+    m.$('#rc').onclick = () => { m.close(); S.reportCard(s.id); };
     const a = s.attendance_summary, tot = a.present + a.absent + a.late + a.excused;
     const cfs = (ctx.lk.custom_fields || []).filter((f) => f.entity === 'student');
     m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(s.name))}</span><div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.name_en || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div>

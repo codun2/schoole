@@ -76,6 +76,14 @@ Route::middleware(['auth:sanctum', 'staff', 'company'])->prefix('app')->group(fu
         Route::get('attendance/sheet', [School\AttendanceController::class, 'sheet']);
         Route::post('attendance', [School\AttendanceController::class, 'save']);
         Route::get('attendance/report', [School\AttendanceController::class, 'report']);
+
+        // Academic: subjects, exam terms, grade marks, report cards, class results
+        crud('subjects', School\SubjectController::class);
+        crud('exam-terms', School\ExamTermController::class);
+        Route::get('grades/sheet', [School\MarkController::class, 'sheet']);
+        Route::post('grades', [School\MarkController::class, 'save']);
+        Route::get('grades/report-card/{student}', [School\MarkController::class, 'reportCard'])->whereNumber('student');
+        Route::get('grades/class-results', [School\MarkController::class, 'classResults']);
     });
 
     // ---- Schools: people

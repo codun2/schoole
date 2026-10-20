@@ -37,6 +37,8 @@ class LookupController extends Controller
             'correspondence_categories' => fn () => Models\CorrespondenceCategory::orderBy('name')->get(['id', 'name']),
             'users'          => fn () => Models\User::whereIn('role', ['admin', 'staff'])->where('status', 'active')->orderBy('name')->get(['id', 'name']),
             'custom_fields'  => fn () => Models\CustomField::orderBy('sort')->get(),
+            'subjects'       => fn () => Models\Subject::where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name_ar', 'grade_id', 'max_mark']),
+            'exam_terms'     => fn () => Models\ExamTerm::where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name', 'weight', 'is_locked']),
         ];
 
         $out = ['year_id' => $yearId];

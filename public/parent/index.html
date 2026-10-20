@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوابة ولي الأمر — سكوول</title>
+<link rel="stylesheet" href="/assets/css/app.css">
+<style>
+  .ptop{background:linear-gradient(140deg,var(--accent),#7c5ce6);color:#fff;padding:18px 16px 70px}
+  .ptop .in{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .ptop .lg{width:46px;height:46px;border-radius:13px;background:#fff;color:var(--accent);display:grid;place-items:center;overflow:hidden}
+  .ptop .lg img{width:100%;height:100%;object-fit:cover}.ptop .lg svg{width:24px;height:24px}
+  .ptop h1{font-size:18px}.ptop small{opacity:.85}
+  .ptop button{color:#fff;opacity:.9}.ptop .tbtn:hover{background:rgba(255,255,255,.15);color:#fff}
+  .pwrap{max-width:960px;margin:-50px auto 40px;padding:0 14px}
+  .kid{display:flex;gap:14px;align-items:center;cursor:pointer;transition:.15s}
+  .kid:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .kid .avatar{width:54px;height:54px;font-size:20px}
+  .ptabs{display:flex;gap:6px;margin-bottom:14px;background:var(--card);padding:5px;border-radius:12px;border:1px solid var(--line);width:fit-content}
+  .ptabs a{padding:7px 16px;border-radius:9px;font-weight:600;color:var(--text-2)}.ptabs a.on{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="spin" style="margin-top:30vh"></div>
+<script src="/assets/js/core.js"></script>
+<script>
+(async () => {
+  const { esc, ic } = S;
+  if (!S.token()) return (location.href = '/login.html');
+  let me; try { me = await S.get('/auth/me'); } catch { return; }
+  if (me.user.role !== 'guardian') return (location.href = me.home);
+  S.setSession(null, me);
+  document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة ولي الأمر — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="mode">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div><div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/payments" data-r="payments">المدفوعات</a></div><div id="v"></div></div>`;
+  document.getElementById('mode').onclick = S.toggleMode;
+  document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
+  const v = document.getElementById('v');
+  const stat = (cls, i, val, k) => `<div class="stat ${cls}"><div class="ic">${ic(i)}</div><div><div class="v num">${val}</div><div class="k">${k}</div></div></div>`;
+
+  async function home() {
+    const d = await S.get('/portal/home');
+    const f = d.finance;
+    v.innerHTML = `<div class="grid g3 mb16">${stat('c-violet', 'coins', S.money(f.total, true), 'إجمالي الرسوم')}${stat('c-green', 'check', S.money(f.paid, true), 'المدفوع')}${stat('c-red', 'timer', S.money(f.remaining, true), 'المتبقي')}</div>
+      ${f.next_due ? `<div class="card pad mb16 row wrap" style="border-color:${f.next_due.is_overdue ? 'var(--bad)' : 'var(--warn)'}"><span class="avatar" style="background:${f.next_due.is_overdue ? 'var(--bad-bg)' : 'var(--warn-bg)'};color:${f.next_due.is_overdue ? 'var(--bad)' : 'var(--warn)'}">${ic('calendar')}</span><div class="grow"><b>${f.next_due.is_overdue ? 'لديك قسط متأخر' : 'القسط القادم'}</b><div class="t2 sm">مبلغ <b>${S.moneyT(f.next_due.remaining)}</b> مستحق بتاريخ <span class="num">${S.d(f.next_due.due_date)}</span></div></div><a class="btn ghost sm" href="tel:${esc(d.school.phone || '')}">${ic('phone')} تواصل مع المدرسة</a></div>` : ''}
+      <div class="sec-t">${ic('users')} أبنائي</div>
+      <div class="grid g2">${d.children.map((c) => `<a class="card pad kid" href="#/child/${c.id}"><span class="avatar">${esc(S.initials(c.name))}</span><div class="grow"><b style="font-size:15px">${esc(c.name)}</b><div class="muted sm">${esc(c.grade?.name_ar || '')} — ${esc(c.section?.name || '')}</div><div class="row mt8 wrap">${c.attendance_rate != null ? `<span class="bdg l-ok">الحضور ${c.attendance_rate}%</span>` : ''}<span class="bdg ${c.absences ? 'l-bad' : 'l-mut'}">غياب ${c.absences} يوم</span>${c.bus ? `<span class="bdg l-info">الحافلة ${esc(c.bus.number)}</span>` : ''}</div></div>${ic('chevL')}</a>`).join('') || S.emptyHtml('لا يوجد أبناء مسجلون')}</div>
+      ${d.announcements.length ? `<div class="sec-t">${ic('megaphone')} إعلانات المدرسة</div>${d.announcements.map((a) => `<div class="card pad mb8"><b>${esc(a.title)}</b><p class="t2 sm" style="white-space:pre-line">${esc(a.body || '')}</p><span class="muted xs">${S.ago(a.created_at)}</span></div>`).join('')}` : ''}`;
+    v.querySelectorAll('.kid>svg').forEach((s) => (s.style.cssText = 'width:18px;height:18px;color:var(--muted)'));
+  }
+  async function child(id) {
+    const d = await S.get('/portal/children/' + id);
+    const s = d.student, att = d.attendance;
+    const cnt = (k) => att.filter((a) => a.status === k).length;
+    v.innerHTML = `<a href="#/" class="btn ghost sm mb16">${ic('chevR')} رجوع</a>
+      <div class="card pad mb16"><div class="profile-h" style="margin:0"><span class="avatar">${esc(S.initials(s.name))}</span><div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.grade?.name_ar || '')} — ${esc(s.section?.name || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div>
+      ${s.bus ? `<div class="mt16">${S.kv([['الحافلة', esc(s.bus.number)], ['السائق', esc(s.bus.driver_name || '—')], ['هاتف السائق', `<a class="num acc-t" href="tel:${esc(s.bus.driver_phone || '')}">${esc(s.bus.driver_phone || '—')}</a>`], ['خط السير', esc(s.bus.route || '—')]])}</div>` : ''}</div>
+      <div class="grid g4 mb16">${stat('c-green', 'check', cnt('present'), 'حضور')}${stat('c-red', 'x', cnt('absent'), 'غياب')}${stat('c-amber', 'clock', cnt('late'), 'تأخير')}${stat('c-blue', 'info', cnt('excused'), 'بعذر')}</div>
+      <div class="card mb16"><div class="hd"><h3>${ic('calCheck')} سجل الحضور (آخر ${att.length} يوم)</h3></div><div class="bd"><div class="chips">${att.map((a) => `<span class="bdg ${S.ST.att[a.status][1]} num" title="${esc(a.note || '')}">${S.d(a.date).slice(5)} ${S.ST.att[a.status][0]}</span>`).join('') || '<span class="muted">لا يوجد سجل</span>'}</div></div></div>
+      ${d.contracts.map((c) => `<div class="card mb16"><div class="hd"><h3>${ic('contract')} عقد <span class="num">${esc(c.number)}</span></h3><span class="grow"></span>${S.badge(S.ST.contract, c.status)}</div><div class="bd"><div class="grid g3 mb16">${stat('c-violet', 'coins', S.money(c.total, true), 'الإجمالي')}${stat('c-green', 'check', S.money(c.paid, true), 'المدفوع')}${stat('c-red', 'timer', S.money(c.remaining, true), 'المتبقي')}</div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>القسط</th><th>تاريخ الاستحقاق</th><th>المبلغ</th><th>المدفوع</th><th>الحالة</th></tr></thead><tbody>${c.installments.map((i) => `<tr class="${i.is_overdue ? 'warn-row' : ''}"><td>${i.seq}</td><td class="num">${S.d(i.due_date)}</td><td class="num">${S.fmtN(i.amount)}</td><td class="num ok-t">${S.fmtN(i.paid)}</td><td>${S.badge(S.ST.inst, i.is_overdue ? 'overdue' : i.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('')}`;
+  }
+  async function payments() {
+    const d = await S.get('/portal/payments');
+    v.innerHTML = `<div class="tbl-wrap">${d.data.length ? `<table class="tbl"><thead><tr><th>رقم السند</th><th>التاريخ</th><th>الطالب</th><th>المبلغ</th><th>الطريقة</th><th></th></tr></thead><tbody>${d.data.map((p, i) => `<tr><td class="num b">${esc(p.number)}</td><td class="num">${S.d(p.date)}</td><td>${esc(p.student_name || '')}</td><td class="num ok-t b">${S.fmtN(p.amount)}</td><td>${S.LBL.method[p.method] || p.method}</td><td><button class="ibtn p" data-p="${i}" title="طباعة">${ic('printer')}</button></td></tr>`).join('')}</tbody></table>` : S.emptyHtml('لا توجد مدفوعات', '', 'receipt')}</div>`;
+    v.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { const p = d.data[+b.dataset.p]; S.printReceipt ? S.printReceipt(p) : S.print('سند ' + p.number, `<h2>سند قبض ${esc(p.number)}</h2><div class="kv"><div><span>التاريخ</span><b>${S.d(p.date)}</b></div><div><span>الطالب</span><b>${esc(p.student_name || '')}</b></div><div><span>رقم العقد</span><b>${esc(p.contract_number || '')}</b></div><div><span>الطريقة</span><b>${S.LBL.method[p.method] || ''}</b></div></div><div class="big">${S.moneyT(p.amount)}</div><p style="text-align:center">${esc(p.description || '')}</p>`); }));
+  }
+  const route = async () => {
+    const h = location.hash.replace('#/', ''), [k, id] = h.split('/');
+    document.querySelectorAll('.ptabs a').forEach((a) => a.classList.toggle('on', a.dataset.r === (k === 'payments' ? 'payments' : '')));
+    v.innerHTML = S.spinner;
+    try { k === 'child' ? await child(id) : k === 'payments' ? await payments() : await home(); } catch (e) { v.innerHTML = S.emptyHtml('تعذّر التحميل', e.message, 'alert'); }
+  };
+  window.onhashchange = route; route();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سكوول — إدارة المنصة</title>
+<link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+<div class="spin" style="margin-top:30vh"></div>
+<script src="/assets/js/core.js"></script>
+<script>
+(async () => {
+  const { esc, ic } = S;
+  if (!S.token()) return (location.href = '/login.html');
+  let me; try { me = await S.get('/auth/me'); } catch { return; }
+  if (me.user.role !== 'super') return (location.href = me.home);
+  S.setSession(null, me);
+  const NAV = [['dash', 'لوحة المنصة', 'home'], ['schools', 'المدارس', 'building'], ['plans', 'الباقات', 'layers'], ['ann', 'إعلانات المنصة', 'megaphone']];
+  document.body.innerHTML = `<div class="backdrop" id="bd"></div><aside class="side" id="side"><div class="brand"><div class="logo">${S.LOGO}</div><div><b>سكوول</b><small>إدارة المنصة</small></div></div><nav class="nav">${NAV.map(([k, l, i]) => `<a class="it" href="#/${k}" data-r="${k}">${ic(i, 'ic')}<span>${l}</span></a>`).join('')}</nav><div class="foot">${ic('shield')} ${esc(me.user.email)}</div></aside>
+    <div class="main"><div class="top"><div class="topbar"><button class="burger" id="burger">${ic('menu')}</button><h1 id="pt"></h1><div class="sp"></div><button class="tbtn" id="mode">${ic('moon')}</button><div class="umenu"><span class="av">${ic('shield')}</span><span class="nm">${esc(me.user.name)}<small>مالك المنصة</small></span></div><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div><main class="content" id="view"></main></div>`;
+  document.getElementById('burger').onclick = () => innerWidth <= 1024 ? document.body.classList.toggle('side-open') : document.body.classList.toggle('collapsed');
+  document.getElementById('bd').onclick = () => document.body.classList.remove('side-open');
+  document.getElementById('mode').onclick = S.toggleMode;
+  document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
+  const view = document.getElementById('view');
+  const stat = (cls, i, v, k) => `<div class="stat ${cls}"><div class="ic">${ic(i)}</div><div><div class="v num">${v}</div><div class="k">${k}</div></div></div>`;
+
+  const P = {
+    async dash() {
+      const d = await S.get('/super/dashboard');
+      view.innerHTML = `<div class="greet"><h2>لوحة المنصة</h2><span>${S.longDate()}</span></div>
+        <div class="grid g4">${stat('c-blue', 'building', S.num(d.schools), 'مدرسة مسجلة')}${stat('c-green', 'check', S.num(d.schools_active), 'مدرسة مفعّلة')}${stat('c-amber', 'clock', S.num(d.schools_pending), 'بانتظار التفعيل')}${stat('c-violet', 'star', S.num(d.schools_trial), 'في الفترة التجريبية')}
+        ${stat('c-teal', 'users', S.num(d.students), 'طالب على المنصة')}${stat('c-pink', 'badge', S.num(d.employees), 'موظف')}${stat('c-orange', 'parents', S.num(d.guardians), 'حساب ولي أمر')}${stat('c-green', 'coins', S.fmtN(d.mrr) + ' ر.ع', 'الإيراد الشهري المتكرر')}</div>
+        <div class="grid g-2-1 mt16"><div class="card"><div class="hd"><h3>${ic('trendUp')} نمو المدارس</h3></div><div class="bd" id="g"></div></div><div class="card"><div class="hd"><h3>${ic('pie')} حسب الباقة</h3></div><div class="bd" id="p"></div></div></div>
+        <div class="card mt16"><div class="hd"><h3>${ic('building')} أحدث المدارس</h3></div><table class="tbl"><thead><tr><th class="s">المدرسة</th><th>المدينة</th><th>الباقة</th><th>الحالة</th><th>تاريخ التسجيل</th></tr></thead><tbody>${d.latest.map((s) => `<tr><td class="s b">${esc(s.name)}</td><td>${esc(s.city || '—')}</td><td>${esc(s.plan?.name || '—')}</td><td>${S.badge(S.ST.school, s.status)}</td><td class="num">${S.d(s.created_at)}</td></tr>`).join('')}</tbody></table></div>`;
+      S.chart.bars(view.querySelector('#g'), { labels: d.growth.map((x) => S.monthLabel(x.month, true)), series: [{ name: 'المدارس', color: '#4f46e5', data: d.growth.map((x) => x.schools) }] });
+      S.chart.donut(view.querySelector('#p'), { items: d.by_plan.map((x, i) => ({ label: x.name, value: x.c, color: S.PALETTE[i] })) });
+    },
+    async schools() {
+      const plans = (await S.get('/super/plans')).data;
+      const st = { q: '', status: '' };
+      view.innerHTML = `<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} إضافة مدرسة</button><div class="chips">${[['', 'الكل'], ['active', 'مفعّلة'], ['pending', 'بانتظار التفعيل'], ['suspended', 'موقوفة']].map(([v, l]) => `<button class="chip ${v === '' ? 'on' : ''}" data-s="${v}">${l}</button>`).join('')}</div><div class="sp"></div><div class="search" style="min-width:260px">${ic('search')}<input class="inp" id="q" placeholder="بحث بالاسم أو البريد..."></div></div><div class="tbl-wrap"><div class="tbl-scroll" id="t"></div></div>`;
+      const fields = (row) => [{ k: 'name', l: 'اسم المدرسة', req: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'slug', l: 'المعرّف (slug)', dir: 'ltr', ph: 'تلقائي' }, { k: 'city', l: 'المدينة' }, { k: 'phone', l: 'الهاتف', t: 'tel' }, { k: 'email', l: 'البريد', t: 'email' }, { k: 'plan_id', l: 'الباقة', t: 'select', opts: plans.map((p) => [p.id, p.name]) }, { k: 'status', l: 'الحالة', t: 'select', opts: S.opts(S.ST.school), def: 'active' }, { k: 'trial_ends_at', l: 'نهاية التجربة', t: 'date' }, { k: 'subscription_ends_at', l: 'نهاية الاشتراك', t: 'date' }, ...(row ? [] : [{ t: 'sec', l: 'حساب مدير المدرسة' }, { k: 'admin_name', l: 'اسم المدير', req: true }, { k: 'admin_email', l: 'البريد', t: 'email', req: true }, { k: 'admin_password', l: 'كلمة المرور', t: 'password', req: true }])];
+      const load = async () => {
+        const d = await S.get('/super/schools', st);
+        view.querySelector('#t').innerHTML = d.data.length ? `<table class="tbl"><thead><tr><th class="s">المدرسة</th><th>المدير</th><th>الباقة</th><th>الطلاب</th><th>المستخدمون</th><th>الحالة</th><th>التسجيل</th><th>الإجراءات</th></tr></thead><tbody>${d.data.map((s, i) => `<tr><td class="s"><b>${esc(s.name)}</b><div class="muted xs ltr">${esc(s.slug)} · ${esc(s.city || '')}</div></td><td>${esc(s.admin?.name || '—')}<div class="muted xs">${esc(s.admin?.email || '')}</div></td><td>${esc(s.plan?.name || '—')}</td><td><span class="cnt">${s.students_count}</span></td><td><span class="cnt m">${s.users_count}</span></td><td>${S.badge(S.ST.school, s.status)}</td><td class="num">${S.d(s.created_at)}</td><td><div class="acts">
+          ${s.status !== 'active' ? `<button class="ibtn g" data-a="active" data-i="${i}" title="تفعيل">${ic('check')}</button>` : `<button class="ibtn d" data-a="suspended" data-i="${i}" title="إيقاف">${ic('lock')}</button>`}
+          <button class="ibtn v" data-a="imp" data-i="${i}" title="الدخول كمدير المدرسة">${ic('logout')}</button><button class="ibtn e" data-a="edit" data-i="${i}" title="تعديل">${ic('edit')}</button><button class="ibtn d" data-a="del" data-i="${i}" title="حذف">${ic('trash')}</button></div></td></tr>`).join('')}</tbody></table>` : S.emptyHtml('لا توجد مدارس');
+        view.querySelectorAll('[data-a]').forEach((b) => (b.onclick = async () => {
+          const s = d.data[+b.dataset.i], a = b.dataset.a;
+          try {
+            if (a === 'active' || a === 'suspended') { const r = await S.post(`/super/schools/${s.id}/status`, { status: a }); S.toast(r.message, 'ok'); load(); }
+            else if (a === 'edit') S.formModal({ title: 'تعديل ' + s.name, fields: fields(s), values: s, onSave: async (v) => { await S.patch('/super/schools/' + s.id, v); S.toast('تم الحفظ', 'ok'); load(); } });
+            else if (a === 'del') { if (await S.confirm('حذف المدرسة «' + s.name + '» وكل بياناتها؟', 'حذف نهائي')) { await S.del('/super/schools/' + s.id); S.toast('تم الحذف', 'ok'); load(); } }
+            else if (a === 'imp') { if (!(await S.confirm('الدخول إلى لوحة «' + s.name + '» كمدير؟ (للدعم الفني — صالح لساعتين)', 'دخول', false))) return; const r = await S.post(`/super/schools/${s.id}/impersonate`); sessionStorage.setItem('sch_super_token', S.token()); S.clearSession(); localStorage.removeItem('sch_year'); S.setSession(r.token, {}); location.href = r.home; }
+          } catch (e) { S.toast(e.message, 'bad'); }
+        }));
+      };
+      view.querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => { view.querySelectorAll('[data-s]').forEach((x) => x.classList.toggle('on', x === b)); st.status = b.dataset.s; load(); }));
+      view.querySelector('#q').oninput = S.debounce((e) => { st.q = e.target.value; load(); });
+      view.querySelector('#add').onclick = () => S.formModal({ title: 'إضافة مدرسة', fields: fields(null), values: { status: 'active', plan_id: plans[1]?.id }, onSave: async (v) => { await S.post('/super/schools', v); S.toast('تم إنشاء المدرسة', 'ok'); load(); } });
+      await load();
+    },
+    async plans() {
+      view.innerHTML = `<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} باقة جديدة</button></div><div class="grid g3" id="l"></div>`;
+      const fields = [{ k: 'name', l: 'اسم الباقة', req: true }, { k: 'description', l: 'الوصف' }, { k: 'price_monthly', l: 'السعر الشهري (ر.ع)', t: 'money' }, { k: 'price_yearly', l: 'السعر السنوي (ر.ع)', t: 'money' }, { k: 'max_students', l: 'الحد الأقصى للطلاب (0 = بلا حد)', t: 'number' }, { k: 'max_users', l: 'الحد الأقصى للمستخدمين (0 = بلا حد)', t: 'number' }, { k: 'sort', l: 'الترتيب', t: 'number' }, { k: 'is_active', l: 'متاحة للتسجيل', t: 'check', def: true }, { k: 'features_txt', l: 'المزايا (سطر لكل ميزة)', t: 'textarea' }];
+      const pay = (v) => ({ ...v, features: (v.features_txt || '').split('\n').map((x) => x.trim()).filter(Boolean) });
+      const load = async () => {
+        const d = (await S.get('/super/plans')).data;
+        view.querySelector('#l').innerHTML = d.map((p, i) => `<div class="card pad"><div class="row between"><h3>${esc(p.name)}</h3>${p.is_active ? '<span class="bdg ok">متاحة</span>' : '<span class="bdg mut">مخفية</span>'}</div><p class="muted sm">${esc(p.description || '')}</p><div style="font-family:var(--head);font-size:26px;font-weight:700;margin:10px 0" class="acc-t">${S.fmtN(p.price_monthly, 0)} <small class="muted" style="font-size:13px">ر.ع / شهر</small></div><ul style="padding-inline-start:18px;line-height:2" class="t2 sm">${(p.features || []).map((f) => `<li>${esc(f)}</li>`).join('')}</ul><div class="row between mt16"><span class="muted sm">${p.schools_count} مدرسة · ${p.max_students || '∞'} طالب</span><div class="acts"><button class="ibtn e" data-e="${i}">${ic('edit')}</button><button class="ibtn d" data-d="${p.id}">${ic('trash')}</button></div></div></div>`).join('');
+        view.querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => { const p = d[+b.dataset.e]; S.formModal({ title: 'تعديل الباقة', fields, values: { ...p, features_txt: (p.features || []).join('\n') }, onSave: async (v) => { await S.patch('/super/plans/' + p.id, pay(v)); load(); } }); }));
+        view.querySelectorAll('[data-d]').forEach((b) => (b.onclick = async () => { if (await S.confirm('حذف الباقة؟', 'حذف')) { try { await S.del('/super/plans/' + b.dataset.d); load(); } catch (e) { S.toast(e.message, 'bad'); } } }));
+      };
+      view.querySelector('#add').onclick = () => S.formModal({ title: 'باقة جديدة', fields, values: { is_active: true }, onSave: async (v) => { await S.post('/super/plans', pay(v)); load(); } });
+      await load();
+    },
+    async ann() {
+      view.innerHTML = `<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} إعلان لكل المدارس</button></div><div id="l"></div>`;
+      const AUD = { all: 'الجميع', staff: 'موظفو المدارس', guardians: 'أولياء الأمور' };
+      const load = async () => { const d = (await S.get('/super/announcements')).data; view.querySelector('#l').innerHTML = d.length ? d.map((a) => `<div class="card pad mb8 row between"><div><b>${esc(a.title)}</b> <span class="bdg l-info">${AUD[a.audience]}</span><div class="t2 sm">${esc(a.body || '')}</div></div><button class="ibtn d" data-d="${a.id}">${ic('trash')}</button></div>`).join('') : S.emptyHtml('لا توجد إعلانات'); view.querySelectorAll('[data-d]').forEach((b) => (b.onclick = async () => { await S.del('/super/announcements/' + b.dataset.d); load(); })); };
+      view.querySelector('#add').onclick = () => S.formModal({ title: 'إعلان منصة', fields: [{ k: 'title', l: 'العنوان', req: true, full: true }, { k: 'audience', l: 'الجمهور', t: 'select', req: true, opts: Object.entries(AUD), def: 'staff' }, { k: 'is_active', l: 'منشور', t: 'check', def: true }, { k: 'body', l: 'النص', t: 'textarea' }], values: { audience: 'staff', is_active: true }, onSave: async (v) => { await S.post('/super/announcements', v); load(); } });
+      await load();
+    },
+  };
+  const route = async () => {
+    const k = location.hash.replace('#/', '') || 'dash';
+    document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.r === k));
+    document.getElementById('pt').textContent = (NAV.find((n) => n[0] === k) || NAV[0])[1];
+    document.body.classList.remove('side-open');
+    view.innerHTML = S.spinner;
+    try { await (P[k] || P.dash)(); } catch (e) { view.innerHTML = S.emptyHtml('تعذّر التحميل', e.message, 'alert'); }
+  };
+  window.onhashchange = route; route();
+})();
+</script>
+</body>
+</html>

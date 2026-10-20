@@ -1,7 +1,66 @@
+# سكوول (schoole) — static frontends (nginx) + Laravel API + MySQL.
+# Host nginx (future domain) reverse-proxies → 127.0.0.1:8013 (schoole-web).
+name: schoole
+
 services:
-  web:
-    build: .
+  schoole-db:
+    image: mysql:8.0
+    container_name: schoole-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: schoole
+      MYSQL_USER: schoole
+      MYSQL_PASSWORD: Sch00le_pr0d_7kQ2v
+      MYSQL_ROOT_PASSWORD: Sch00le_root_4nW8x
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - schoole-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pSch00le_root_4nW8x"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [schoole-net]
+
+  schoole-api:
+    build: ./api
+    container_name: schoole-api
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      APP_ENV: production
+      PHP_CLI_SERVER_WORKERS: "6"
+      APP_URL: http://109.199.98.171:8099
+      DB_CONNECTION: mysql
+      DB_HOST: schoole-db
+      DB_PORT: "3306"
+      DB_DATABASE: schoole
+      DB_USERNAME: schoole
+      DB_PASSWORD: Sch00le_pr0d_7kQ2v
+    volumes:
+      - ./api:/app
+      - schoole-api-storage:/app/storage/app/public
+    depends_on:
+      schoole-db:
+        condition: service_healthy
+    networks: [schoole-net]
+
+  schoole-web:
+    image: nginx:alpine
     container_name: schoole-web
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8013:80"
+      - "127.0.0.1:8013:80"   # host nginx exposes it publicly on :8099 (/etc/nginx/sites-available/schoole)
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./.nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - schoole-api
+    networks: [schoole-net]
+
+volumes:
+  schoole-db-data:
+  schoole-api-storage:
+
+networks:
+  schoole-net:

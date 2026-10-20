@@ -3,3 +3,7 @@ node_modules/
 .env
 *.log
 .last_deployed
+
+_test/_shots/
+_test/node_modules
+.claude/settings.local.json

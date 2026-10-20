@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToCompany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use BelongsToCompany, HasApiTokens, Notifiable;
+
+    protected $fillable = ['company_id', 'name', 'email', 'phone', 'role', 'status', 'title', 'photo', 'permissions', 'password'];
+
+    protected $hidden = ['password', 'remember_token'];
+
+    /** Section permissions a school staff member can be granted. */
+    public const PERMISSIONS = ['school', 'students', 'finance', 'accounting', 'hr', 'admin_affairs', 'settings', 'users'];
+
+    /** Roles: super (platform owner), admin (school owner/principal), staff, guardian. */
+    public function isStaff(): bool
+    {
+        return in_array($this->role, ['staff', 'admin'], true);
+    }
+
+    public function isSuper(): bool
+    {
+        return $this->role === 'super';
+    }
+
+    public function isGuardian(): bool
+    {
+        return $this->role === 'guardian';
+    }
+
+    public function hasPerm(string $key): bool
+    {
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        return $this->isStaff() && in_array($key, $this->permissions ?? [], true);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'password'    => 'hashed',
+            'permissions' => 'array',
+        ];
+    }
+
+    public function guardian()
+    {
+        return $this->hasOne(Guardian::class);
+    }
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>استمارة التسجيل</title>
+<link rel="stylesheet" href="/assets/css/app.css">
+<style>
+  .hero{background:linear-gradient(140deg,var(--accent),#7c5ce6);color:#fff;padding:36px 16px 90px;text-align:center}
+  .hero .lg{width:72px;height:72px;border-radius:20px;background:#fff;margin:0 auto 12px;display:grid;place-items:center;overflow:hidden;color:var(--accent)}
+  .hero .lg img{width:100%;height:100%;object-fit:cover}.hero h1{font-size:24px}.hero p{opacity:.85}
+  .wrapf{max-width:760px;margin:-64px auto 40px;padding:0 14px}
+</style>
+</head>
+<body>
+<div class="hero"><div class="lg" id="lg"></div><h1 id="nm">استمارة التسجيل</h1><p id="sub">جاري التحميل...</p></div>
+<div class="wrapf"><div class="card pad" id="box"><div class="spin"></div></div></div>
+<script src="/assets/js/core.js"></script>
+<script>
+(async () => {
+  const slug = new URLSearchParams(location.search).get('school');
+  const box = document.getElementById('box');
+  let sc;
+  try { sc = await S.api('/public/schools/' + encodeURIComponent(slug || ''), { noRedirect: true }); }
+  catch { document.getElementById('sub').textContent = ''; box.innerHTML = S.emptyHtml('الرابط غير صحيح', 'تأكد من رابط التسجيل الذي أرسلته المدرسة', 'alert'); return; }
+  document.title = 'استمارة التسجيل — ' + sc.name;
+  document.getElementById('nm').textContent = sc.name;
+  document.getElementById('sub').textContent = 'استمارة طلب التسجيل للعام الدراسي ' + (sc.year || '');
+  document.getElementById('lg').innerHTML = sc.logo ? `<img src="${S.esc(sc.logo)}">` : S.LOGO;
+  const fields = [
+    { t: 'sec', l: 'بيانات الطالب' }, { k: 'student_name', l: 'اسم الطالب الرباعي', req: true, full: true }, { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: [['male', 'ذكر'], ['female', 'أنثى']] }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' },
+    { k: 'national_id', l: 'رقم الهوية المدنية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', def: 'عماني' }, { k: 'grade_id', l: 'الصف المطلوب', t: 'select', req: true, opts: sc.grades.map((g) => [g.id, g.name_ar]) }, { k: 'previous_school', l: 'المدرسة السابقة (إن وجدت)' },
+    { t: 'sec', l: 'بيانات ولي الأمر' }, { k: 'guardian_name', l: 'اسم ولي الأمر', req: true }, { k: 'guardian_relation', l: 'صلة القرابة', t: 'select', opts: [['أب', 'أب'], ['أم', 'أم'], ['أخرى', 'أخرى']], def: 'أب' }, { k: 'guardian_phone', l: 'رقم الجوال', t: 'tel', req: true }, { k: 'guardian_national_id', l: 'رقم هوية ولي الأمر', dir: 'ltr' }, { k: 'guardian_email', l: 'البريد الإلكتروني', t: 'email', full: true }, { k: 'notes', l: 'ملاحظات إضافية', t: 'textarea' },
+  ];
+  box.innerHTML = S.formHtml(fields, {}) + `<button class="btn mt24" id="go" style="width:100%;height:46px">${S.ic('send')} إرسال طلب التسجيل</button><p class="muted sm mt8" style="text-align:center">للاستفسار: <span class="num">${S.esc(sc.phone || '')}</span></p>`;
+  document.getElementById('go').onclick = async (e) => {
+    const form = box.querySelector('form'); if (!S.validate(form, fields)) return S.toast('يرجى تعبئة الحقول المطلوبة', 'bad');
+    S.btnBusy(e.currentTarget, true);
+    try { const r = await S.api(`/public/schools/${encodeURIComponent(slug)}/apply`, { method: 'POST', body: S.readForm(form, fields), noRedirect: true }); box.innerHTML = `<div class="empty" style="color:var(--ok)">${S.ic('check')}<b style="color:var(--text)">${S.esc(r.message)}</b><div>رقم الطلب: <span class="num">#${r.id}</span></div></div>`; }
+    catch (ex) { S.toast(ex.message, 'bad'); S.showErrors(form, ex); S.btnBusy(e.currentTarget, false); }
+  };
+})();
+</script>
+</body>
+</html>

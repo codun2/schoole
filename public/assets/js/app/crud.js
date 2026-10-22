@@ -79,7 +79,7 @@
             let h = '';
             if (cfg.view || cfg.viewFields) h += `<button class="ibtn v" data-act="view" title="عرض">${ic('eye')}</button>`;
             (cfg.rowActions || []).forEach((a, i) => { if (!a.show || a.show(r)) h += `<button class="ibtn ${a.cls || 'p'}" data-ra="${i}" title="${esc(a.t)}">${ic(a.ic)}</button>`; });
-            if (cfg.fields && cfg.canEdit !== false && (!cfg.canEdit || cfg.canEdit(r))) h += `<button class="ibtn e" data-act="edit" title="تعديل">${ic('edit')}</button>`;
+            if ((cfg.fields || cfg.editPage) && cfg.canEdit !== false && (!cfg.canEdit || cfg.canEdit(r))) h += `<button class="ibtn e" data-act="edit" title="تعديل">${ic('edit')}</button>`;
             if (cfg.canDelete !== false && (!cfg.canDelete || cfg.canDelete(r))) h += `<button class="ibtn d" data-act="del" title="حذف">${ic('trash')}</button>`;
             return h;
           };
@@ -104,6 +104,7 @@
           p.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { state.page = +b.dataset.p; load(); }));
         }
         async function openForm(row) {
+          if (cfg.editPage) { location.hash = '#/' + cfg.editPage + (row && row.id ? '/' + row.id : ''); return; }
           let full = row;
           if (row && cfg.loadForEdit) { try { full = await S.get(cfg.api + '/' + row.id); } catch (e) { return S.toast(e.message, 'bad'); } }
           if (cfg.customForm) return cfg.customForm(full, ctx);
@@ -149,6 +150,64 @@
         if (params.new) openForm(null);
         if (params.id) openView({ id: params.id });
         await load();
+      },
+    };
+  };
+
+  /**
+   * Full-PAGE add/edit form (instead of a modal). Pairs with a list built via
+   * S.crud({ ..., editPage: '<formRouteKey>' }).
+   * cfg: { api, title, singular, perm, year, lookups:[], loadForEdit,
+   *        backTo:'<listRouteKey>', fields:(lk,row,ctx)=>[...], formCols,
+   *        newDefaults(params,lk), toForm(row), toPayload(vals,row),
+   *        context(row,lk,ctx)=>html (optional read-only side cards),
+   *        subtitle }
+   */
+  S.formPage = function (cfg) {
+    return {
+      title: cfg.title, perm: cfg.perm,
+      async render(el, params, rc) {
+        const keys = [...new Set([...(cfg.year ? ['years'] : []), ...(cfg.lookups || [])])];
+        const lk = keys.length ? await S.L(keys) : {};
+        const id = params.id;
+        let row = null;
+        if (id) {
+          el.innerHTML = S.spinner;
+          try { row = await S.get(cfg.api + '/' + id); } catch (e) { el.innerHTML = S.emptyHtml('تعذّر تحميل السجل', e.message, 'alert'); return; }
+        }
+        const ctx = { lk, params, row };
+        const fields = cfg.fields(lk, row, ctx);
+        const values = row ? (cfg.toForm ? cfg.toForm(row) : row) : (cfg.newDefaults ? cfg.newDefaults(params, lk) : {});
+        const titleTxt = (id ? 'تعديل ' : 'إضافة ') + (cfg.singular || cfg.title || '');
+        const ctxHtml = cfg.context ? (cfg.context(row, lk, ctx) || '') : '';
+
+        el.innerHTML = `<div class="crumbs"><a class="acc-t" href="#/${cfg.backTo}">${esc(cfg.title || '')}</a> ${ic('chevL')} <b>${id ? 'تعديل' : 'إضافة'}</b></div>
+          <div class="page-h"><div><h2>${esc(titleTxt)}</h2>${cfg.subtitle ? `<p>${esc(cfg.subtitle)}</p>` : ''}</div><a class="btn ghost" href="#/${cfg.backTo}">${ic('chevR')} رجوع للقائمة</a></div>
+          <div class="grid ${ctxHtml ? 'g-2-1' : ''}" style="align-items:start">
+            <div class="card"><div class="bd pad" id="fwrap">${S.formHtml(fields, values, cfg.formCols)}</div>
+              <div class="mf" style="display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line)"><button class="btn" id="sv">${ic('check')} حفظ</button><a class="btn ghost" href="#/${cfg.backTo}">إلغاء</a></div></div>
+            ${ctxHtml ? `<div id="ctx">${ctxHtml}</div>` : ''}
+          </div>`;
+
+        const form = el.querySelector('#fwrap form');
+        // live conditional visibility (same behaviour as S.formModal)
+        const refresh = () => { const cur = S.readForm(form, fields.filter((f) => f.t !== 'file')); fields.forEach((f) => { if (f.show) { const w = form.querySelector(`[data-f="${f.k}"]`); if (w) w.style.display = f.show(cur) ? '' : 'none'; } }); };
+        form.addEventListener('change', refresh); refresh();
+        if (cfg.afterRender) cfg.afterRender(el, { form, lk, row, params });
+
+        el.querySelector('#sv').onclick = async (ev) => {
+          if (!S.validate(form, fields)) return S.toast('راجع الحقول المطلوبة', 'bad');
+          const vals = S.readForm(form, fields);
+          const body = cfg.toPayload ? cfg.toPayload(vals, row) : vals;
+          S.btnBusy(ev.currentTarget, true);
+          try {
+            if (id) await S.api(cfg.api + '/' + id, { method: body instanceof FormData ? 'POST' : 'PATCH', body });
+            else await S.api(cfg.api, { method: 'POST', body: body instanceof FormData ? body : { ...body, ...(cfg.year ? { year: S.yearId() } : {}) }, query: cfg.year ? { year: S.yearId() } : undefined });
+            (cfg.invalidate || []).forEach((k) => S.L.clear(k));
+            S.toast(id ? 'تم حفظ التعديلات' : 'تمت الإضافة بنجاح', 'ok');
+            location.hash = '#/' + cfg.backTo;
+          } catch (er) { S.showErrors(form, er); S.btnBusy(ev.currentTarget, false); S.toast(er.message || 'تعذّر الحفظ', 'bad'); }
+        };
       },
     };
   };

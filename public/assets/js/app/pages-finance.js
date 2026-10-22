@@ -29,8 +29,27 @@
     });
   };
 
-  // ============================================================ contract builder
-  S.contractBuilder = async function (existing, preset = {}) {
+  // ============================================================ contract builder (full page)
+  /** Navigate to the full-page contract form. Kept as the public entry point used across the app. */
+  S.contractBuilder = function (existing, preset = {}) {
+    if (existing && existing.id) location.hash = '#/contract-form/' + existing.id;
+    else if (preset && preset.student_id) location.hash = '#/contract-form?student=' + preset.student_id;
+    else location.hash = '#/contract-form';
+  };
+
+  S.page('contract-form', {
+    perm: 'finance', title: 'العقود',
+    async render(el, params) {
+      let existing = null;
+      if (params.id) {
+        el.innerHTML = S.spinner;
+        try { existing = await S.get('/app/contracts/' + params.id); } catch (e) { el.innerHTML = S.emptyHtml('تعذّر تحميل العقد', e.message, 'alert'); return; }
+      }
+      await mountContractForm(el, existing, params.student ? { student_id: params.student } : {});
+    },
+  });
+
+  async function mountContractForm(el, existing, preset = {}) {
     const lk = await S.L(['fee_items', 'buses', 'sections']);
     const me = S.me();
     const studentsRes = await S.get('/app/students', { all: 1, year: S.yearId(), status: 'active' });
@@ -43,8 +62,12 @@
       bus_id: c.bus_id || '', discount_type: c.discount_type || 'fixed', discount_value: +c.discount_value || 0, discount_reason: c.discount_reason || '',
       tax_rate: c.tax_rate != null ? +c.tax_rate : +(me.company.tax_rate || 0), installments_count: c.installments_count || 3, first_due_date: S.d(c.first_due_date) !== '—' ? S.d(c.first_due_date) : S.today(), notes: c.notes || '',
     };
-    const m = S.modal({ title: existing ? 'تعديل العقد ' + c.number : 'عقد تسجيل جديد', size: 'xwide', sticky: true, body: '<div id="cb"></div>', foot: `<button class="btn ghost" data-close>إلغاء</button><button class="btn ghost" id="sv-d">${ic('file')} حفظ كمسودة</button><button class="btn success" id="sv-a">${ic('check')} حفظ وتفعيل</button>` });
-    const root = m.$('#cb');
+    el.innerHTML = `<div class="crumbs"><a class="acc-t" href="#/contracts">العقود</a> ${ic('chevL')} <b>${existing ? 'تعديل' : 'عقد جديد'}</b></div>
+      <div class="page-h"><div><h2>${existing ? 'تعديل العقد ' + esc(c.number) : 'عقد تسجيل جديد'}</h2><p>اختر الطالب وبنود الرسوم والخصم وجدولة الأقساط.</p></div>
+        <div class="row"><a class="btn ghost" href="#/contracts">${ic('chevR')} رجوع للقائمة</a></div></div>
+      <div id="cb"></div>
+      <div class="card pad mt16" style="display:flex;gap:10px;flex-wrap:wrap;position:sticky;bottom:12px;z-index:5"><button class="btn ghost" id="sv-d">${ic('file')} حفظ كمسودة</button><button class="btn success" id="sv-a">${ic('check')} حفظ وتفعيل</button><a class="btn ghost" href="#/contracts">إلغاء</a></div>`;
+    const root = el.querySelector('#cb');
     const student = () => students.find((s) => String(s.id) === String(state.student_id));
     const feeFor = (s) => lk.fee_items.filter((f) => !f.grade_id || (s && f.grade_id === s.grade_id));
     const pickDefaults = () => { const s = student(); if (!s) return; state.items = feeFor(s).filter((f) => f.is_mandatory).map((f) => ({ fee_item_id: f.id, name: f.name, amount: +f.amount })); state.bus_id = s.bus_id || ''; };
@@ -105,14 +128,13 @@
         const body = { ...state, items: state.items.filter((i) => i.name), activate };
         const r = existing ? await S.patch('/app/contracts/' + existing.id, body) : await S.post('/app/contracts', body);
         S.toast(activate ? 'تم حفظ العقد وتفعيله وتوليد الأقساط' : 'تم حفظ العقد كمسودة', 'ok');
-        m.close();
         const target = '#/contracts/' + r.id;
         if (location.hash === target) S.reroute(); else location.hash = target;
       } catch (e) { S.toast(e.message, 'bad'); S.btnBusy(btn, false); }
     };
-    m.$('#sv-d').onclick = (e) => save(false, e.currentTarget);
-    m.$('#sv-a').onclick = (e) => save(true, e.currentTarget);
-  };
+    el.querySelector('#sv-d').onclick = (e) => save(false, e.currentTarget);
+    el.querySelector('#sv-a').onclick = (e) => save(true, e.currentTarget);
+  }
 
   // ============================================================ contract view
   S.contractView = async function (id, reload) {

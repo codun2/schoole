@@ -58,16 +58,30 @@
       <div class="kv"><div><span>نوع الحافلة</span><b>${esc(r.type || '—')}</b></div><div><span>السائق</span><b>${esc(r.driver_name || '—')} — ${esc(r.driver_phone || '')}</b></div><div><span>المشرف</span><b>${esc(r.supervisor_name || '—')}</b></div><div><span>خط السير</span><b>${esc(r.route || '—')}</b></div><div><span>عدد الركاب</span><b>${d.students.length} / ${r.capacity}</b></div></div>
       <table><thead><tr><th>#</th><th>اسم الطالب</th><th>الصف / الشعبة</th><th>ولي الأمر</th><th>الجوال</th><th>توقيع</th></tr></thead><tbody>${d.students.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(s.name)}</td><td>${esc((s.grade?.name_ar || '') + ' / ' + (s.section?.name || ''))}</td><td>${esc(s.guardian?.name || '')}</td><td>${esc(s.guardian?.phone || '')}</td><td style="width:90px"></td></tr>`).join('')}</tbody></table>`);
   };
+  const busFields = () => [
+    { t: 'sec', l: 'بيانات الحافلة' },
+    { k: 'number', l: 'رقم الحافلة / رقم اللوحة', req: true, dir: 'ltr' }, { k: 'type', l: 'نوع الحافلة', ph: 'باص 26 راكب' }, { k: 'capacity', l: 'عدد الركاب (السعة)', t: 'number', min: 0 }, { k: 'route', l: 'خط السير / المسار', full: true },
+    { t: 'sec', l: 'السائق والمشرف' },
+    { k: 'driver_name', l: 'اسم السائق' }, { k: 'driver_phone', l: 'هاتف السائق', t: 'tel' }, { k: 'supervisor_name', l: 'المشرف/ة' },
+    { t: 'sec', l: 'الرسوم' },
+    { k: 'price', l: 'السعر السنوي المتفق عليه', t: 'money' },
+  ];
   S.page('buses', S.crud({
-    title: 'الحافلات', singular: 'حافلة', api: '/app/buses', perm: 'school', year: true, icon: 'bus', invalidate: ['buses'],
+    title: 'الحافلات', singular: 'حافلة', api: '/app/buses', perm: 'school', year: true, icon: 'bus', invalidate: ['buses'], editPage: 'bus-form',
     columns: [
       { l: 'رقم الحافلة', v: (r) => `<b class="num">${esc(r.number)}</b>` }, { l: 'نوع الحافلة', v: (r) => esc(r.type || '—') }, { l: 'السائق', v: (r) => esc(r.driver_name || '—') },
       { l: 'هاتف السائق', v: (r) => cell.phone(r.driver_phone) }, { l: 'خط السير', v: (r) => `<span class="sm t2">${esc(r.route || '—')}</span>` }, { l: 'عدد الركاب', v: (r) => cell.num(r.capacity) },
       { l: 'الطلاب', v: (r) => `<a href="#/students?bus_id=${r.id}">${cell.cnt(r.students_count, 'r')}</a>` }, { l: 'السعر المتفق عليه', v: (r) => S.money(r.price) },
     ],
-    fields: () => [{ k: 'number', l: 'رقم الحافلة / اللوحة', req: true, dir: 'ltr' }, { k: 'type', l: 'نوع الحافلة', ph: 'باص 26 راكب' }, { k: 'driver_name', l: 'اسم السائق' }, { k: 'driver_phone', l: 'هاتف السائق', t: 'tel' }, { k: 'supervisor_name', l: 'المشرف/ة' }, { k: 'capacity', l: 'عدد الركاب', t: 'number', min: 0 }, { k: 'price', l: 'السعر السنوي المتفق عليه', t: 'money' }, { k: 'route', l: 'خط السير', full: true }],
     rowActions: [{ ic: 'printer', cls: 'p', t: 'طباعة كشف الركاب', run: printBus }],
     search: 'بحث برقم الحافلة أو السائق...',
+  }));
+  S.page('bus-form', S.formPage({
+    api: '/app/buses', title: 'الحافلات', singular: 'حافلة', perm: 'school', year: true, backTo: 'buses', invalidate: ['buses'], fields: busFields,
+    context: (row) => row ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('bus')} ملخص الحافلة</div>
+      ${S.kv([['السعة', `<span class="num">${esc(row.capacity || '—')}</span> راكب`], ['عدد الركاب الحاليين', `<span class="num">${esc(row.students_count ?? '—')}</span>`], ['السعر السنوي', S.moneyT(row.price || 0)]])}
+      <a class="btn ghost sm mt8" href="#/students?bus_id=${row.id}&year=all">${ic('users')} عرض قائمة الركاب</a></div>
+      <div class="card pad" style="margin-top:14px"><div class="sec-t" style="margin-top:0">${ic('printer')} الطباعة</div><p class="muted sm">بعد الحفظ يمكنك طباعة كشف ركاب الحافلة من قائمة الحافلات.</p></div>` : `<div class="card pad"><p class="muted sm">${ic('bus')} أدخل بيانات الحافلة والسائق وخط السير. بعد الحفظ يمكنك إسناد الطلاب إليها من شاشة الطلاب.</p></div>`,
   }));
 
   // ---------------------------------------------------------------- guardians
@@ -86,15 +100,13 @@
   S.customFieldSpecs = customFieldSpecs;
 
   S.page('guardians', S.crud({
-    title: 'أولياء الأمور', singular: 'ولي أمر', api: '/app/guardians', perm: 'students', icon: 'parents', lookups: ['custom_fields'], invalidate: ['guardians'], formSize: 'wide',
+    title: 'أولياء الأمور', singular: 'ولي أمر', api: '/app/guardians', perm: 'students', icon: 'parents', lookups: ['custom_fields'], invalidate: ['guardians'], editPage: 'guardian-form',
     search: 'بحث بالاسم أو رقم الهوية أو الجوال...',
     columns: [
       { l: 'الاسم', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(r.name)}</a> ${r.has_login ? `<span title="لديه دخول للبوابة">🔑</span>` : ''}` },
       { l: 'رقم الهوية المدنية', v: (r) => cell.num(r.national_id || '—') }, { l: 'الجنسية', v: (r) => esc(r.nationality || '—') },
       { l: 'الجوال', v: (r) => cell.phone(r.phone) }, { l: 'الطلاب', v: (r) => `<a href="#/students?guardian_id=${r.id}&year=all">${cell.cnt(r.students_count)}</a>` },
     ],
-    fields: guardianFields, toForm: unpackCustom, toPayload: (v) => packCustom(v, S._lkG || {}, 'guardian'),
-    afterRender: (ctx) => (S._lkG = ctx.lk),
     view: async (row, ctx) => {
       const m = S.modal({ title: 'ملف ولي الأمر', size: 'wide', body: S.spinner, foot: `<button class="btn ghost" data-close>إغلاق</button><button class="btn" id="ed">${ic('edit')} تعديل</button>` });
       const g = await S.get('/app/guardians/' + row.id);
@@ -109,6 +121,20 @@
     },
     exportCols: [{ l: 'الاسم', v: (r) => r.name }, { l: 'رقم الهوية', v: (r) => r.national_id }, { l: 'الجنسية', v: (r) => r.nationality }, { l: 'الجوال', v: (r) => r.phone }, { l: 'البريد', v: (r) => r.email }, { l: 'عدد الطلاب', v: (r) => r.students_count }],
     importer: { endpoint: '/app/guardians/import', file: 'نموذج-أولياء-الأمور', headers: ['الاسم', 'رقم الهوية', 'الجنسية', 'الجوال', 'البريد', 'صلة القرابة', 'المهنة', 'العنوان'], sample: [['خالد بن سعيد الهنائي', '12345678', 'عماني', '96891234567', '', 'أب', 'مهندس', 'مسقط']], map: { name: ['الاسم', 'name'], national_id: ['رقم الهوية', 'national_id'], nationality: ['الجنسية', 'nationality'], phone: ['الجوال', 'phone'], email: ['البريد', 'email'], relation: ['صلة القرابة', 'relation'], job: ['المهنة', 'job'], address: ['العنوان', 'address'] } },
+  }));
+
+  S.page('guardian-form', S.formPage({
+    api: '/app/guardians', title: 'أولياء الأمور', singular: 'ولي أمر', perm: 'students', backTo: 'guardians',
+    lookups: ['custom_fields'], invalidate: ['guardians'],
+    fields: guardianFields, toForm: unpackCustom, toPayload: (v) => packCustom(v, S._lkG || {}, 'guardian'),
+    afterRender: (el, c) => (S._lkG = c.lk),
+    context: (g) => {
+      if (!g) return `<div class="card pad"><p class="muted sm">${ic('parents')} سجّل بيانات ولي الأمر. يمكنك لاحقاً ربط أبنائه به من شاشة الطلاب، وتفعيل دخوله لبوابة ولي الأمر من هذا النموذج.</p></div>`;
+      return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px"><span class="avatar">${esc(S.initials(g.name))}</span><div class="grow"><b>${esc(g.name)}</b><div class="muted sm">${esc(g.relation || '')}</div></div>${g.has_login ? '<span class="bdg l-ok">دخول مفعّل</span>' : '<span class="bdg l-mut">بلا دخول</span>'}</div>
+        <div class="sec-t" style="margin-top:0">${ic('users')} الأبناء (${(g.students || []).length})</div>
+        <div class="chips">${(g.students || []).map((s) => `<a class="bdg l-info" href="#/students/${s.id}">${esc(s.name)}</a>`).join('') || '<span class="muted sm">لا يوجد</span>'}</div>
+        ${(g.contracts || []).length ? `<div class="sec-t">${ic('contract')} العقود</div><div class="chips">${g.contracts.map((c) => `<a class="bdg l-mut num" href="#/contracts/${c.id}">${esc(c.number)} · ${S.fmtN(c.remaining)}</a>`).join('')}</div>` : ''}</div>`;
+    },
   }));
 
   // ---------------------------------------------------------------- students
@@ -145,7 +171,7 @@
       ${s.recent_absences.length ? `<div class="sec-t">${ic('calendar')} آخر حالات الغياب والتأخير</div><div class="chips">${s.recent_absences.map((x) => `<span class="bdg ${x.status === 'absent' ? 'l-bad' : 'l-warn'} num">${S.d(x.date)} — ${S.ST.att[x.status][0]}</span>`).join('')}</div>` : ''}`;
   }
   S.page('students', S.crud({
-    title: 'الطلاب', singular: 'طالب', api: '/app/students', perm: 'students', year: true, icon: 'users', lookups: ['grades', 'sections', 'buses', 'guardians', 'custom_fields'], formSize: 'wide', loadForEdit: true,
+    title: 'الطلاب', singular: 'طالب', api: '/app/students', perm: 'students', year: true, icon: 'users', lookups: ['grades', 'sections', 'buses', 'guardians', 'custom_fields'], editPage: 'student-form',
     search: 'بحث باسم الطالب أو رقم هويته أو ولي الأمر أو الجوال...',
     passParams: ['guardian_id', 'bus_id'],
     filters: [{ k: 'status', l: 'الحالة', all: 'جميع الحالات', opts: S.opts(S.ST.student) }, { k: 'grade_id', l: 'الصف', all: 'كل الصفوف', opts: gradeOpts }, { k: 'section_id', l: 'الشعبة', all: 'كل الشعب', opts: sectionOpts }],
@@ -154,12 +180,26 @@
       { l: 'الصف / الشعبة', v: (r) => esc((r.grade?.name_ar || '—') + '  /  ' + (r.section?.name || '—')) }, { l: 'ولي الأمر', v: (r) => esc(r.guardian?.name || '—') },
       { l: 'جوال ولي الأمر', v: (r) => cell.phone(r.guardian?.phone) }, { l: 'الحالة', v: (r) => S.badge(S.ST.student, r.status) }, { l: 'الجنسية', v: (r) => esc(r.nationality || '—') }, { l: 'تاريخ التسجيل', v: (r) => cell.num(S.d(r.registered_at)) },
     ],
-    fields: studentFields, toForm: unpackCustom, toPayload: (v) => packCustom(v, S._lkS || {}, 'student'),
-    afterRender: (ctx) => (S._lkS = ctx.lk), view: studentProfile, invalidate: [],
+    view: studentProfile, invalidate: [],
     exportCols: [{ l: 'الرقم المدرسي', v: (r) => r.student_no }, { l: 'اسم الطالب', v: (r) => r.name }, { l: 'رقم الهوية', v: (r) => r.national_id }, { l: 'الجنس', v: (r) => S.LBL.gender[r.gender] }, { l: 'الصف', v: (r) => r.grade?.name_ar }, { l: 'الشعبة', v: (r) => r.section?.name }, { l: 'ولي الأمر', v: (r) => r.guardian?.name }, { l: 'جوال ولي الأمر', v: (r) => r.guardian?.phone }, { l: 'الحالة', v: (r) => S.ST.student[r.status]?.[0] }, { l: 'الجنسية', v: (r) => r.nationality }, { l: 'تاريخ التسجيل', v: (r) => r.registered_at }],
     importer: { endpoint: '/app/students/import', year: true, file: 'نموذج-الطلاب', headers: ['اسم الطالب', 'رقم الهوية', 'الجنس', 'تاريخ الميلاد', 'الجنسية', 'الصف', 'الشعبة', 'اسم ولي الأمر', 'جوال ولي الأمر', 'هوية ولي الأمر'], sample: [['سالم بن خالد البلوشي', '20160022', 'ذكر', '2019-03-15', 'عماني', 'الصف الأول', 'شعبة أ', 'خالد بن عبدالله البلوشي', '96891001002', '87654321']], map: { name: ['اسم الطالب', 'name'], national_id: ['رقم الهوية', 'national_id'], gender: ['الجنس', 'gender'], birth_date: ['تاريخ الميلاد', 'birth_date'], nationality: ['الجنسية', 'nationality'], grade: ['الصف', 'grade'], section: ['الشعبة', 'section'], guardian_name: ['اسم ولي الأمر', 'guardian_name'], guardian_phone: ['جوال ولي الأمر', 'guardian_phone'], guardian_national_id: ['هوية ولي الأمر', 'guardian_national_id'] } },
     rowActions: [{ ic: 'contract', cls: 'p', t: 'إنشاء عقد', show: (r) => r.status === 'active', run: (r) => S.contractBuilder(null, { student_id: r.id }) }],
     toolbar: [{ l: 'نقل جماعي', ic: 'swap', cls: 'ghost', run: (ctx) => bulkMove(ctx) }],
+  }));
+  S.page('student-form', S.formPage({
+    api: '/app/students', title: 'الطلاب', singular: 'طالب', perm: 'students', year: true, backTo: 'students',
+    lookups: ['grades', 'sections', 'buses', 'guardians', 'custom_fields'], invalidate: [],
+    fields: studentFields, toForm: unpackCustom, toPayload: (v) => packCustom(v, S._lkS || {}, 'student'),
+    afterRender: (el, c) => (S._lkS = c.lk),
+    context: (s) => {
+      if (!s) return `<div class="card pad"><p class="muted sm">${ic('userPlus')} عبّئ بيانات الطالب وسجّله في الشعبة المناسبة. بعد الحفظ يمكنك إنشاء عقد له من ملفّه أو من قائمة الطلاب.</p></div>`;
+      const a = s.attendance_summary || { present: 0, absent: 0, late: 0, excused: 0 }, tot = a.present + a.absent + a.late + a.excused;
+      const rem = (s.contracts || []).reduce((x, c) => x + (c.status === 'cancelled' ? 0 : +c.remaining), 0);
+      return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px"><span class="avatar">${esc(S.initials(s.name))}</span><div class="grow"><b>${esc(s.name)}</b><div class="muted sm num">${esc(s.student_no || '')}</div></div>${S.badge(S.ST.student, s.status)}</div>
+        <div class="grid g2 mb8">${S.ui.stat('c-green', 'check', tot ? Math.round(((a.present + a.late) * 100) / tot) + '%' : '—', 'الحضور')}${S.ui.stat('c-red', 'x', S.num(a.absent), 'الغياب')}</div>
+        ${S.kv([['ولي الأمر', s.guardian ? `<a class="lk" href="#/guardians/${s.guardian.id}">${esc(s.guardian.name)}</a>` : '—'], ['المتبقي من الرسوم', S.moneyT(rem)]])}
+        <div class="row wrap mt8"><button class="btn ghost sm" onclick="S.reportCard(${s.id})">${ic('fileText')} كشف الدرجات</button><button class="btn ghost sm" onclick="S.contractBuilder(null,{student_id:${s.id}})">${ic('contract')} عقد جديد</button></div></div>`;
+    },
   }));
   function bulkMove(ctx) {
     if (!ctx.rows || !ctx.rows.length) return S.toast('لا يوجد طلاب في القائمة الحالية', 'bad');
@@ -174,8 +214,16 @@
   }
 
   // ---------------------------------------------------------------- applications
+  const appFields = (lk) => [
+    { t: 'sec', l: 'بيانات الطالب' },
+    { k: 'student_name', l: 'اسم الطالب', req: true, full: true }, { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'national_id', l: 'رقم الهوية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'grade_id', l: 'الصف المطلوب', t: 'select', opts: gradeOpts(lk) }, { k: 'previous_school', l: 'المدرسة السابقة', full: true },
+    { t: 'sec', l: 'بيانات ولي الأمر' },
+    { k: 'guardian_name', l: 'اسم ولي الأمر', req: true }, { k: 'guardian_phone', l: 'الجوال', t: 'tel', req: true }, { k: 'guardian_national_id', l: 'رقم هوية ولي الأمر', dir: 'ltr' }, { k: 'guardian_email', l: 'البريد', t: 'email' }, { k: 'guardian_relation', l: 'صلة القرابة', def: 'أب' },
+    { t: 'sec', l: 'ملاحظات' },
+    { k: 'notes', l: 'ملاحظات إضافية', t: 'textarea', full: true },
+  ];
   S.page('applications', S.crud({
-    title: 'استمارة التسجيل', singular: 'طلب تسجيل', api: '/app/applications', perm: 'students', year: true, icon: 'userPlus', lookups: ['grades', 'sections'], formSize: 'wide',
+    title: 'استمارة التسجيل', singular: 'طلب تسجيل', api: '/app/applications', perm: 'students', year: true, icon: 'userPlus', lookups: ['grades', 'sections'], editPage: 'application-form',
     intro: `<div class="card pad mb16 row wrap" style="background:var(--accent-soft);border-color:transparent"><span class="acc-t">${S.ic('link')}</span><div class="grow"><b>رابط التسجيل الإلكتروني لأولياء الأمور</b><div class="sm t2">يصل كل طلب جديد إلى هذه الشاشة لمراجعته وقبوله.</div></div><button class="btn sm" id="cplink">${S.ic('copy')} نسخ الرابط</button><a class="btn ghost sm" target="_blank" id="oplink">فتح الاستمارة</a></div>`,
     afterRender: (ctx) => { const url = location.origin + '/apply.html?school=' + S.me().company.slug; ctx.el.querySelector('#cplink').onclick = () => S.copy(url); ctx.el.querySelector('#oplink').href = url; },
     chips: { k: 'status', items: S.opts(S.ST.app) }, defaults: { status: 'new' },
@@ -186,13 +234,21 @@
       { l: 'ولي الأمر', v: (r) => esc(r.guardian_name) }, { l: 'الجوال', v: (r) => cell.phone(r.guardian_phone) }, { l: 'المصدر', v: (r) => (r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>') },
       { l: 'تاريخ الطلب', v: (r) => cell.num(S.d(r.created_at)) }, { l: 'الحالة', v: (r) => S.badge(S.ST.app, r.status) },
     ],
-    fields: (lk) => [{ k: 'student_name', l: 'اسم الطالب', req: true, full: true }, { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'national_id', l: 'رقم الهوية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'grade_id', l: 'الصف المطلوب', t: 'select', opts: gradeOpts(lk) }, { k: 'previous_school', l: 'المدرسة السابقة' }, { t: 'sec', l: 'ولي الأمر' }, { k: 'guardian_name', l: 'اسم ولي الأمر', req: true }, { k: 'guardian_phone', l: 'الجوال', t: 'tel', req: true }, { k: 'guardian_national_id', l: 'رقم هوية ولي الأمر', dir: 'ltr' }, { k: 'guardian_email', l: 'البريد', t: 'email' }, { k: 'guardian_relation', l: 'صلة القرابة', def: 'أب' }, { k: 'notes', l: 'ملاحظات', t: 'textarea' }],
     canEdit: (r) => r.status === 'new',
     rowActions: [
       { ic: 'check', cls: 'g', t: 'قبول وتسجيل الطالب', show: (r) => r.status === 'new', run: (r, ctx) => S.formModal({ title: 'قبول طلب ' + r.student_name, fields: [{ k: 'section_id', l: 'التسكين في الشعبة', t: 'select', opts: sectionOpts(ctx.lk).filter(([id]) => !r.grade_id || (ctx.lk.sections.find((s) => s.id === id) || {}).grade_id === r.grade_id) }], extra: '<p class="muted sm mt8">سيتم إنشاء ملف الطالب وربطه بولي الأمر (أو إنشاء ولي أمر جديد إن لم يكن مسجلاً).</p>', saveText: 'قبول', onSave: async (v) => { const res = await S.post(`/app/applications/${r.id}/accept`, v); S.toast(res.message, 'ok'); S.L.clear('guardians'); ctx.reload(); S.refreshBadges(); } }) },
       { ic: 'x', cls: 'd', t: 'رفض', show: (r) => r.status === 'new', run: (r, ctx) => S.formModal({ title: 'رفض طلب ' + r.student_name, fields: [{ k: 'reason', l: 'سبب الرفض', t: 'textarea' }], saveText: 'رفض الطلب', onSave: async (v) => { await S.post(`/app/applications/${r.id}/reject`, v); S.toast('تم رفض الطلب', 'ok'); ctx.reload(); S.refreshBadges(); } }) },
     ],
     viewFields: (r) => [['اسم الطالب', esc(r.student_name)], ['الجنس', S.LBL.gender[r.gender]], ['تاريخ الميلاد', S.d(r.birth_date)], ['الجنسية', esc(r.nationality || '—')], ['رقم الهوية', esc(r.national_id || '—')], ['الصف المطلوب', esc(r.grade?.name_ar || '—')], ['المدرسة السابقة', esc(r.previous_school || '—')], ['ولي الأمر', esc(r.guardian_name)], ['الجوال', esc(r.guardian_phone)], ['هوية ولي الأمر', esc(r.guardian_national_id || '—')], ['البريد', esc(r.guardian_email || '—')], ['الحالة', S.badge(S.ST.app, r.status)], ['ملاحظات', esc(r.notes || '—')]],
+  }));
+
+  S.page('application-form', S.formPage({
+    api: '/app/applications', title: 'استمارة التسجيل', singular: 'طلب تسجيل', perm: 'students', year: true, backTo: 'applications',
+    lookups: ['grades', 'sections'], fields: appFields,
+    subtitle: 'سجّل طلب تسجيل جديد لطالب — يمكنك قبوله لاحقاً وتحويله إلى ملف طالب من قائمة الطلبات.',
+    newDefaults: () => ({ status: 'new', source: 'office', gender: 'male', nationality: 'عماني', guardian_relation: 'أب' }),
+    context: (r) => r ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('userPlus')} حالة الطلب</div>${S.kv([['الحالة', S.badge(S.ST.app, r.status)], ['المصدر', r.source === 'online' ? 'إلكتروني' : 'المكتب'], ['تاريخ الطلب', `<span class="num">${S.d(r.created_at)}</span>`]])}${r.status === 'new' ? '<p class="muted sm mt8">لقبول الطلب وتحويله لطالب، استخدم زر «قبول» من قائمة الطلبات.</p>' : ''}</div>`
+      : `<div class="card pad"><p class="muted sm">${ic('userPlus')} أدخل بيانات الطالب وولي الأمر. تصل الطلبات الإلكترونية من أولياء الأمور إلى نفس القائمة لمراجعتها.</p></div>`,
   }));
 
   // ---------------------------------------------------------------- custom fields

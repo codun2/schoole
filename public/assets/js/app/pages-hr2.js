@@ -9,8 +9,18 @@
   const gradeOf = (p) => { if (p == null) return { letter: '—', remark: 'غير مقيّم', color: '#8a93a6' }; const r = SCALE.find(([m]) => p >= m) || SCALE[4]; return { letter: r[1], remark: r[2], color: r[3] }; };
 
   // ---------------------------------------------------------------- employee contracts
+  const contractFields = (lk) => [
+    { t: 'sec', l: 'الموظف ونوع العقد' },
+    { k: 'employee_id', l: 'الموظف', t: 'select', req: true, opts: empOpts(lk) }, { k: 'type', l: 'نوع العقد', t: 'select', opts: S.opts(CTYPE), def: 'permanent' }, { k: 'status', l: 'حالة العقد', t: 'select', opts: [['active', 'ساري'], ['terminated', 'منتهٍ/مفسوخ']], def: 'active' },
+    { t: 'sec', l: 'المدة' },
+    { k: 'start_date', l: 'تاريخ البداية', t: 'date', req: true, def: S.today() }, { k: 'end_date', l: 'تاريخ النهاية', t: 'date', help: 'اتركه فارغاً للعقد الدائم' },
+    { t: 'sec', l: 'الراتب التعاقدي' },
+    { k: 'basic_salary', l: 'الراتب الأساسي', t: 'money' }, { k: 'allowances', l: 'إجمالي البدلات', t: 'money' },
+    { t: 'sec', l: 'المرفقات والملاحظات' },
+    { k: 'file', l: 'نسخة العقد (ملف PDF/صورة)', t: 'file', full: true }, { k: 'notes', l: 'ملاحظات', t: 'textarea', full: true },
+  ];
   S.page('employee-contracts', S.crud({
-    title: 'عقود الموظفين', singular: 'عقد موظف', api: '/app/employee-contracts', perm: 'hr', icon: 'contract', lookups: ['employees'], formSize: 'wide',
+    title: 'عقود الموظفين', singular: 'عقد موظف', api: '/app/employee-contracts', perm: 'hr', icon: 'contract', lookups: ['employees'], editPage: 'employee-contract-form',
     search: 'رقم العقد أو اسم الموظف...',
     chips: { k: 'state', items: [['', 'الكل'], ['expiring', 'قاربت على الانتهاء'], ['expired', 'منتهية']] },
     filters: [{ k: 'type', l: 'نوع العقد', opts: S.opts(CTYPE) }, { k: 'employee_id', l: 'الموظف', opts: empOpts }],
@@ -20,17 +30,16 @@
       { l: 'الراتب', v: (r) => S.money(+r.basic_salary + +r.allowances) }, { l: 'الحالة', v: (r) => (r.status === 'terminated' ? '<span class="bdg mut">منتهٍ</span>' : S.badge(S.ST.license, r.state)) }, { l: 'مرفق', v: (r) => cell.file(r.attachment) },
     ],
     rowClass: (r) => (r.status !== 'terminated' && (r.state === 'expired' || r.state === 'expiring') ? 'warn-row' : ''),
-    fields: (lk) => [
-      { k: 'employee_id', l: 'الموظف', t: 'select', req: true, opts: empOpts(lk) }, { k: 'type', l: 'نوع العقد', t: 'select', opts: S.opts(CTYPE), def: 'permanent' },
-      { k: 'start_date', l: 'تاريخ البداية', t: 'date', req: true, def: S.today() }, { k: 'end_date', l: 'تاريخ النهاية', t: 'date', help: 'اتركه فارغاً للعقد الدائم' },
-      { k: 'basic_salary', l: 'الراتب الأساسي', t: 'money' }, { k: 'allowances', l: 'إجمالي البدلات', t: 'money' }, { k: 'status', l: 'الحالة', t: 'select', opts: [['active', 'ساري'], ['terminated', 'منتهٍ/مفسوخ']], def: 'active' },
-      { k: 'file', l: 'نسخة العقد (ملف)', t: 'file' }, { k: 'notes', l: 'ملاحظات', t: 'textarea' },
-    ],
-    newDefaults: () => ({ type: 'permanent', status: 'active', start_date: S.today() }),
-    toForm: (r) => ({ ...r }),
-    toPayload: (v) => { if (v instanceof FormData) return v; const f = new FormData(); Object.entries(v).forEach(([k, x]) => x != null && f.append(k, typeof x === 'boolean' ? (x ? 1 : 0) : x)); return f; },
     viewFields: (r) => [['رقم العقد', esc(r.number)], ['الموظف', esc(r.employee?.name)], ['النوع', CTYPE[r.type]], ['البداية', S.d(r.start_date)], ['النهاية', S.d(r.end_date) || 'غير محدد'], ['الراتب الأساسي', S.money(r.basic_salary)], ['البدلات', S.money(r.allowances)], ['الحالة', r.status === 'terminated' ? 'منتهٍ' : S.ST.license[r.state][0]], ['المرفق', r.attachment ? `<a class="lk" target="_blank" href="${esc(r.attachment)}">فتح</a>` : '—'], ['ملاحظات', esc(r.notes || '—')]],
     exportCols: [{ l: 'رقم العقد', v: (r) => r.number }, { l: 'الموظف', v: (r) => r.employee?.name }, { l: 'النوع', v: (r) => CTYPE[r.type] }, { l: 'البداية', v: (r) => S.d(r.start_date) }, { l: 'النهاية', v: (r) => S.d(r.end_date) }, { l: 'الراتب', v: (r) => +r.basic_salary + +r.allowances }, { l: 'الحالة', v: (r) => r.status }],
+  }));
+  S.page('employee-contract-form', S.formPage({
+    api: '/app/employee-contracts', title: 'عقود الموظفين', singular: 'عقد موظف', perm: 'hr', backTo: 'employee-contracts', lookups: ['employees'],
+    fields: contractFields,
+    newDefaults: () => ({ type: 'permanent', status: 'active', start_date: S.today() }),
+    toPayload: (v) => { if (v instanceof FormData) return v; const f = new FormData(); Object.entries(v).forEach(([k, x]) => x != null && f.append(k, typeof x === 'boolean' ? (x ? 1 : 0) : x)); return f; },
+    context: (r) => r ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('contract')} ملخص العقد</div>${S.kv([['رقم العقد', `<span class="num">${esc(r.number || '—')}</span>`], ['الموظف', esc(r.employee?.name || '—')], ['إجمالي الراتب', S.moneyT(+(r.basic_salary || 0) + +(r.allowances || 0))], ['الحالة', r.status === 'terminated' ? 'منتهٍ' : (S.ST.license[r.state] ? S.ST.license[r.state][0] : '—')]])}${r.attachment ? `<a class="btn ghost sm mt8" target="_blank" href="${esc(r.attachment)}">${ic('file')} فتح نسخة العقد</a>` : ''}</div>`
+      : `<div class="card pad"><p class="muted sm">${ic('contract')} اختر الموظف وحدّد نوع العقد ومدته وراتبه التعاقدي، وأرفق نسخة العقد. يُولّد رقم العقد تلقائياً عند الحفظ.</p></div>`,
   }));
 
   // ---------------------------------------------------------------- evaluation criteria

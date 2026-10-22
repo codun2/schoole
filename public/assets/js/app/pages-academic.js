@@ -7,8 +7,15 @@
   const gBadge = (g) => `<span class="bdg" style="background:${g.color}22;color:${g.color}">${g.letter} — ${esc(g.remark)}</span>`;
 
   // ---------------------------------------------------------------- subjects
+  const subjectFields = (lk) => [
+    { t: 'sec', l: 'بيانات المادة' },
+    { k: 'name_ar', l: 'اسم المادة بالعربية', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'code', l: 'رمز المادة', dir: 'ltr', ph: 'ARA, MATH...' },
+    { k: 'grade_id', l: 'الصف المطبّق عليه', t: 'select', blank: 'جميع الصفوف', opts: gradeOpts(lk), help: 'اتركه «جميع الصفوف» إن كانت المادة عامة لكل الصفوف' },
+    { t: 'sec', l: 'الدرجات والترتيب' },
+    { k: 'max_mark', l: 'الدرجة العظمى', t: 'number', min: 1, def: 100 }, { k: 'pass_mark', l: 'درجة النجاح', t: 'number', min: 0, def: 50 }, { k: 'sort', l: 'ترتيب العرض', t: 'number', min: 0 },
+  ];
   S.page('subjects', S.crud({
-    title: 'المواد الدراسية', singular: 'مادة', api: '/app/subjects', perm: 'school', year: true, icon: 'book', lookups: ['grades'], invalidate: ['subjects'],
+    title: 'المواد الدراسية', singular: 'مادة', api: '/app/subjects', perm: 'school', year: true, icon: 'book', lookups: ['grades'], invalidate: ['subjects'], editPage: 'subject-form',
     search: 'بحث باسم المادة أو الرمز...',
     filters: [{ k: 'grade_id', l: 'الصف', opts: gradeOpts }],
     columns: [
@@ -16,11 +23,11 @@
       { l: 'الرمز', v: (r) => cell.num(r.code || '—') }, { l: 'الصف', v: (r) => esc(r.grade?.name_ar || 'جميع الصفوف') },
       { l: 'الدرجة العظمى', v: (r) => cell.num(S.fmtN(r.max_mark, 0)) }, { l: 'درجة النجاح', v: (r) => cell.num(S.fmtN(r.pass_mark, 0)) },
     ],
-    fields: (lk) => [
-      { k: 'name_ar', l: 'اسم المادة بالعربية', req: true, full: true }, { k: 'name_en', l: 'بالإنجليزية', dir: 'ltr' }, { k: 'code', l: 'الرمز', dir: 'ltr', ph: 'ARA, MATH...' },
-      { k: 'grade_id', l: 'الصف', t: 'select', blank: 'جميع الصفوف', opts: gradeOpts(lk) }, { k: 'max_mark', l: 'الدرجة العظمى', t: 'number', min: 1, def: 100 }, { k: 'pass_mark', l: 'درجة النجاح', t: 'number', min: 0, def: 50 }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 },
-    ],
-    newDefaults: () => ({ max_mark: 100, pass_mark: 50 }),
+  }));
+  S.page('subject-form', S.formPage({
+    api: '/app/subjects', title: 'المواد الدراسية', singular: 'مادة', perm: 'school', year: true, backTo: 'subjects', lookups: ['grades'], invalidate: ['subjects'],
+    fields: subjectFields, newDefaults: () => ({ max_mark: 100, pass_mark: 50 }),
+    context: () => `<div class="card pad"><p class="muted sm">${ic('book')} عرّف المادة ودرجتها العظمى ودرجة النجاح. تُستخدم هذه المادة في رصد الدرجات وبطاقات النتائج. يمكنك تخصيصها لصفّ معيّن أو جعلها عامة لكل الصفوف.</p></div>`,
   }));
 
   // ---------------------------------------------------------------- exam terms

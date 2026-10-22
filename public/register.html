@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
+<button id="lang" class="btn ghost sm" style="position:fixed;top:14px;inset-inline-end:14px;z-index:20;font-weight:800">EN</button>
 <div class="auth">
   <div class="frm">
     <form id="f" novalidate style="max-width:460px">
@@ -29,7 +30,11 @@
   <div class="art"><div></div><div><h2>ابدأ خلال دقائق.</h2><p>نجهّز لك السنة الدراسية والصناديق وفئات المصاريف وأنواع الإجازات تلقائياً — فقط أضف صفوفك وطلابك.</p></div><div id="pl" class="feats"></div></div>
 </div>
 <script src="/assets/js/core.js"></script>
+<script src="/assets/js/i18n-dict.js"></script>
+<script src="/assets/js/i18n.js"></script>
 <script>
+const lng = document.getElementById('lang'); lng.textContent = S.isEn() ? 'ع' : 'EN'; lng.onclick = () => S.toggleLang();
+S.i18nStart && S.i18nStart();
 const f = document.getElementById('f'), err = document.getElementById('err');
 S.api('/public/plans').then((plans) => {
   document.getElementById('plans').innerHTML = plans.map((p) => `<option value="${p.id}" ${p.sort === 2 ? 'selected' : ''}>${S.esc(p.name)} — ${S.fmtN(p.price_monthly, 0)} ر.ع/شهر</option>`).join('');

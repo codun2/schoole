@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
+<button id="lang" class="btn ghost sm" style="position:fixed;top:14px;inset-inline-end:14px;z-index:20;font-weight:800">EN</button>
 <div class="auth">
   <div class="frm">
     <form id="f" novalidate>
@@ -36,7 +37,10 @@
   </div>
 </div>
 <script src="/assets/js/core.js"></script>
+<script src="/assets/js/i18n-dict.js"></script>
+<script src="/assets/js/i18n.js"></script>
 <script>
+const lng = document.getElementById('lang'); lng.textContent = S.isEn() ? 'ع' : 'EN'; lng.onclick = () => S.toggleLang();
 document.getElementById('lg').innerHTML = S.LOGO; document.querySelector('#lg svg').style.cssText = 'width:24px;height:24px';
 const f = document.getElementById('f'), err = document.getElementById('err');
 const me = S.me(); if (S.token() && me) location.href = me.home || '/app/';
@@ -51,6 +55,7 @@ f.onsubmit = async (e) => {
   } catch (ex) { err.textContent = ex.message; err.classList.remove('hide'); S.btnBusy(b, false); }
 };
 document.querySelectorAll('[data-l]').forEach((b) => (b.onclick = () => { f.login.value = b.dataset.l; f.password.value = 'password'; f.requestSubmit(); }));
+S.i18nStart && S.i18nStart();
 </script>
 </body>
 </html>

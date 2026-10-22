@@ -121,7 +121,7 @@
           <a href="#how">كيف يعمل</a>
           <a href="#contact">تواصل</a>
         </div>
-        <div style="display:flex;gap:8px"><a href="/login.html" class="btn btn-ghost">تسجيل الدخول</a><a href="/register.html" class="btn btn-primary">ابدأ الآن مجاناً</a></div>
+        <div style="display:flex;gap:8px;align-items:center"><button id="lang" class="btn btn-ghost" style="font-weight:800;padding:12px 16px">EN</button><a href="/login.html" class="btn btn-ghost">تسجيل الدخول</a><a href="/register.html" class="btn btn-primary">ابدأ الآن مجاناً</a></div>
       </nav>
     </div>
   </header>
@@ -269,5 +269,12 @@
       <p>نظام إدارة المدارس الذكي © ۲۰۲۶ — جميع الحقوق محفوظة.</p>
     </div>
   </footer>
+<script src="/assets/js/i18n-dict.js"></script>
+<script src="/assets/js/i18n.js"></script>
+<script>
+  var lng = document.getElementById('lang');
+  if (lng) { lng.textContent = S.isEn() ? 'ع' : 'EN'; lng.onclick = function () { S.toggleLang(); }; }
+  if (S.i18nStart) S.i18nStart();
+</script>
 </body>
 </html>

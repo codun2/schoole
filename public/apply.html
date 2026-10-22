@@ -13,10 +13,15 @@
 </style>
 </head>
 <body>
+<button id="lang" class="btn ghost sm" style="position:fixed;top:14px;inset-inline-end:14px;z-index:20;font-weight:800;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)">EN</button>
 <div class="hero"><div class="lg" id="lg"></div><h1 id="nm">استمارة التسجيل</h1><p id="sub">جاري التحميل...</p></div>
 <div class="wrapf"><div class="card pad" id="box"><div class="spin"></div></div></div>
 <script src="/assets/js/core.js"></script>
+<script src="/assets/js/i18n-dict.js"></script>
+<script src="/assets/js/i18n.js"></script>
 <script>
+const lng = document.getElementById('lang'); lng.textContent = S.isEn() ? 'ع' : 'EN'; lng.onclick = () => S.toggleLang();
+S.i18nStart && S.i18nStart();
 (async () => {
   const slug = new URLSearchParams(location.search).get('school');
   const box = document.getElementById('box');

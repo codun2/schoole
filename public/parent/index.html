@@ -23,6 +23,8 @@
 <body>
 <div class="spin" style="margin-top:30vh"></div>
 <script src="/assets/js/core.js"></script>
+<script src="/assets/js/i18n-dict.js"></script>
+<script src="/assets/js/i18n.js"></script>
 <script>
 (async () => {
   const { esc, ic } = S;
@@ -30,8 +32,10 @@
   let me; try { me = await S.get('/auth/me'); } catch { return; }
   if (me.user.role !== 'guardian') return (location.href = me.home);
   S.setSession(null, me);
-  document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة ولي الأمر — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="mode">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div><div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/payments" data-r="payments">المدفوعات</a></div><div id="v"></div></div>`;
+  document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة ولي الأمر — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="lng" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button><button class="tbtn" id="mode">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div><div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/payments" data-r="payments">المدفوعات</a></div><div id="v"></div></div>`;
   document.getElementById('mode').onclick = S.toggleMode;
+  const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
+  S.i18nStart && S.i18nStart();
   document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
   const v = document.getElementById('v');
   const stat = (cls, i, val, k) => `<div class="stat ${cls}"><div class="ic">${ic(i)}</div><div><div class="v num">${val}</div><div class="k">${k}</div></div></div>`;

@@ -65,6 +65,7 @@
     S.applyTheme();
     if (!localStorage.getItem('sch_year') && me.company) localStorage.setItem('sch_year', me.company.current_year_id || '');
     renderShell(me);
+    S.i18nStart && S.i18nStart();
     window.addEventListener('hashchange', route);
     route();
     refreshBadges(); setInterval(refreshBadges, 60000);
@@ -98,6 +99,7 @@
           <div class="sp"></div>
           <div class="clock"><b id="clk-t" class="num"></b><span id="clk-d" class="num"></span></div>
           <button class="tbtn" id="t-settings" title="الإعدادات">${ic('gear')}</button>
+          <button class="tbtn" id="t-lang" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button>
           <button class="tbtn" id="t-mode" title="الوضع الليلي">${ic('moon')}</button>
           <button class="tbtn" id="t-help" title="المساعدة">${ic('help')}</button>
           <button class="tbtn" id="t-ann" title="الإعلانات">${ic('megaphone')}<span class="dot hide" id="ann-dot"></span></button>
@@ -126,6 +128,7 @@
     document.getElementById('burger').onclick = () => { if (innerWidth <= 1024) document.body.classList.toggle('side-open'); else { document.body.classList.toggle('collapsed'); localStorage.setItem('sch_collapsed', document.body.classList.contains('collapsed') ? 1 : ''); } };
     if (localStorage.getItem('sch_collapsed') && innerWidth > 1024) document.body.classList.add('collapsed');
     document.getElementById('bd').onclick = closeSide;
+    const tl = document.getElementById('t-lang'); if (tl) tl.onclick = () => S.toggleLang();
     document.getElementById('t-mode').onclick = () => { S.toggleMode(); modeIcon(); };
     const modeIcon = () => (document.getElementById('t-mode').innerHTML = ic(document.documentElement.getAttribute('data-theme') === 'dark' ? 'sun' : 'moon'));
     modeIcon();

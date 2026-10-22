@@ -82,7 +82,9 @@ class PlatformController extends Controller
                 $slug .= '-'.rand(2, 99);
             }
             $company = Company::create(collect($data)->except(['admin_name', 'admin_email', 'admin_password'])->all() + ['slug' => $slug, 'status' => $data['status'] ?? 'active']);
-            User::create(['company_id' => $company->id, 'name' => $data['admin_name'], 'email' => $data['admin_email'], 'role' => 'admin', 'title' => 'مدير المدرسة', 'status' => 'active', 'password' => $data['admin_password']]);
+            $admin = new User(['name' => $data['admin_name'], 'email' => $data['admin_email'], 'role' => 'admin', 'title' => 'مدير المدرسة', 'status' => 'active', 'password' => $data['admin_password']]);
+            $admin->company_id = $company->id;
+            $admin->save();
             SchoolSetup::defaults($company);
 
             return $company;

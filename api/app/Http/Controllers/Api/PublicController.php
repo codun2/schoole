@@ -59,16 +59,17 @@ class PublicController extends Controller
                 'principal_name' => $data['name'],
             ]);
 
-            User::create([
-                'company_id' => $company->id,
-                'name'       => $data['name'],
-                'email'      => $data['email'],
-                'phone'      => $data['phone'],
-                'role'       => 'admin',
-                'title'      => 'مدير المدرسة',
-                'status'     => 'active',
-                'password'   => $data['password'],
+            $admin = new User([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'phone'    => $data['phone'],
+                'role'     => 'admin',
+                'title'    => 'مدير المدرسة',
+                'status'   => 'active',
+                'password' => $data['password'],
             ]);
+            $admin->company_id = $company->id;
+            $admin->save();
 
             SchoolSetup::defaults($company);
 

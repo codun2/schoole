@@ -54,8 +54,13 @@ class UserController extends ResourceController
         if (empty($data['password'])) {
             unset($data['password']);
         }
-        if ($record && $record->id === $request->user()->id) {
-            unset($data['role'], $data['status']); // can't demote / lock yourself out
+        // Only a school admin may set roles, section permissions, or account status.
+        // A staff member holding the "users" permission can manage staff accounts
+        // but can neither mint/promote admins nor grant permissions (incl. to self).
+        if ($request->user()->role !== 'admin') {
+            unset($data['role'], $data['permissions'], $data['status']);
+        } elseif ($record && $record->id === $request->user()->id) {
+            unset($data['role'], $data['status']); // an admin can't demote / lock out themselves
         }
 
         return $data;

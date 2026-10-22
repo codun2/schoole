@@ -41,7 +41,7 @@ return new class extends Migration
             $t->string('cr_number')->nullable();
             $t->string('license_number')->nullable();
             $t->string('tax_number')->nullable();
-            $t->string('currency', 8)->default('OMR');
+            $t->string('currency', 8)->default('SAR');
             $t->decimal('tax_rate', 5, 2)->default(0);
             $t->string('contract_prefix', 12)->default('SCH');
             $t->string('receipt_prefix', 12)->default('RC');

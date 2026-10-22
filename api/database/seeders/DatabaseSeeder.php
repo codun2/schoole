@@ -29,20 +29,22 @@ class DatabaseSeeder extends Seeder
             Models\Plan::create(['name' => 'المؤسسات', 'description' => 'لمجموعات المدارس', 'price_monthly' => 79, 'price_yearly' => 790, 'max_students' => 0, 'max_users' => 0, 'features' => ['كل المزايا', 'فروع متعددة', 'دعم مخصّص', 'تخصيص كامل'], 'sort' => 3]),
         ];
 
-        Models\User::create(['company_id' => null, 'name' => 'إدارة منصة سكوول', 'email' => 'super@schoole.app', 'role' => 'super', 'status' => 'active', 'password' => 'password']);
+        Models\User::create(['name' => 'إدارة منصة سكوول', 'email' => 'super@schoole.app', 'role' => 'super', 'status' => 'active', 'password' => 'password']);
 
         $school = Models\Company::create([
             'name' => 'مدرسة المستقبل الخاصة', 'name_en' => 'Al Mustaqbal Private School', 'slug' => 'almustaqbal',
             'status' => 'active', 'plan_id' => $plans[1]->id, 'subscription_ends_at' => now()->addMonths(10),
             'phone' => '24501234', 'email' => 'info@almustaqbal.om', 'city' => 'مسقط', 'address' => 'الخوض، مسقط، سلطنة عُمان',
             'principal_name' => 'أ. سالم بن ناصر الرحبي', 'cr_number' => '1234567', 'license_number' => 'MOE-2019-0456',
-            'currency' => 'OMR', 'tax_rate' => 0, 'contract_prefix' => 'SCH', 'receipt_prefix' => 'RC',
+            'currency' => 'SAR', 'tax_rate' => 0, 'contract_prefix' => 'SCH', 'receipt_prefix' => 'RC',
         ]);
         // Two more schools so the platform dashboard isn't empty.
-        $other1 = Models\Company::create(['name' => 'مدرسة النور العالمية', 'slug' => 'alnoor', 'status' => 'active', 'plan_id' => $plans[2]->id, 'city' => 'صحار', 'email' => 'info@alnoor.om', 'phone' => '26801122', 'currency' => 'OMR']);
-        $other2 = Models\Company::create(['name' => 'روضة البراعم', 'slug' => 'albaraem', 'status' => 'pending', 'plan_id' => $plans[0]->id, 'city' => 'نزوى', 'email' => 'hello@albaraem.om', 'phone' => '25401010', 'currency' => 'OMR', 'trial_ends_at' => now()->addDays(10)]);
+        $other1 = Models\Company::create(['name' => 'مدرسة النور العالمية', 'slug' => 'alnoor', 'status' => 'active', 'plan_id' => $plans[2]->id, 'city' => 'صحار', 'email' => 'info@alnoor.om', 'phone' => '26801122', 'currency' => 'SAR']);
+        $other2 = Models\Company::create(['name' => 'روضة البراعم', 'slug' => 'albaraem', 'status' => 'pending', 'plan_id' => $plans[0]->id, 'city' => 'نزوى', 'email' => 'hello@albaraem.om', 'phone' => '25401010', 'currency' => 'SAR', 'trial_ends_at' => now()->addDays(10)]);
         foreach ([[$other1, 'مدير النور', 'admin@alnoor.om'], [$other2, 'مديرة البراعم', 'admin@albaraem.om']] as [$co, $n, $e]) {
-            Models\User::create(['company_id' => $co->id, 'name' => $n, 'email' => $e, 'role' => 'admin', 'status' => 'active', 'password' => 'password']);
+            $coAdmin = new Models\User(['name' => $n, 'email' => $e, 'role' => 'admin', 'status' => 'active', 'password' => 'password']);
+            $coAdmin->company_id = $co->id;
+            $coAdmin->save();
             SchoolSetup::defaults($co);
         }
 

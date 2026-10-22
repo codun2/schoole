@@ -44,7 +44,7 @@
   // ---------------------------------------------------------------- formatting
   const esc = (S.esc = (s) => (s == null ? '' : String(s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]))));
   const CUR = { OMR: ['ر.ع', 3], SAR: ['ر.س', 2], AED: ['د.إ', 2], KWD: ['د.ك', 3], QAR: ['ر.ق', 2], BHD: ['د.ب', 3], JOD: ['د.أ', 3], EGP: ['ج.م', 2], USD: ['$', 2] };
-  S.currency = () => { const me = S.me(); return (me && me.company && me.company.currency) || S._currency || 'OMR'; };
+  S.currency = () => { const me = S.me(); return (me && me.company && me.company.currency) || S._currency || 'SAR'; };
   S.dec = () => (CUR[S.currency()] || ['', 2])[1];
   S.fmtN = (n, d) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: d ?? S.dec(), maximumFractionDigits: d ?? S.dec() });
   S.money = (n, plain) => { const [sym, d] = CUR[S.currency()] || [S.currency(), 2]; const v = S.fmtN(n, d); return plain ? v : `<span class="mny"><span class="num">${v}</span> <small class="muted">${sym}</small></span>`; };

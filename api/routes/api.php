@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Hr;
 use App\Http\Controllers\Api\Portal\PortalController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\School;
+use App\Http\Controllers\Api\Teacher\TeacherController;
 use App\Http\Controllers\Api\Super\PlatformController;
 use Illuminate\Support\Facades\Route;
 
@@ -205,6 +206,26 @@ Route::middleware(['auth:sanctum', 'guardian', 'company'])->prefix('portal')->gr
     Route::get('home', [PortalController::class, 'home']);
     Route::get('children/{id}', [PortalController::class, 'child'])->whereNumber('id');
     Route::get('payments', [PortalController::class, 'payments']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Teacher portal (role=teacher) — row-scoped to their own sections/students
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'teacher', 'company'])->prefix('teacher')->group(function () {
+    Route::get('home', [TeacherController::class, 'home']);
+    Route::get('sections', [TeacherController::class, 'sections']);
+    Route::get('grade-options', [TeacherController::class, 'gradeOptions']);
+    Route::get('students', [TeacherController::class, 'students']);
+    Route::post('students', [TeacherController::class, 'storeStudent']);
+    Route::match(['put', 'patch'], 'students/{id}', [TeacherController::class, 'updateStudent'])->whereNumber('id');
+    Route::get('marks/sheet', [TeacherController::class, 'marksSheet']);
+    Route::post('marks', [TeacherController::class, 'marksSave']);
+    Route::get('report-card/{student}', [TeacherController::class, 'reportCard'])->whereNumber('student');
+    Route::get('class-results', [TeacherController::class, 'classResults']);
+    Route::get('attendance/sheet', [TeacherController::class, 'attendanceSheet']);
+    Route::post('attendance', [TeacherController::class, 'attendanceSave']);
 });
 
 /*

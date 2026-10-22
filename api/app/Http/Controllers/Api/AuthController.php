@@ -103,6 +103,7 @@ class AuthController extends Controller
             'home' => match ($user->role) {
                 'super'    => '/super/',
                 'guardian' => '/parent/',
+                'teacher'  => '/teacher/',
                 default    => '/app/',
             },
             'user' => [

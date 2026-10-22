@@ -11,5 +11,9 @@ class Employee extends TenantModel
     public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
     public function department(): BelongsTo { return $this->belongsTo(Department::class); }
     public function jobTitle(): BelongsTo { return $this->belongsTo(JobTitle::class); }
+    /** The login account of a teacher (role=teacher), when one has been created. */
+    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    /** Sections this employee is the homeroom teacher of. */
+    public function sections(): HasMany { return $this->hasMany(Section::class, 'teacher_id'); }
     public function allowances(): float { return (float) $this->housing_allowance + (float) $this->transport_allowance + (float) $this->other_allowance; }
 }

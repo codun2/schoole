@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوابة المعلم — سكوول</title>
+<link rel="stylesheet" href="/assets/css/app.css">
+<style>
+  .ptop{background:linear-gradient(140deg,var(--accent),#2bb3a3);color:#fff;padding:18px 16px 70px}
+  .ptop .in{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .ptop .lg{width:46px;height:46px;border-radius:13px;background:#fff;color:var(--accent);display:grid;place-items:center;overflow:hidden}
+  .ptop .lg img{width:100%;height:100%;object-fit:cover}.ptop .lg svg{width:24px;height:24px}
+  .ptop h1{font-size:18px}.ptop small{opacity:.85}
+  .ptop button{color:#fff;opacity:.9}.ptop .tbtn:hover{background:rgba(255,255,255,.15);color:#fff}
+  .pwrap{max-width:1040px;margin:-50px auto 40px;padding:0 14px}
+  .ptabs{display:flex;gap:6px;margin-bottom:14px;background:var(--card);padding:5px;border-radius:12px;border:1px solid var(--line);width:fit-content;max-width:100%;overflow:auto}
+  .ptabs a{padding:7px 16px;border-radius:9px;font-weight:600;color:var(--text-2);white-space:nowrap}.ptabs a.on{background:var(--accent);color:#fff}
+  .selrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+  .selrow label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--text-2)}
+  .selrow select,.selrow input{min-width:150px}
+  .mk{width:90px;text-align:center}
+  .secard{cursor:pointer;transition:.15s}.secard:hover{border-color:var(--accent);transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<div class="spin" style="margin-top:30vh"></div>
+<script src="/assets/js/core.js"></script>
+<script>
+(async () => {
+  const { esc, ic } = S;
+  if (!S.token()) return (location.href = '/login.html');
+  let me; try { me = await S.get('/auth/me'); } catch { return; }
+  if (me.user.role !== 'teacher') return (location.href = me.home);
+  S.setSession(null, me);
+
+  const ATT = { present: ['حاضر', 'l-ok'], absent: ['غائب', 'l-bad'], late: ['متأخر', 'l-warn'], excused: ['بعذر', 'l-info'] };
+
+  document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة المعلم — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="mode" title="الوضع الليلي">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div>
+    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/students" data-r="students">طلابي</a><a href="#/marks" data-r="marks">رصد الدرجات</a><a href="#/attendance" data-r="attendance">الحضور</a></div><div id="v"><div class="spin"></div></div></div>`;
+  document.getElementById('mode').onclick = S.toggleMode;
+  document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
+  const v = document.getElementById('v');
+  const stat = (cls, i, val, k) => `<div class="stat ${cls}"><div class="ic">${ic(i)}</div><div><div class="v num">${val}</div><div class="k">${k}</div></div></div>`;
+
+  let SECTIONS = [];
+  async function loadSections() { if (!SECTIONS.length) SECTIONS = (await S.get('/teacher/sections')).sections; return SECTIONS; }
+  const homeroomSections = () => SECTIONS.filter((s) => s.homeroom);
+  const secLabel = (s) => `${esc(s.grade || '')} — ${esc(s.name)}${s.homeroom ? ' (مربّي الفصل)' : ''}`;
+
+  // --------------------------------------------------------------- home
+  async function home() {
+    const d = await S.get('/teacher/home');
+    const st = d.stats;
+    v.innerHTML = `<div class="grid g4 mb16">${stat('c-violet', 'users', S.num(st.students), 'طلاب فصولي')}${stat('c-blue', 'clipboard', S.num(st.homeroom_sections), 'فصول أنا مربّيها')}${stat('c-green', 'book', S.num(st.teaching_sections), 'شعب أُدرّسها')}${stat('c-amber', 'calCheck', S.num(st.attendance_today), 'حضور رُصد اليوم')}</div>
+      ${d.homeroom.length ? `<div class="sec-t">${ic('clipboard')} فصولي (مربّي الفصل)</div><div class="grid g3 mb16">${d.homeroom.map((s) => `<div class="card pad secard" data-sec="${s.id}"><div class="row"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">${ic('users')}</span><div class="grow"><b>${esc(s.grade?.name_ar || '')} — ${esc(s.name)}</b><div class="muted sm">${s.students_count} طالب</div></div>${ic('chevL')}</div></div>`).join('')}</div>` : ''}
+      ${d.teaching.length ? `<div class="sec-t">${ic('book')} شعب أُدرّس فيها</div><div class="chips mb16">${d.teaching.map((s) => `<span class="bdg l-info">${esc(s.grade?.name_ar || '')} — ${esc(s.name)}</span>`).join('')}</div>` : ''}
+      ${d.subjects.length ? `<div class="sec-t">${ic('book')} موادي</div><div class="chips mb16">${d.subjects.map((s) => `<span class="bdg l-mut">${esc(s.name_ar)}</span>`).join('')}</div>` : ''}
+      ${d.announcements.length ? `<div class="sec-t">${ic('megaphone')} إعلانات المدرسة</div>${d.announcements.map((a) => `<div class="card pad mb8"><b>${esc(a.title)}</b><p class="t2 sm" style="white-space:pre-line">${esc(a.body || '')}</p><span class="muted xs">${S.ago(a.created_at)}</span></div>`).join('')}` : ''}
+      ${!d.homeroom.length && !d.teaching.length ? S.emptyHtml('لم تُسنَد إليك فصول بعد', 'تواصل مع إدارة المدرسة لربطك بفصلٍ أو موادّ في الجدول.', 'clipboard') : ''}`;
+    v.querySelectorAll('.secard').forEach((c) => (c.onclick = () => (location.hash = '#/students?section=' + c.dataset.sec)));
+    v.querySelectorAll('.secard svg').forEach((s) => (s.style.cssText = 'width:18px;height:18px;color:var(--muted)'));
+  }
+
+  // --------------------------------------------------------------- students (homeroom)
+  async function students(q) {
+    await loadSections();
+    const homes = homeroomSections();
+    if (!homes.length) { v.innerHTML = S.emptyHtml('لا توجد فصول أنت مربّيها', 'يمكنك رصد الدرجات لشعب الجدول من تبويب «رصد الدرجات».', 'users'); return; }
+    const cur = q.get('section') || homes[0].id;
+    v.innerHTML = `<div class="selrow"><label>الفصل<select id="sec" class="inp">${homes.map((s) => `<option value="${s.id}" ${String(s.id) === String(cur) ? 'selected' : ''}>${secLabel(s)}</option>`).join('')}</select></label><div class="grow"></div><button class="btn" id="add">${ic('userPlus')} إضافة طالب</button></div><div id="list"><div class="spin"></div></div>`;
+    const list = v.querySelector('#list');
+    const load = async () => {
+      const sid = v.querySelector('#sec').value;
+      list.innerHTML = '<div class="spin"></div>';
+      const d = await S.get('/teacher/students', { section_id: sid });
+      list.innerHTML = d.data.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>الرقم</th><th class="s">الطالب</th><th>ولي الأمر</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>${d.data.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="num">${esc(s.student_no || '—')}</td><td class="s"><b>${esc(s.name)}</b>${s.national_id ? `<div class="muted xs num">${esc(s.national_id)}</div>` : ''}</td><td>${esc(s.guardian?.name || '—')}${s.guardian?.phone ? ` <span class="muted xs num">${esc(s.guardian.phone)}</span>` : ''}</td><td>${S.badge(S.ST.student, s.status)}</td><td><div class="acts"><button class="ibtn" data-report="${s.id}" title="بطاقة الدرجات">${ic('book')}</button><button class="ibtn v" data-edit="${s.id}" title="تعديل">${ic('edit')}</button></div></td></tr>`).join('')}</tbody></table></div></div>` : S.emptyHtml('لا طلاب في هذا الفصل', 'اضغط «إضافة طالب» لتسجيل أول طالب.', 'users');
+      list.querySelectorAll('[data-report]').forEach((b) => (b.onclick = () => reportCard(b.dataset.report)));
+      list.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => studentForm(sid, d.data.find((x) => String(x.id) === b.dataset.edit))));
+    };
+    v.querySelector('#sec').onchange = load;
+    v.querySelector('#add').onclick = () => studentForm(v.querySelector('#sec').value, null);
+    load();
+  }
+
+  function studentForm(sectionId, row) {
+    const fields = [
+      { k: 'name', l: 'اسم الطالب', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', full: true },
+      { k: 'gender', l: 'الجنس', t: 'select', opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'national_id', l: 'رقم الهوية', dir: 'ltr' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' },
+      ...(row ? [{ k: 'status', l: 'الحالة', t: 'select', opts: [['active', 'نشط'], ['suspended', 'موقوف']] }]
+        : [{ t: 'sec', l: 'ولي الأمر (اختياري)' }, { k: 'guardian_name', l: 'اسم ولي الأمر', full: true }, { k: 'guardian_phone', l: 'جوال ولي الأمر', t: 'tel' }]),
+    ];
+    const m = S.modal({ title: row ? 'تعديل طالب' : 'إضافة طالب', body: S.formHtml(fields, row || {}), foot: `<button class="btn ghost" data-close>إلغاء</button><button class="btn" id="sv">${ic('check')} حفظ</button>` });
+    m.$('#sv').onclick = async (ev) => {
+      const data = S.readForm(m.body, fields);
+      if (!data.name) return S.toast('أدخل اسم الطالب', 'bad');
+      S.btnBusy(ev.currentTarget, true);
+      try {
+        if (row) await S.patch('/teacher/students/' + row.id, data);
+        else await S.post('/teacher/students', { ...data, section_id: sectionId });
+        S.toast('تم الحفظ', 'ok'); m.close(); students(new URLSearchParams('section=' + sectionId));
+      } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(ev.currentTarget, false); }
+    };
+  }
+
+  // --------------------------------------------------------------- marks
+  async function marks() {
+    await loadSections();
+    if (!SECTIONS.length) { v.innerHTML = S.emptyHtml('لا توجد شعب مسندة إليك', '', 'book'); return; }
+    v.innerHTML = `<div class="selrow"><label>الشعبة<select id="sec" class="inp">${SECTIONS.map((s) => `<option value="${s.id}">${secLabel(s)}</option>`).join('')}</select></label><label>المادة<select id="sub" class="inp"><option value="">—</option></select></label><label>الفصل الدراسي<select id="term" class="inp"><option value="">—</option></select></label><button class="btn ghost" id="go">${ic('book')} تحديث الكشف</button></div><div class="muted sm mb16">اختر الشعبة والمادة والفصل، ثم اكتب الدرجة أمام كل طالب واضغط <b>حفظ الدرجات</b>.</div><div id="sheet"></div>`;
+    const sub = v.querySelector('#sub'), term = v.querySelector('#term');
+    const loadOpts = async () => {
+      sub.innerHTML = '<option value="">…</option>'; term.innerHTML = '<option value="">…</option>';
+      const d = await S.get('/teacher/grade-options', { section_id: v.querySelector('#sec').value });
+      sub.innerHTML = d.subjects.length ? d.subjects.map((s) => `<option value="${s.id}" data-max="${+s.max_mark}">${esc(s.name_ar)} (من ${+s.max_mark})</option>`).join('') : '<option value="">لا مواد</option>';
+      term.innerHTML = d.terms.length ? d.terms.map((t) => `<option value="${t.id}" data-locked="${t.is_locked ? 1 : 0}">${esc(t.name)}</option>`).join('') : '<option value="">لا فصول</option>';
+    };
+    const autoLoad = () => { if (sub.value && term.value) loadSheet(); else v.querySelector('#sheet').innerHTML = ''; };
+    v.querySelector('#sec').onchange = async () => { await loadOpts(); autoLoad(); };
+    sub.onchange = autoLoad;
+    term.onchange = autoLoad;
+    v.querySelector('#go').onclick = loadSheet;
+    await loadOpts();
+    autoLoad();
+
+    async function loadSheet() {
+      const section_id = v.querySelector('#sec').value, subject_id = sub.value, exam_term_id = term.value;
+      if (!subject_id || !exam_term_id) return S.toast('اختر المادة والفصل الدراسي', 'bad');
+      const max = +sub.selectedOptions[0].dataset.max;
+      const locked = term.selectedOptions[0].dataset.locked === '1';
+      const sh = v.querySelector('#sheet'); sh.innerHTML = '<div class="spin"></div>';
+      const d = await S.get('/teacher/marks/sheet', { section_id, subject_id, exam_term_id });
+      const rows = d.students.map((s) => ({ ...s }));
+      sh.innerHTML = `<div class="toolbar"><b>${esc(d.subject.name_ar)}</b> — ${esc(d.section.name)} — ${esc(d.term.name)} <span class="bdg l-mut">الدرجة من ${max}</span>${locked ? '<span class="bdg l-bad">مقفل</span>' : ''}<div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة / PDF</button>${locked ? '' : `<button class="btn success" id="sv">${ic('check')} حفظ الدرجات</button>`}</div>
+        <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>الرقم</th><th class="s">الطالب</th><th>الدرجة</th><th>ملاحظة</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td class="num">${esc(r.student_no || '')}</td><td class="s b">${esc(r.name)}</td><td><input class="inp mk num" type="number" min="0" max="${max}" step="0.5" value="${r.mark ?? ''}" data-i="${i}" ${locked ? 'disabled' : ''}></td><td><input class="inp" value="${esc(r.note || '')}" data-n="${i}" ${locked ? 'disabled' : ''}></td></tr>`).join('')}</tbody></table></div></div>`;
+      sh.querySelector('#pr').onclick = () => {
+        const graded = rows.filter((r) => r.mark != null).length;
+        const body = `<h2>كشف درجات — ${esc(d.subject.name_ar)}</h2>
+          <div class="kv"><div><span>الصف / الشعبة</span><b>${esc(d.section.grade?.name_ar || '')} — ${esc(d.section.name)}</b></div><div><span>المادة</span><b>${esc(d.subject.name_ar)} (من ${max})</b></div><div><span>الفصل الدراسي</span><b>${esc(d.term.name)}</b></div><div><span>عدد الطلاب</span><b>${rows.length} — رُصد ${graded}</b></div></div>
+          <table><thead><tr><th>#</th><th>رقم الطالب</th><th style="text-align:right">اسم الطالب</th><th>الدرجة (من ${max})</th><th>ملاحظات</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.student_no || '')}</td><td style="text-align:right">${esc(r.name)}</td><td${r.mark != null ? '' : ' style="color:#999"'}>${r.mark != null ? S.fmtN(r.mark, 1) : '—'}</td><td>${esc(r.note || '')}</td></tr>`).join('')}</tbody></table>
+          <div class="sig"><div>معلّم المادة<br>${esc(me.user.name)}</div><div>مدير المدرسة</div><div>الختم</div></div>`;
+        S.print('كشف درجات ' + d.subject.name_ar + ' — ' + d.section.name, body);
+      };
+      if (locked) return;
+      sh.querySelectorAll('[data-i]').forEach((inp) => (inp.oninput = () => { let x = inp.value === '' ? null : Math.min(+inp.value, max); rows[+inp.dataset.i].mark = x; if (x !== null && +inp.value > max) inp.value = max; }));
+      sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (rows[+inp.dataset.n].note = inp.value)));
+      sh.querySelector('#sv').onclick = async (ev) => {
+        S.btnBusy(ev.currentTarget, true);
+        try { await S.post('/teacher/marks', { section_id, subject_id, exam_term_id, marks: rows.map((r) => ({ student_id: r.id, mark: r.mark ?? null, note: r.note || null })) }); S.toast('تم حفظ الدرجات', 'ok'); } catch (er) { S.toast(er.message, 'bad'); }
+        S.btnBusy(ev.currentTarget, false);
+      };
+    }
+  }
+
+  // --------------------------------------------------------------- attendance (homeroom)
+  async function attendance() {
+    await loadSections();
+    const homes = homeroomSections();
+    if (!homes.length) { v.innerHTML = S.emptyHtml('تسجيل الحضور متاح لمربّي الفصل فقط', 'لم تُسنَد إليك فصول كمربّي.', 'calCheck'); return; }
+    v.innerHTML = `<div class="selrow"><label>الفصل<select id="sec" class="inp">${homes.map((s) => `<option value="${s.id}">${secLabel(s)}</option>`).join('')}</select></label><label>التاريخ<input type="date" id="dt" class="inp" value="${S.today()}"></label><button class="btn" id="go">${ic('calCheck')} عرض الكشف</button></div><div id="sheet"></div>`;
+    v.querySelector('#go').onclick = loadSheet;
+    loadSheet();
+    async function loadSheet() {
+      const section_id = v.querySelector('#sec').value, date = v.querySelector('#dt').value;
+      const sh = v.querySelector('#sheet'); sh.innerHTML = '<div class="spin"></div>';
+      const d = await S.get('/teacher/attendance/sheet', { section_id, date });
+      const rows = d.students.map((s) => ({ ...s, status: s.status || 'present' }));
+      const count = () => Object.keys(ATT).map((k) => `<span class="bdg ${ATT[k][1]}">${ATT[k][0]} ${rows.filter((r) => r.status === k).length}</span>`).join('');
+      const render = () => {
+        sh.innerHTML = `<div class="toolbar" id="cnt">${count()}<div class="sp"></div><button class="btn success" id="sv">${ic('check')} حفظ الحضور</button></div>
+          <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الحالة</th><th>ملاحظة</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(r.name)}</td><td><select class="inp" data-s="${i}" style="min-width:120px">${Object.keys(ATT).map((k) => `<option value="${k}" ${r.status === k ? 'selected' : ''}>${ATT[k][0]}</option>`).join('')}</select></td><td><input class="inp" value="${esc(r.note || '')}" data-n="${i}"></td></tr>`).join('')}</tbody></table></div></div>`;
+        sh.querySelectorAll('[data-s]').forEach((sel) => (sel.onchange = () => { rows[+sel.dataset.s].status = sel.value; sh.querySelector('#cnt').innerHTML = count() + '<div class="sp"></div>' + sh.querySelector('#sv').outerHTML; bindSave(); }));
+        sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (rows[+inp.dataset.n].note = inp.value)));
+        bindSave();
+      };
+      const bindSave = () => { const b = sh.querySelector('#sv'); if (b) b.onclick = async (ev) => { S.btnBusy(ev.currentTarget, true); try { await S.post('/teacher/attendance', { section_id, date, marks: rows.map((r) => ({ student_id: r.id, status: r.status, note: r.note || null })) }); S.toast('تم حفظ الحضور', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } S.btnBusy(ev.currentTarget, false); }; };
+      render();
+    }
+  }
+
+  // --------------------------------------------------------------- report card (modal)
+  async function reportCard(id) {
+    const m = S.modal({ title: 'بطاقة الدرجات', size: 'wide', body: S.spinner, foot: '<button class="btn ghost" data-close>إغلاق</button>' });
+    try {
+      const d = await S.get('/teacher/report-card/' + id);
+      const r = d;
+      m.body.innerHTML = `<div class="profile-h" style="margin:0 0 14px"><span class="avatar">${esc(S.initials(r.student.name))}</span><div class="grow"><h3>${esc(r.student.name)}</h3><div class="muted">${esc(r.student.grade?.name_ar || '')} — ${esc(r.student.section?.name || '')}</div></div>${r.overall.percent != null ? `<span class="bdg" style="background:${r.overall.grade.color}22;color:${r.overall.grade.color}">${S.fmtN(r.overall.percent, 1)}% — ${esc(r.overall.grade.remark)}</span>` : ''}</div>
+        ${r.rows.some((x) => x.percent != null) ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">المادة</th>${r.terms.map((t) => `<th>${esc(t.name)}</th>`).join('')}<th>النتيجة</th><th>التقدير</th></tr></thead><tbody>${r.rows.map((row) => `<tr><td class="s b">${esc(row.subject.name_ar)}</td>${r.terms.map((t) => `<td class="num">${row.term_marks[t.id] != null ? S.fmtN(row.term_marks[t.id], 1) : '—'}</td>`).join('')}<td class="num b">${row.percent != null ? S.fmtN(row.percent, 1) + '%' : '—'}</td><td><span class="bdg" style="background:${row.grade.color}22;color:${row.grade.color}">${row.grade.letter}</span></td></tr>`).join('')}</tbody></table></div>${r.rank && r.rank.position ? `<div class="muted sm mt8">الترتيب على الشعبة: ${r.rank.position} من ${r.rank.of}</div>` : ''}` : S.emptyHtml('لا توجد درجات مرصودة بعد')}`;
+    } catch (er) { m.body.innerHTML = S.emptyHtml('تعذّر تحميل البطاقة', er.message); }
+  }
+
+  // --------------------------------------------------------------- router
+  const routes = { '': home, students, marks, attendance };
+  async function route() {
+    const raw = location.hash.replace(/^#\//, '');
+    const [path, qs] = raw.split('?');
+    const fn = routes[path] || home;
+    v.querySelectorAll && document.querySelectorAll('.ptabs a').forEach((a) => a.classList.toggle('on', a.dataset.r === (path || '')));
+    v.innerHTML = '<div class="spin"></div>';
+    try { await fn(new URLSearchParams(qs || '')); } catch (er) { if (er.message !== 'unauth') v.innerHTML = S.emptyHtml('حدث خطأ', er.message); }
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

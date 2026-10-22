@@ -116,6 +116,13 @@ class DatabaseSeeder extends Seeder
             }
             Models\FeeItem::create(['academic_year_id' => $yid, 'grade_id' => $g->id, 'name' => 'الرسوم الدراسية — '.$ar, 'type' => 'tuition', 'amount' => $fee, 'is_mandatory' => true]);
         }
+
+        // A ready teacher login (role=teacher) so the teacher portal works out of the box.
+        // $teachers[0] is the homeroom teacher of the first grade's "شعبة أ".
+        $teacherUser = Models\User::create(['name' => $teachers[0]->name, 'email' => 'teacher@schoole.app', 'role' => 'teacher', 'status' => 'active', 'password' => 'password']);
+        $teachers[0]->user_id = $teacherUser->id;
+        $teachers[0]->save();
+
         $regFee = Models\FeeItem::create(['academic_year_id' => $yid, 'name' => 'رسوم التسجيل', 'type' => 'registration', 'amount' => 50, 'is_mandatory' => true]);
         $books = Models\FeeItem::create(['academic_year_id' => $yid, 'name' => 'الكتب والقرطاسية', 'type' => 'books', 'amount' => 40, 'is_mandatory' => true]);
         Models\FeeItem::create(['academic_year_id' => $yid, 'name' => 'الزي المدرسي', 'type' => 'uniform', 'amount' => 25, 'is_mandatory' => false]);

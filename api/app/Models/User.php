@@ -34,6 +34,11 @@ class User extends Authenticatable
         return $this->role === 'guardian';
     }
 
+    public function isTeacher(): bool
+    {
+        return $this->role === 'teacher';
+    }
+
     public function hasPerm(string $key): bool
     {
         if ($this->role === 'admin') {
@@ -54,5 +59,11 @@ class User extends Authenticatable
     public function guardian()
     {
         return $this->hasOne(Guardian::class);
+    }
+
+    /** The employee record a teacher login is attached to. */
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
     }
 }

@@ -61,6 +61,7 @@
     if (!me || !me.user) return;
     if (me.user.role === 'super') { location.href = '/super/'; return; }
     if (me.user.role === 'guardian') { location.href = '/parent/'; return; }
+    if (me.user.role === 'teacher') { location.href = '/teacher/'; return; }
     S.applyTheme();
     if (!localStorage.getItem('sch_year') && me.company) localStorage.setItem('sch_year', me.company.current_year_id || '');
     renderShell(me);

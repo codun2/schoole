@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'company' => \App\Http\Middleware\SetCompanyContext::class,
             'super'   => \App\Http\Middleware\EnsureSuperAdmin::class,
             'guardian' => \App\Http\Middleware\EnsureGuardian::class,
+            'teacher' => \App\Http\Middleware\EnsureTeacher::class,
         ]);
 
         // CRITICAL (multi-tenant isolation): the tenant context must be bound
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureSuperAdmin::class,
             \App\Http\Middleware\EnsureStaff::class,
             \App\Http\Middleware\EnsureGuardian::class,
+            \App\Http\Middleware\EnsureTeacher::class,
             \App\Http\Middleware\SetCompanyContext::class,
             \App\Http\Middleware\EnsurePermission::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class,

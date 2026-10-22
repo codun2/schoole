@@ -133,7 +133,9 @@ body.collapsed .main{margin-inline-start:0}
 .crumbs svg{width:13px;height:13px}
 .yearbar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 16px;margin-bottom:16px;font-size:13.5px}
 .yearbar svg{width:17px;height:17px;color:var(--accent)}
-.yearbar select{border:none;background:var(--accent-soft);color:var(--accent);font-weight:700;border-radius:8px;padding:4px 10px;outline:none;cursor:pointer}
+.yearbar select{-webkit-appearance:none;-moz-appearance:none;appearance:none;border:1px solid transparent;background-color:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;border-radius:9px;padding:7px 14px 7px 32px;outline:none;cursor:pointer;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%234f46e5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 11px center;background-size:14px;transition:background-color .15s,border-color .15s,box-shadow .15s}
+.yearbar select:hover{background-color:rgba(var(--accent-rgb),.22)}
+.yearbar select:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18)}
 .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
 .page-h h2{font-size:20px}
 .page-h p{color:var(--muted);font-size:13px}
@@ -158,10 +160,11 @@ body.collapsed .main{margin-inline-start:0}
 .kpi{position:relative;border-radius:var(--radius);padding:18px;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);overflow:hidden;display:flex;gap:14px;align-items:flex-start;min-height:104px}
 .kpi::before{content:"";position:absolute;inset:0;background:linear-gradient(140deg,var(--tint,transparent),transparent 65%);opacity:.9;pointer-events:none}
 .kpi>*{position:relative}
-.kpi .ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c,var(--accent));box-shadow:0 8px 18px -8px var(--c,var(--accent))}
+.kpi .ic{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c,var(--accent));box-shadow:0 8px 18px -8px var(--c,var(--accent))}
 .kpi .ic svg{width:21px;height:21px}
-.kpi .k{color:var(--text-2);font-size:12.5px;font-weight:500}
-.kpi .v{font-family:var(--head);font-size:20px;font-weight:700;margin:2px 0;display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap}
+.kpi .grow{min-width:0}
+.kpi .k{color:var(--text-2);font-size:12.5px;font-weight:500;line-height:1.4;overflow-wrap:anywhere}
+.kpi .v{font-family:var(--head);font-size:20px;font-weight:700;margin:3px 0;display:flex;align-items:baseline;gap:6px 8px;flex-wrap:wrap;overflow-wrap:anywhere}
 .kpi .k{min-height:20px}
 .kpi .v small{font-size:12px;font-weight:500;color:var(--text-2)}
 .kpi .d{color:var(--muted);font-size:11.5px;line-height:1.45}
@@ -300,9 +303,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .av-row{display:flex;align-items:center;gap:10px;text-align:start}
 
 /* modal */
-.modal{position:fixed;inset:0;background:rgba(15,20,32,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:5vh 14px;overflow-y:auto;backdrop-filter:blur(3px);animation:fade .15s}
-.modal .box{background:var(--card);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:560px;animation:pop .18s ease-out;display:flex;flex-direction:column;max-height:none}
-.modal .box.wide{max-width:860px}.modal .box.xwide{max-width:1100px}.modal .box.narrow{max-width:420px}
+.modal{position:fixed;inset:0;background:rgba(15,20,32,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;backdrop-filter:blur(3px);animation:fade .15s}
+.modal .box{background:var(--card);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:640px;margin:auto;animation:pop .18s ease-out;display:flex;flex-direction:column;max-height:none}
+.modal .box.wide{max-width:920px}.modal .box.xwide{max-width:1120px}.modal .box.narrow{max-width:440px}
 .modal .mh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
 .modal .mh h3{font-size:16px;flex:1}
 .modal .mh .x{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--muted);font-size:20px}

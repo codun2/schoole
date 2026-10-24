@@ -6,6 +6,9 @@
 <title>سكوول — لوحة التحكم</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.2'%3E%3Cpath d='M22 10 12 5 2 10l10 5 10-5z'/%3E%3Cpath d='M6 12v5c3 2.5 9 2.5 12 0v-5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/assets/css/app.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#4f46e5">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 </head>
 <body>
 <div class="spin" style="margin-top:30vh"></div>
@@ -23,6 +26,7 @@
 <script src="/assets/js/app/pages-hr.js"></script>
 <script src="/assets/js/app/pages-hr2.js"></script>
 <script src="/assets/js/app/pages-admin.js"></script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(function () {});</script>
 <script>S.boot();</script>
 </body>
 </html>

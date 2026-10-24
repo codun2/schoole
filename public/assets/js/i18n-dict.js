@@ -1439,4 +1439,13 @@ window.SCH_DICT = {
   'نتائج الفصل': 'Term Results',
   '(أو استوردهم من Excel).': '(or import them from Excel).',
   'إنشاء شعبة': 'Create Section',
+
+  // ---- PWA / offline
+  'تثبيت التطبيق على الجهاز': 'Install app on this device',
+  'تم تثبيت التطبيق على الجهاز': 'App installed on this device',
+  'غير متصل بالإنترنت': 'No internet connection',
+  'تعرض آخر بيانات محفوظة على هذا الجهاز (قراءة فقط)': 'Showing the last data saved on this device (read-only)',
+  'عاد الاتصال بالإنترنت': 'Back online',
+  'أنت غير متصل بالإنترنت — هذه العملية تحتاج اتصالاً، أعد المحاولة عند عودة الشبكة.': 'You are offline — this action needs a connection; try again when the network is back.',
+  'أنت غير متصل بالإنترنت ولا توجد نسخة محفوظة من هذه البيانات على الجهاز.': 'You are offline and there is no saved copy of this data on the device.',
 };

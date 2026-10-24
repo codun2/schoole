@@ -24,7 +24,7 @@
     }
     let res;
     try { res = await fetch(url, { method: opts.method || 'GET', headers, body }); }
-    catch { const e = new Error('تعذّر الاتصال بالخادم، تحقق من الإنترنت.'); e.status = 0; throw e; }
+    catch { const off = typeof navigator !== 'undefined' && navigator.onLine === false; const e = new Error(off ? 'أنت غير متصل بالإنترنت — هذه العملية تحتاج اتصالاً، أعد المحاولة عند عودة الشبكة.' : 'تعذّر الاتصال بالخادم، تحقق من الإنترنت.'); e.status = 0; throw e; }
     if (res.status === 401 && !opts.noRedirect) { S.clearSession(); location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.hash); throw new Error('unauth'); }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

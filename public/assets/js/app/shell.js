@@ -3,6 +3,11 @@
   'use strict';
   const { esc, ic } = S;
 
+  // PWA install prompt — may fire before the shell renders, so capture it at load time
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; const b = document.getElementById('install-app'); if (b) b.classList.remove('hide'); });
+  window.addEventListener('appinstalled', () => { installEvt = null; const b = document.getElementById('install-app'); if (b) b.classList.add('hide'); S.toast('تم تثبيت التطبيق على الجهاز', 'ok'); });
+
   // [key, label, icon, perm, children:[ [route, label, perm] ]]
   const NAV = [
     ['home', 'الرئيسية', 'home', null, null, '#/'],
@@ -109,6 +114,7 @@
               <a href="#/profile">${ic('user')} الملف الشخصي</a>
               <a href="#/profile">${ic('key')} تغيير كلمة المرور</a>
               ${S.can('settings') ? `<a href="#/settings">${ic('gear')} إعدادات المدرسة</a>` : ''}
+              <button id="install-app" class="${installEvt ? '' : 'hide'}">${ic('download')} تثبيت التطبيق على الجهاز</button>
               <hr><button id="logout" style="color:var(--bad)">${ic('logout')} تسجيل الخروج</button>
             </div></div>
         </div></div>
@@ -139,7 +145,23 @@
     const um = document.getElementById('umenu'), ud = document.getElementById('udrop');
     um.onclick = (e) => { e.stopPropagation(); ud.classList.toggle('show'); };
     document.addEventListener('click', () => ud.classList.remove('show'));
-    document.getElementById('logout').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); localStorage.removeItem('sch_year'); location.href = '/login.html'; };
+    document.getElementById('logout').onclick = async () => {
+      try { await S.post('/auth/logout'); } catch {}
+      S.clearSession(); localStorage.removeItem('sch_year');
+      // drop cached API data so nothing leaks to the next account on a shared device
+      try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('CLEAR_API'); await caches.delete('sch-api-v1'); } catch {}
+      location.href = '/login.html';
+    };
+    const ib = document.getElementById('install-app');
+    ib.onclick = async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch {} installEvt = null; ib.classList.add('hide'); };
+    // offline indicator — phase 1: reading works offline, writing needs the network
+    const netState = () => {
+      const off = !navigator.onLine; let bar = document.getElementById('netbar');
+      document.body.classList.toggle('is-offline', off);
+      if (off && !bar) { bar = document.createElement('div'); bar.id = 'netbar'; bar.className = 'netbar'; bar.innerHTML = `${ic('alert')}<b>غير متصل بالإنترنت</b><span>تعرض آخر بيانات محفوظة على هذا الجهاز (قراءة فقط)</span>`; document.body.appendChild(bar); }
+      else if (!off && bar) { bar.remove(); S.toast('عاد الاتصال بالإنترنت', 'ok'); }
+    };
+    window.addEventListener('online', netState); window.addEventListener('offline', netState); netState();
     const tick = () => { const d = new Date(); document.getElementById('clk-t').textContent = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); document.getElementById('clk-d').textContent = S.today(); };
     tick(); setInterval(tick, 1000);
   }

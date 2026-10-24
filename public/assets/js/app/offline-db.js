@@ -109,9 +109,29 @@
     sync.state.running = false; emit();
   };
 
+  // ---- app updates: the shell is network-first, but an open (installed) window keeps the code it
+  // started with until it reloads — so watch one script's Last-Modified and offer a reload.
+  let buildStamp = null;
+  async function checkUpdate() {
+    if (!navigator.onLine) return;
+    try {
+      const r = await fetch('/assets/js/app/crud.js', { method: 'HEAD', cache: 'no-store' });
+      const v = r.headers.get('Last-Modified') || r.headers.get('ETag'); if (!v) return;
+      if (buildStamp === null) { buildStamp = v; return; }
+      if (v === buildStamp || document.getElementById('upd-toast')) return;
+      let w = document.getElementById('toasts'); if (!w) { w = document.createElement('div'); w.id = 'toasts'; document.body.appendChild(w); }
+      const t = document.createElement('div'); t.id = 'upd-toast'; t.className = 'toast'; t.style.pointerEvents = 'auto';
+      t.innerHTML = `${ic('refresh')}<span>يتوفر تحديث جديد للنظام</span><button class="btn sm" style="margin-inline-start:8px">إعادة التحميل الآن</button>`;
+      t.querySelector('button').onclick = () => location.reload();
+      w.appendChild(t);
+    } catch {}
+  }
+  sync.checkUpdate = checkUpdate;
+
   sync.schedule = function () {
     if (sync._scheduled) return; sync._scheduled = true;
-    const cycle = async () => { if (S.outbox) await S.outbox.flush(); await sync.run(); }; // upload our changes first, then pull
+    checkUpdate(); // records the stamp of the code this window is running
+    const cycle = async () => { await checkUpdate(); if (S.outbox) await S.outbox.flush(); await sync.run(); }; // upload our changes first, then pull
     setTimeout(cycle, 1500);                                 // right after boot, off the critical path
     setInterval(cycle, 10 * 60 * 1000);
     window.addEventListener('online', () => setTimeout(cycle, 2000));

@@ -1493,4 +1493,6 @@ window.SCH_DICT = {
   'تجاهل': 'Discard',
   'لا توجد تغييرات بانتظار الرفع': 'No changes pending upload',
   'فشل الرفع': 'Upload failed',
+  'يتوفر تحديث جديد للنظام': 'A new version is available',
+  'إعادة التحميل الآن': 'Reload now',
 };

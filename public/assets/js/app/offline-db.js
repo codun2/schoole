@@ -48,8 +48,11 @@
   const isOfflineError = (e) => !e || e.status === 0 || e.status === 503 || !!(e.data && e.data.offline) || navigator.onLine === false;
   S.local = { isOfflineError };
 
+  /** Stop background syncing for the rest of this page's life (used by logout before wiping caches). */
+  sync.stop = () => { sync._stopped = true; };
+
   sync.run = async function (opts = {}) {
-    if (sync.state.running || !navigator.onLine) return;
+    if (sync._stopped || sync.state.running || !navigator.onLine) return;
     Object.assign(sync.state, { running: true, phase: 'manifest', table: '', done: 0, total: 0, error: null }); emit();
     try {
       const since = opts.full ? null : (await DB.getMeta('last_sync')) || null;
@@ -73,6 +76,21 @@
       // dropdown lookups for the current year, so forms and filters work offline too
       sync.state.phase = 'lookups'; emit();
       try { const y = S.yearId(); const lk = await S.get('/app/lookups', { year: y }); await DB.setMeta('lookups:' + (y || 'current'), lk); } catch {}
+      // warm the service-worker cache with the DEFAULT view of screens that are not plain lists
+      // (dashboards, HR summaries, settings…) so they open offline too. Each call must build the
+      // exact same URL the page itself requests — same params, same key order.
+      sync.state.phase = 'warm'; emit();
+      const cy = String(new Date().getFullYear());
+      await Promise.allSettled([
+        S.get('/app/dashboard/main', { period: sessionStorage.getItem('sch_period') || 'month' }),
+        S.get('/app/dashboard/school', { year: S.yearId() }),
+        S.get('/app/dashboard/accounting'), S.get('/app/dashboard/hr'), S.get('/app/dashboard/admin'),
+        S.get('/app/leave-balances', { year: cy }),
+        S.get('/app/payrolls'),
+        S.get('/app/installments', { year: S.yearId(), state: 'unpaid', q: '', grade_id: '', from: '', to: '', page: 1, per_page: 25 }),
+        S.get('/app/settings'), S.get('/app/school-announcements'),
+        S.get('/app/timetable/config'), S.get('/app/timetable/load'),
+      ]);
       // next delta starts a little before this server time — the overlap is harmless (upserts are idempotent)
       const t = new Date(man.server_time); t.setMinutes(t.getMinutes() - 2);
       await DB.setMeta('last_sync', t.toISOString());

@@ -1474,4 +1474,6 @@ window.SCH_DICT = {
   'المكافآت والاستقطاعات': 'Bonuses & Deductions',
   'السندات': 'Vouchers',
   'المراسلات': 'Correspondence',
+  'هذه الشاشة لم تُحفظ على هذا الجهاز بعد — افتحها مرة وأنت متصل لتصبح متاحة بدون إنترنت.': 'This screen has not been saved on this device yet — open it once while online and it will be available offline.',
+  'أنت غير متصل بالإنترنت.': 'You are offline.',
 };

@@ -32,7 +32,8 @@
       if (res.status === 403) msg = 'ليس لديك صلاحية للوصول لهذا القسم.';
       if (res.status === 422 && data.errors) msg = Object.values(data.errors)[0][0];
       if (res.status >= 500) msg = 'خطأ في الخادم، حاول مرة أخرى.';
-      const e = new Error(msg); e.status = res.status; e.data = data; throw e;
+      if (data.offline) msg = data.message || 'أنت غير متصل بالإنترنت.'; // 503 synthesized by the service worker, not a server fault
+      const e = new Error(msg); e.status = res.status; e.data = data; e.offline = !!data.offline; throw e;
     }
     return data;
   };

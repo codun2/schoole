@@ -157,6 +157,7 @@
     um.onclick = (e) => { e.stopPropagation(); ud.classList.toggle('show'); };
     document.addEventListener('click', () => ud.classList.remove('show'));
     document.getElementById('logout').onclick = async () => {
+      if (S.sync && S.sync.stop) S.sync.stop(); // don't let a background sync refill the caches we are about to wipe
       try { await S.post('/auth/logout'); } catch {}
       S.clearSession(); localStorage.removeItem('sch_year');
       // drop cached API data so nothing leaks to the next account on a shared device
@@ -210,6 +211,12 @@
     } catch (e) {
       if (token !== S._routeToken) return;
       console.error(e);
+      if (e && (e.offline || (S.local && S.local.isOfflineError(e) && !navigator.onLine))) {
+        // offline and this screen has no saved copy yet — say so plainly instead of "server error"
+        view.innerHTML = S.emptyHtml('غير متصل بالإنترنت', 'هذه الشاشة لم تُحفظ على هذا الجهاز بعد — افتحها مرة وأنت متصل لتصبح متاحة بدون إنترنت.', 'alert',
+          `<div class="row wrap gap8 mt16" style="justify-content:center"><a class="btn ghost" href="#/">${ic('home')} الرئيسية</a><a class="btn soft" href="#/local-data">${ic('shield')} النسخة المحلية</a></div>`);
+        return;
+      }
       view.innerHTML = S.emptyHtml('تعذّر تحميل الصفحة', e.message, 'alert');
     }
   }

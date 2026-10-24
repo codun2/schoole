@@ -1510,4 +1510,13 @@ window.SCH_DICT = {
   '— كل الطلاب النشطين لديهم عقود لهذه السنة —': '— All active students already have contracts this year —',
   '— لا يوجد طلاب نشطون في هذه السنة —': '— No active students this year —',
   'إجمالي هذا العقد صفر — لا بنود ولا حافلة. هل تريد حفظه على أي حال؟': 'This contract totals zero — no items and no bus. Save it anyway?',
+  'الخزينة والتقارير': 'Treasury & Reports',
+  'الحضور والإجازات': 'Attendance & Leave',
+  'التقييم': 'Evaluation',
+  'المتابعة': 'Follow-up',
+  'الأكاديمي': 'Academic',
+  'الرسوم والعقود': 'Fees & Contracts',
+  'الإعداد': 'Setup',
+  'الطلاب والتسجيل': 'Students & Admission',
+  'الموظفون والهيكل': 'Staff & Structure',
 };

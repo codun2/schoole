@@ -8,37 +8,43 @@
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; const b = document.getElementById('install-app'); if (b) b.classList.remove('hide'); });
   window.addEventListener('appinstalled', () => { installEvt = null; const b = document.getElementById('install-app'); if (b) b.classList.add('hide'); S.toast('تم تثبيت التطبيق على الجهاز', 'ok'); });
 
-  // [key, label, icon, perm, children:[ [route, label, perm] ]]
+  // [key, label, icon, perm, children:[ [route, label, perm] ]]  —  a child ['-', 'title'] is a sub-heading that
+  // clusters the items after it (daily work first, setup last), so long groups stay scannable.
   const NAV = [
     ['home', 'الرئيسية', 'home', null, null, '#/'],
     ['g-settings', 'الإعدادات العامة', 'gear', null, [
       ['settings', 'إعدادات المدرسة', 'settings'], ['users', 'المستخدمون والصلاحيات', 'users'], ['branches', 'الفروع', 'hr'],
       ['announcements', 'الإعلانات والتعاميم', 'settings'], ['activity', 'سجل النشاطات', 'settings'],
     ]],
+    ['g-school', 'المدارس', 'cap', null, [
+      ['schools', 'لوحة تحكم المدارس', 'school'],
+      ['-', 'الطلاب والتسجيل'], ['students', 'الطلاب', 'students'], ['guardians', 'أولياء الأمور', 'students'], ['applications', 'استمارة التسجيل', 'students'], ['attendance', 'الحضور والغياب', 'school'],
+      ['-', 'الأكاديمي'], ['subjects', 'المواد الدراسية', 'school'], ['exam-terms', 'الفصول والاختبارات', 'school'], ['marks', 'الدرجات والتقييم', 'school'], ['timetable', 'الجدول الدراسي', 'school'],
+      ['-', 'الرسوم والعقود'], ['contracts', 'العقود', 'finance'], ['installments', 'الأقساط', 'finance'], ['tuition-payments', 'مدفوعات الأقساط', 'finance'], ['fee-items', 'بنود الرسوم الدراسية', 'school'],
+      ['-', 'الإعداد'], ['years', 'السنوات الدراسية', 'school'], ['grades', 'الصفوف', 'school'], ['sections', 'الشعب', 'school'], ['buses', 'الحافلات', 'school'], ['custom-fields', 'الحقول المخصصة', 'school'],
+    ]],
     ['g-acc', 'المحاسبة', 'calc', 'accounting', [
-      ['accounting', 'لوحة التحكم'], ['service-invoices', 'فواتير الخدمات'], ['customers', 'العملاء'],
-      ['expenses', 'فواتير المصروفات'], ['expense-categories', 'فئات المصاريف'], ['suppliers', 'الموردون'],
-      ['receipts', 'سندات القبض'], ['payments-out', 'سندات الصرف'], ['cash-accounts', 'الصناديق والبنوك'], ['reports', 'التقارير المالية'],
+      ['accounting', 'لوحة التحكم'],
+      ['-', 'الإيرادات'], ['service-invoices', 'فواتير الخدمات'], ['customers', 'العملاء'], ['receipts', 'سندات القبض'],
+      ['-', 'المصروفات'], ['expenses', 'فواتير المصروفات'], ['expense-categories', 'فئات المصاريف'], ['suppliers', 'الموردون'], ['payments-out', 'سندات الصرف'],
+      ['-', 'الخزينة والتقارير'], ['cash-accounts', 'الصناديق والبنوك'], ['reports', 'التقارير المالية'],
     ]],
     ['g-hr', 'الموارد البشرية', 'users', 'hr', [
-      ['hr', 'لوحة التحكم'], ['employees', 'الموظفون'], ['departments', 'الأقسام'], ['job-titles', 'المسميات الوظيفية'],
-      ['emp-attendance', 'الحضور والانصراف'], ['leave-requests', 'طلبات الإجازات'], ['leave-types', 'أنواع الإجازات'], ['leave-balances', 'أرصدة الإجازات'],
-      ['employee-contracts', 'عقود الموظفين'], ['payrolls', 'الرواتب الشهرية'], ['advances', 'سلف الموظفين'], ['bonuses', 'المكافآت'], ['deductions', 'الاستقطاعات'], ['evaluations', 'التقييمات'], ['evaluation-criteria', 'معايير التقييم'], ['evaluation-periods', 'فترات التقييم'],
+      ['hr', 'لوحة التحكم'],
+      ['-', 'الموظفون والهيكل'], ['employees', 'الموظفون'], ['employee-contracts', 'عقود الموظفين'], ['departments', 'الأقسام'], ['job-titles', 'المسميات الوظيفية'],
+      ['-', 'الحضور والإجازات'], ['emp-attendance', 'الحضور والانصراف'], ['leave-requests', 'طلبات الإجازات'], ['leave-balances', 'أرصدة الإجازات'], ['leave-types', 'أنواع الإجازات'],
+      ['-', 'الرواتب'], ['payrolls', 'الرواتب الشهرية'], ['advances', 'سلف الموظفين'], ['bonuses', 'المكافآت'], ['deductions', 'الاستقطاعات'],
+      ['-', 'التقييم'], ['evaluations', 'التقييمات'], ['evaluation-criteria', 'معايير التقييم'], ['evaluation-periods', 'فترات التقييم'],
     ]],
     ['g-admin', 'الشؤون الإدارية', 'briefcase', 'admin_affairs', [
-      ['admin', 'لوحة التحكم'], ['corr-in', 'المراسلات الواردة'], ['corr-out', 'المراسلات الصادرة'], ['corr-internal', 'المراسلات الداخلية'],
-      ['corr-categories', 'فئات المراسلات'], ['licenses', 'التراخيص'], ['tasks', 'المهام والمواعيد'], ['calendar', 'تقويم المهام'], ['documents', 'الأرشفة الإلكترونية'],
-    ]],
-    ['g-school', 'المدارس', 'cap', null, [
-      ['schools', 'لوحة تحكم المدارس', 'school'], ['years', 'السنوات الدراسية', 'school'], ['grades', 'الصفوف', 'school'], ['sections', 'الشعب', 'school'],
-      ['buses', 'الحافلات', 'school'], ['guardians', 'أولياء الأمور', 'students'], ['students', 'الطلاب', 'students'], ['applications', 'استمارة التسجيل', 'students'],
-      ['attendance', 'الحضور والغياب', 'school'], ['subjects', 'المواد الدراسية', 'school'], ['exam-terms', 'الفصول والاختبارات', 'school'], ['marks', 'الدرجات والتقييم', 'school'], ['timetable', 'الجدول الدراسي', 'school'], ['custom-fields', 'الحقول المخصصة', 'school'], ['fee-items', 'بنود الرسوم الدراسية', 'school'],
-      ['contracts', 'العقود', 'finance'], ['installments', 'الأقساط', 'finance'], ['tuition-payments', 'مدفوعات الأقساط', 'finance'],
+      ['admin', 'لوحة التحكم'],
+      ['-', 'المراسلات'], ['corr-in', 'المراسلات الواردة'], ['corr-out', 'المراسلات الصادرة'], ['corr-internal', 'المراسلات الداخلية'], ['corr-categories', 'فئات المراسلات'],
+      ['-', 'المتابعة'], ['tasks', 'المهام والمواعيد'], ['calendar', 'تقويم المهام'], ['licenses', 'التراخيص'], ['documents', 'الأرشفة الإلكترونية'],
     ]],
   ];
   S.NAV = NAV;
   const routeGroup = {}; const routeLabel = {};
-  NAV.forEach(([k, l, , gperm, kids]) => (kids || []).forEach(([r, rl, p]) => { routeGroup[r] = k; routeLabel[r] = rl; }));
+  NAV.forEach(([k, l, , gperm, kids]) => (kids || []).forEach(([r, rl, p]) => { if (r === '-') return; routeGroup[r] = k; routeLabel[r] = rl; }));
   S.routeLabel = routeLabel;
 
   // ------------------------------------------------------------ year context
@@ -102,9 +108,16 @@
     const hl = (t) => (f ? esc(t).replace(new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), (m) => `<mark>${m}</mark>`) : esc(t));
     return NAV.map(([k, label, icon, perm, kids, href]) => {
       if (!kids) return !f || label.includes(f) ? `<a class="it" data-r="home" href="${href}">${ic(icon, 'ic')}<span>${hl(label)}</span></a>` : '';
-      const visible = kids.filter(([r, l, p]) => S.can(p || perm) && (!f || l.includes(f) || label.includes(f)));
-      if (!visible.length) return '';
-      return `<div class="grp ${f ? 'open' : ''}" data-g="${k}"><div class="it">${ic(icon, 'ic')}<span>${hl(label)}</span>${ic('chevL', 'chev')}</div><div class="sub">${visible.map(([r, l]) => `<a href="#/${r}" data-r="${r}">${hl(l)}${r === 'applications' ? '<span class="pill hide" id="pill-app"></span>' : ''}</a>`).join('')}</div></div>`;
+      const visible = kids.filter(([r, l, p]) => r === '-' || (S.can(p || perm) && (!f || l.includes(f) || label.includes(f))));
+      if (!visible.some(([r]) => r !== '-')) return '';
+      // sub-headings are shown only above items the user can see, and hidden while searching
+      let sub = '', heading = null;
+      for (const [r, l] of visible) {
+        if (r === '-') { heading = l; continue; }
+        if (heading && !f) { sub += `<div class="sh">${esc(heading)}</div>`; heading = null; }
+        sub += `<a href="#/${r}" data-r="${r}">${hl(l)}${r === 'applications' ? '<span class="pill hide" id="pill-app"></span>' : ''}</a>`;
+      }
+      return `<div class="grp ${f ? 'open' : ''}" data-g="${k}"><div class="it">${ic(icon, 'ic')}<span>${hl(label)}</span>${ic('chevL', 'chev')}</div><div class="sub">${sub}</div></div>`;
     }).join('') || '<div class="empty xs">لا نتائج</div>';
   }
 

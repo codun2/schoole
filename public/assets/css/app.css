@@ -426,3 +426,7 @@ table.tt td,table.tt th{min-width:118px}
 .pending-pill{height:30px;padding:0 10px;border-radius:20px;background:var(--warn-bg);color:var(--warn);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent}
 .pending-pill svg{width:14px;height:14px}.pending-pill:hover{border-color:var(--warn)}
 .tbl tr.pending td{background:var(--warn-bg)}
+/* ---- sidebar sub-headings: cluster a long group's items under small labels */
+.nav .sub .sh{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.3px;padding:10px 14px 3px;margin-inline-start:6px;text-transform:uppercase}
+.nav .sub .sh:first-child{padding-top:6px}
+.nav .sub a{padding:6px 14px}

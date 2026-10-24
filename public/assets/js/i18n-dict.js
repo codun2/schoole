@@ -1507,4 +1507,6 @@ window.SCH_DICT = {
   'يمكنك تعديل تاريخ أو مبلغ أي قسط؛ الأخير يُضبط تلقائياً.': 'You can edit the date or amount of any installment; the last one adjusts automatically.',
   'المبالغ تتجاوز الإجمالي': 'Amounts exceed the total',
   'مبالغ الأقساط تتجاوز إجمالي العقد — راجع الجدول': 'Installment amounts exceed the contract total — check the schedule',
+  '— كل الطلاب النشطين لديهم عقود لهذه السنة —': '— All active students already have contracts this year —',
+  '— لا يوجد طلاب نشطون في هذه السنة —': '— No active students this year —',
 };

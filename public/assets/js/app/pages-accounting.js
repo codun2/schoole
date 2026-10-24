@@ -78,9 +78,9 @@
     draw();
     m.$('#sv').onclick = async (e) => {
       if (st.items.some((i) => !i.description.trim())) return S.toast('أدخل وصف كل البنود', 'bad');
-      S.btnBusy(e.currentTarget, true);
+      const _btn = e.currentTarget; S.btnBusy(_btn, true);
       try { inv ? await S.patch('/app/service-invoices/' + inv.id, st) : await S.post('/app/service-invoices', st); S.toast('تم حفظ الفاتورة', 'ok'); m.close(); ctx.reload(); }
-      catch (er) { S.toast(er.message, 'bad'); S.btnBusy(e.currentTarget, false); }
+      catch (er) { S.toast(er.message, 'bad'); S.btnBusy(_btn, false); }
     };
   }
   const printInvoice = async (r) => {

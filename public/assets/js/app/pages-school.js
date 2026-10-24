@@ -306,7 +306,7 @@
             sh.querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => { st[+b.dataset.i].status = b.dataset.s; draw(); }));
             sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (st[+inp.dataset.n].note = inp.value)));
             sh.querySelector('#allp').onclick = () => { st.forEach((s) => (s.status = 'present')); draw(); };
-            sh.querySelector('#save').onclick = async (e) => { S.btnBusy(e.currentTarget, true); try { await S.post('/app/attendance', { section_id: body.querySelector('#sec').value, date: body.querySelector('#dt').value, marks: st.map((s) => ({ student_id: s.id, status: s.status, note: s.note })) }); S.toast('تم حفظ الحضور', 'ok'); d.saved = true; draw(); } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(e.currentTarget, false); } };
+            sh.querySelector('#save').onclick = async (e) => { const _btn = e.currentTarget; S.btnBusy(_btn, true); try { await S.post('/app/attendance', { section_id: body.querySelector('#sec').value, date: body.querySelector('#dt').value, marks: st.map((s) => ({ student_id: s.id, status: s.status, note: s.note })) }); S.toast('تم حفظ الحضور', 'ok'); d.saved = true; draw(); } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(_btn, false); } };
           };
           draw();
         };

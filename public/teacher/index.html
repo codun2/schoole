@@ -97,12 +97,12 @@
     m.$('#sv').onclick = async (ev) => {
       const data = S.readForm(m.body, fields);
       if (!data.name) return S.toast('أدخل اسم الطالب', 'bad');
-      S.btnBusy(ev.currentTarget, true);
+      const _btn = ev.currentTarget; S.btnBusy(_btn, true);
       try {
         if (row) await S.patch('/teacher/students/' + row.id, data);
         else await S.post('/teacher/students', { ...data, section_id: sectionId });
         S.toast('تم الحفظ', 'ok'); m.close(); students(new URLSearchParams('section=' + sectionId));
-      } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(ev.currentTarget, false); }
+      } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(_btn, false); }
     };
   }
 
@@ -148,9 +148,9 @@
       sh.querySelectorAll('[data-i]').forEach((inp) => (inp.oninput = () => { let x = inp.value === '' ? null : Math.min(+inp.value, max); rows[+inp.dataset.i].mark = x; if (x !== null && +inp.value > max) inp.value = max; }));
       sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (rows[+inp.dataset.n].note = inp.value)));
       sh.querySelector('#sv').onclick = async (ev) => {
-        S.btnBusy(ev.currentTarget, true);
+        const _btn = ev.currentTarget; S.btnBusy(_btn, true);
         try { await S.post('/teacher/marks', { section_id, subject_id, exam_term_id, marks: rows.map((r) => ({ student_id: r.id, mark: r.mark ?? null, note: r.note || null })) }); S.toast('تم حفظ الدرجات', 'ok'); } catch (er) { S.toast(er.message, 'bad'); }
-        S.btnBusy(ev.currentTarget, false);
+        S.btnBusy(_btn, false);
       };
     }
   }
@@ -176,7 +176,7 @@
         sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (rows[+inp.dataset.n].note = inp.value)));
         bindSave();
       };
-      const bindSave = () => { const b = sh.querySelector('#sv'); if (b) b.onclick = async (ev) => { S.btnBusy(ev.currentTarget, true); try { await S.post('/teacher/attendance', { section_id, date, marks: rows.map((r) => ({ student_id: r.id, status: r.status, note: r.note || null })) }); S.toast('تم حفظ الحضور', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } S.btnBusy(ev.currentTarget, false); }; };
+      const bindSave = () => { const b = sh.querySelector('#sv'); if (b) b.onclick = async (ev) => { const _btn = ev.currentTarget; S.btnBusy(_btn, true); try { await S.post('/teacher/attendance', { section_id, date, marks: rows.map((r) => ({ student_id: r.id, status: r.status, note: r.note || null })) }); S.toast('تم حفظ الحضور', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } S.btnBusy(_btn, false); }; };
       render();
     }
   }

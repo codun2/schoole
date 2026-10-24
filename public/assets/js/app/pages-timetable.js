@@ -62,11 +62,11 @@
             });
           };
           const save = async (e) => {
-            S.btnBusy(e.currentTarget, true);
+            const _btn = e.currentTarget; S.btnBusy(_btn, true);
             const entries = Object.entries(grid).map(([k, c]) => { const [day, period] = k.split('-'); return { day: +day, period: +period, subject_id: c.subject_id || null, teacher_id: c.teacher_id || null, room: c.room || null }; });
             try { const r = await S.post('/app/timetable/section', { section_id: body.querySelector('#sec').value, entries }); if (!(r && r._queued)) S.toast('تم حفظ الجدول', 'ok'); }
             catch (er) { S.toast(er.message, 'bad'); if (er.data && er.data.clashes) S.modal({ title: 'تعذّر الحفظ — تعارض', size: 'narrow', body: `<div class="bad-t b mb8">${esc(er.message)}</div><ul style="padding-inline-start:18px;line-height:2">${er.data.clashes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` }); }
-            S.btnBusy(e.currentTarget, false);
+            S.btnBusy(_btn, false);
           };
           draw();
         };
@@ -124,9 +124,9 @@
         body.querySelectorAll('[data-d]').forEach((b) => (b.onclick = () => { const i = +b.dataset.d; sel.has(i) ? sel.delete(i) : sel.add(i); b.classList.toggle('on'); }));
         body.querySelector('#sv').onclick = async (e) => {
           if (!sel.size) return S.toast('اختر يوم دوام واحداً على الأقل', 'bad');
-          S.btnBusy(e.currentTarget, true);
+          const _btn = e.currentTarget; S.btnBusy(_btn, true);
           try { const r = await S.patch('/app/timetable/config', { days: [...sel].sort(), periods: +body.querySelector('#per').value }); cfg = r && r._queued ? { ...cfg, days: [...sel].sort(), periods: +body.querySelector('#per').value } : r; if (!(r && r._queued)) S.toast('تم الحفظ', 'ok'); } catch (er) { S.toast(er.message, 'bad'); }
-          S.btnBusy(e.currentTarget, false);
+          S.btnBusy(_btn, false);
         };
       }
 

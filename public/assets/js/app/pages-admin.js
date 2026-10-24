@@ -102,10 +102,10 @@
         <div class="card"><div class="hd"><h3>${ic('shield')} الاشتراك</h3></div><div class="bd">${S.kv([['الباقة', esc(c.plan?.name || '—')], ['الحالة', S.badge(S.ST.school, c.status)], ['التجربة تنتهي', c.trial_ends_at ? S.d(c.trial_ends_at) : '—'], ['الاشتراك ينتهي', c.subscription_ends_at ? S.d(c.subscription_ends_at) : '—'], ['رابط التسجيل', `<span class="ltr xs">/apply.html?school=${esc(c.slug)}</span>`]]).replace('class="kv"', 'class="kv" style="grid-template-columns:1fr"')}</div></div></div></div>`;
       el.querySelector('#sv').onclick = async (e) => {
         const f = el.querySelector('#f form'); if (!S.validate(f, fields)) return;
-        S.btnBusy(e.currentTarget, true);
+        const _btn = e.currentTarget; S.btnBusy(_btn, true);
         try { const r = await S.patch('/app/settings', S.readForm(f, fields)); const me = S.me(); Object.assign(me.company, { name: r.name, currency: r.currency, tax_rate: r.tax_rate }); S.setSession(null, me); S.toast('تم حفظ الإعدادات', 'ok'); }
         catch (er) { S.toast(er.message, 'bad'); S.showErrors(f, er); }
-        S.btnBusy(e.currentTarget, false);
+        S.btnBusy(_btn, false);
       };
       el.querySelector('#lf').onchange = async (e) => { const fd = new FormData(); fd.append('logo', e.target.files[0]); try { const r = await S.api('/app/settings/logo', { method: 'POST', body: fd }); el.querySelector('#lg').innerHTML = `<img src="${esc(r.logo)}" style="width:100%;height:100%;object-fit:cover">`; const me = S.me(); me.company.logo = r.logo; S.setSession(null, me); S.toast('تم رفع الشعار', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } };
       el.querySelectorAll('[data-th]').forEach((b) => (b.onclick = async () => { await S.patch('/app/settings', { theme: b.dataset.th }); localStorage.removeItem('sch_accent'); const me = S.me(); me.company.theme = b.dataset.th; S.setSession(null, me); S.applyTheme(); el.querySelectorAll('[data-th]').forEach((x) => x.classList.toggle('on', x === b)); }));

@@ -84,10 +84,10 @@
     m.$('#sv').onclick = async (e) => {
       const scores = form.criteria.filter((c) => state[c.id].score !== '' && state[c.id].score != null).map((c) => ({ criterion_id: c.id, score: +state[c.id].score, note: state[c.id].note || null }));
       if (!scores.length) return S.toast('أدخل درجة واحدة على الأقل', 'bad');
-      S.btnBusy(e.currentTarget, true);
+      const _btn = e.currentTarget; S.btnBusy(_btn, true);
       const payload = { employee_id: employeeId, period_id: periodId, notes: m.$('#notes').value, scores };
       try { form.evaluation ? await S.patch('/app/evaluations/' + form.evaluation.id, payload) : await S.post('/app/evaluations', payload); S.toast('تم حفظ التقييم', 'ok'); m.close(); done && done(); }
-      catch (er) { S.toast(er.message, 'bad'); S.btnBusy(e.currentTarget, false); }
+      catch (er) { S.toast(er.message, 'bad'); S.btnBusy(_btn, false); }
     };
   }
 

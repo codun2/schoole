@@ -40,9 +40,9 @@ S.i18nStart && S.i18nStart();
   box.innerHTML = S.formHtml(fields, {}) + `<button class="btn mt24" id="go" style="width:100%;height:46px">${S.ic('send')} إرسال طلب التسجيل</button><p class="muted sm mt8" style="text-align:center">للاستفسار: <span class="num">${S.esc(sc.phone || '')}</span></p>`;
   document.getElementById('go').onclick = async (e) => {
     const form = box.querySelector('form'); if (!S.validate(form, fields)) return S.toast('يرجى تعبئة الحقول المطلوبة', 'bad');
-    S.btnBusy(e.currentTarget, true);
+    const _btn = e.currentTarget; S.btnBusy(_btn, true);
     try { const r = await S.api(`/public/schools/${encodeURIComponent(slug)}/apply`, { method: 'POST', body: S.readForm(form, fields), noRedirect: true }); box.innerHTML = `<div class="empty" style="color:var(--ok)">${S.ic('check')}<b style="color:var(--text)">${S.esc(r.message)}</b><div>رقم الطلب: <span class="num">#${r.id}</span></div></div>`; }
-    catch (ex) { S.toast(ex.message, 'bad'); S.showErrors(form, ex); S.btnBusy(e.currentTarget, false); }
+    catch (ex) { S.toast(ex.message, 'bad'); S.showErrors(form, ex); S.btnBusy(_btn, false); }
   };
 })();
 </script>

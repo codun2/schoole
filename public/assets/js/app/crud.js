@@ -221,7 +221,7 @@
           if (!S.validate(form, fields)) return S.toast('راجع الحقول المطلوبة', 'bad');
           const vals = S.readForm(form, fields);
           const body = cfg.toPayload ? cfg.toPayload(vals, row) : vals;
-          S.btnBusy(ev.currentTarget, true);
+          const _btn = ev.currentTarget; S.btnBusy(_btn, true);
           try {
             let res;
             if (id) res = await S.api(cfg.api + '/' + id, { method: body instanceof FormData ? 'POST' : 'PATCH', body });
@@ -229,7 +229,7 @@
             (cfg.invalidate || []).forEach((k) => S.L.clear(k));
             if (!(res && res._queued)) S.toast(id ? 'تم حفظ التعديلات' : 'تمت الإضافة بنجاح', 'ok');
             location.hash = '#/' + cfg.backTo;
-          } catch (er) { S.showErrors(form, er); S.btnBusy(ev.currentTarget, false); S.toast(er.message || 'تعذّر الحفظ', 'bad'); }
+          } catch (er) { S.showErrors(form, er); S.btnBusy(_btn, false); S.toast(er.message || 'تعذّر الحفظ', 'bad'); }
         };
       },
     };

@@ -146,8 +146,9 @@
   // Money/numbering flows (contracts, invoices, vouchers, expenses, advances) stay online-only.
   const QUEUE_CRUD = ['academic-years', 'grades', 'sections', 'buses', 'fee-items', 'custom-fields', 'subjects', 'exam-terms', 'guardians', 'students', 'applications',
     'cash-accounts', 'customers', 'suppliers', 'expense-categories', 'branches', 'departments', 'job-titles', 'employees', 'leave-types', 'leave-requests', 'adjustments',
-    'employee-contracts', 'evaluation-criteria', 'evaluation-periods', 'correspondence-categories', 'correspondences', 'licenses', 'tasks'];
-  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/\d+)?$/];
+    'employee-contracts', 'evaluation-criteria', 'evaluation-periods', 'correspondence-categories', 'correspondences', 'licenses', 'tasks',
+    'contracts']; // contracts: drafted/activated offline, numbered and scheduled by the server on upload; payments stay online
+  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/contracts\/[^/]+\/activate$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/\d+)?$/];
   // field → mirrored table, to rebuild the nested relation objects list screens expect (r.grade.name_ar …)
   const REL = { grade_id: 'grades', section_id: 'sections', guardian_id: 'guardians', bus_id: 'buses', student_id: 'students', employee_id: 'employees', teacher_id: 'employees', department_id: 'departments', branch_id: 'branches', job_title_id: 'job-titles', customer_id: 'customers', supplier_id: 'suppliers', cash_account_id: 'cash-accounts', leave_type_id: 'leave-types', subject_id: 'subjects', period_id: 'evaluation-periods', exam_term_id: 'exam-terms' };
   const parse = (path) => { const m = path.match(/^\/app\/([a-z-]+)(?:\/([^/?]+))?$/); return m ? { slug: m[1], rid: m[2] } : {}; };
@@ -178,7 +179,8 @@
       const crud = slug && QUEUE_CRUD.includes(slug) && !(body && Array.isArray(body.marks));
       if (crud && method === 'POST') {
         op.tmp = 'tmp_' + op.idem.slice(0, 8); op.table = slug;
-        const row = await decorate(slug, { ...body, id: op.tmp, academic_year_id: body.academic_year_id || body.year || undefined, created_at: now, updated_at: now, _pending: true });
+        const row = await decorate(slug, { ...body, id: op.tmp, academic_year_id: body.academic_year_id || body.year || (S.yearId && S.yearId()) || undefined, created_at: now, updated_at: now, _pending: true });
+        if (slug === 'contracts') Object.assign(row, { number: 'مؤقت', status: body.activate ? 'active' : 'draft', paid: 0, remaining: +row.total || 0, installments: [], payments: [], year: await DB.get('academic-years', row.academic_year_id) });
         await DB.putMany(slug, [row]); result = { ...row, _queued: true };
       } else if (crud && method === 'PATCH' && rid) {
         op.table = slug; op.rid = rid;
@@ -202,6 +204,10 @@
         const all = (await DB.all('student-attendance')).filter((r) => String(r.section_id) === String(body.section_id) && String(r.date || '').slice(0, 10) === body.date);
         const rows = body.marks.map((m) => { const ex = all.find((r) => String(r.student_id) === String(m.student_id)); return { ...(ex || { id: 'tmp_' + uuid().slice(0, 8), student_id: m.student_id, section_id: body.section_id, date: body.date }), status: m.status, note: m.note || null, _pending: true, _op: op.id }; });
         await DB.putMany('student-attendance', rows);
+      } else if (/^\/app\/contracts\/[^/]+\/activate$/.test(path)) {
+        const cid = path.split('/')[3]; const c = await DB.get('contracts', cid);
+        if (c) await DB.putMany('contracts', [{ ...c, status: 'active', _pending: true }]);
+        result = { message: 'سيُفعَّل العقد وتتولّد أقساطه عند الرفع', _queued: true };
       } else if (path === '/app/timetable/section' && body && Array.isArray(body.entries)) {
         // mirror the new grid: current rows of the section are hidden (restored if the upload is discarded),
         // the new cells are added as temporary rows tagged with the op
@@ -297,7 +303,7 @@
   const strVals = (r, depth, out) => { for (const k in r) { const v = r[k]; if (v == null) continue; if (typeof v === 'object') { if (depth < 1 && !Array.isArray(v)) strVals(v, depth + 1, out); } else out.push(String(v)); } return out; };
   S.local.query = async function (table, o = {}) {
     let rows = await DB.all(table);
-    if (o.year && o.year !== 'all' && rows.length && 'academic_year_id' in rows[0]) rows = rows.filter((r) => String(r.academic_year_id) === String(o.year));
+    if (o.year && o.year !== 'all') rows = rows.filter((r) => r.academic_year_id == null || String(r.academic_year_id) === String(o.year));
     for (const [k, v] of Object.entries(o.f || {})) {
       if (v === undefined || v === null || v === '' || k === 'from' || k === 'to') continue;
       rows = rows.filter((r) => !(k in r) || String(r[k]) === String(v));

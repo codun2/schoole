@@ -1496,4 +1496,9 @@ window.SCH_DICT = {
   'يتوفر تحديث جديد للنظام': 'A new version is available',
   'إعادة التحميل الآن': 'Reload now',
   'تعذّر تحميل الجدول': 'Could not load the timetable',
+  'مؤقت': 'Temporary',
+  'عقد محفوظ على الجهاز': 'Contract saved on this device',
+  'سيأخذ رقمه الرسمي وتتولّد أقساطه عند الرفع إلى الخادم': 'It will get its official number and installments when uploaded to the server',
+  'سيُفعَّل العقد وتتولّد أقساطه عند الرفع': 'The contract will be activated and its installments generated on upload',
+  'لا توجد نسخة محفوظة من هذا العقد على الجهاز': 'No saved copy of this contract on the device',
 };

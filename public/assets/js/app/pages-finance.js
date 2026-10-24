@@ -43,7 +43,10 @@
       let existing = null;
       if (params.id) {
         el.innerHTML = S.spinner;
-        try { existing = await S.get('/app/contracts/' + params.id); } catch (e) { el.innerHTML = S.emptyHtml('تعذّر تحميل العقد', e.message, 'alert'); return; }
+        try { existing = String(params.id).startsWith('tmp_') ? null : await S.get('/app/contracts/' + params.id); }
+        catch (e) { if (!(S.local && S.local.isOfflineError(e))) { el.innerHTML = S.emptyHtml('تعذّر تحميل العقد', e.message, 'alert'); return; } }
+        if (!existing && S.db) existing = await S.db.get('contracts', params.id); // offline / drafted offline: the mirrored copy
+        if (!existing) { el.innerHTML = S.emptyHtml('تعذّر تحميل العقد', 'لا توجد نسخة محفوظة من هذا العقد على الجهاز', 'alert'); return; }
       }
       await mountContractForm(el, existing, params.student ? { student_id: params.student } : {});
     },
@@ -52,7 +55,9 @@
   async function mountContractForm(el, existing, preset = {}) {
     const lk = await S.L(['fee_items', 'buses', 'sections']);
     const me = S.me();
-    const studentsRes = await S.get('/app/students', { all: 1, year: S.yearId(), status: 'active' });
+    let studentsRes;
+    try { studentsRes = await S.get('/app/students', { all: 1, year: S.yearId(), status: 'active' }); if (studentsRes._fromCache && S.local) throw Object.assign(new Error('cache'), { status: 503, offline: true }); }
+    catch (e) { if (!(S.local && S.local.isOfflineError(e))) throw e; studentsRes = await S.local.query('students', { f: { status: 'active' }, year: S.yearId(), perPage: 5000, sort: ['name', 'asc'] }); } // offline: active students from the mirror
     const students = studentsRes.data;
     const c = existing || {};
     const state = {
@@ -125,8 +130,10 @@
       if (!state.items.length && !state.bus_id) return S.toast('أضف بنداً واحداً على الأقل', 'bad');
       S.btnBusy(btn, true);
       try {
-        const body = { ...state, items: state.items.filter((i) => i.name), activate };
+        const k = calc();
+        const body = { ...state, items: state.items.filter((i) => i.name), activate, subtotal: k.sub, discount: k.disc, tax: k.tax, total: k.total }; // totals are recomputed by the server; they also feed the offline copy
         const r = existing ? await S.patch('/app/contracts/' + existing.id, body) : await S.post('/app/contracts', body);
+        if (r && r._queued) { location.hash = '#/contracts'; return; } // saved offline: back to the list where it shows as pending
         S.toast(activate ? 'تم حفظ العقد وتفعيله وتوليد الأقساط' : 'تم حفظ العقد كمسودة', 'ok');
         const target = '#/contracts/' + r.id;
         if (location.hash === target) S.reroute(); else location.hash = target;
@@ -140,10 +147,14 @@
   S.contractView = async function (id, reload) {
     const m = S.modal({ title: 'تفاصيل العقد', size: 'xwide', body: S.spinner, foot: '<div id="cf" class="row wrap grow" style="justify-content:flex-end"></div>' });
     const refresh = async () => {
-      const c = await S.get('/app/contracts/' + id);
+      let c;
+      try { c = String(id).startsWith('tmp_') ? null : await S.get('/app/contracts/' + id); if (c && c._fromCache && S.db) c = null; }
+      catch (e) { if (!(S.local && S.local.isOfflineError(e))) throw e; }
+      if (!c && S.db) { c = await S.db.get('contracts', id); if (c) c = { ...c, items: c.items || [], installments: c.installments || [], payments: c.payments || [] }; }
+      if (!c) throw new Error('لا توجد نسخة محفوظة من هذا العقد على الجهاز');
       m.$('h3').innerHTML = `العقد <span class="num">${esc(c.number)}</span> ${S.badge(S.ST.contract, c.status)}`;
       const pct = +c.total ? Math.round((+c.paid * 100) / +c.total) : 0;
-      m.body.innerHTML = `<div class="grid g4 mb16">${S.ui.stat('c-violet', 'coins', S.money(c.total, true), 'إجمالي العقد')}${S.ui.stat('c-green', 'check', S.money(c.paid, true), 'المدفوع')}${S.ui.stat('c-red', 'timer', S.money(c.remaining, true), 'المتبقي')}<div class="stat c-blue"><div class="grow"><div class="k mb8">نسبة السداد</div>${S.prog(pct)}</div></div></div>
+      m.body.innerHTML = `${c._pending ? `<div class="card pad mb16 row gap8" style="background:var(--warn-bg);border-color:transparent">${ic('alert')}<span class="sm"><b>عقد محفوظ على الجهاز</b><span class="muted"> — سيأخذ رقمه الرسمي وتتولّد أقساطه عند الرفع إلى الخادم</span></span></div>` : ''}<div class="grid g4 mb16">${S.ui.stat('c-violet', 'coins', S.money(c.total, true), 'إجمالي العقد')}${S.ui.stat('c-green', 'check', S.money(c.paid, true), 'المدفوع')}${S.ui.stat('c-red', 'timer', S.money(c.remaining, true), 'المتبقي')}<div class="stat c-blue"><div class="grow"><div class="k mb8">نسبة السداد</div>${S.prog(pct)}</div></div></div>
         <div class="grid g2"><div>${S.kv([['الطالب', `<a class="lk" href="#/students/${c.student_id}">${esc(c.student?.name)}</a>`], ['ولي الأمر', esc(c.guardian?.name || '—')], ['الجوال', `<span class="num">${esc(c.guardian?.phone || '—')}</span>`], ['الصف / الشعبة', esc((c.grade?.name_ar || '') + ' / ' + (c.section?.name || ''))], ['السنة الدراسية', esc(c.year?.name || '')], ['تاريخ العقد', `<span class="num">${S.d(c.date)}</span>`]]).replace('class="kv"', 'class="kv" style="grid-template-columns:1fr"')}</div>
           <div><table class="tbl" style="border:1px solid var(--line);border-radius:10px"><thead><tr><th class="s">البند</th><th>المبلغ</th></tr></thead><tbody>${c.items.map((i) => `<tr><td class="s">${esc(i.name)}</td><td class="num">${S.fmtN(i.amount)}</td></tr>`).join('')}</tbody><tfoot><tr><td class="s">الإجمالي الفرعي</td><td class="num">${S.fmtN(c.subtotal)}</td></tr>${+c.discount ? `<tr><td class="s">الخصم ${c.discount_reason ? '(' + esc(c.discount_reason) + ')' : ''}</td><td class="num bad-t">− ${S.fmtN(c.discount)}</td></tr>` : ''}${+c.tax ? `<tr><td class="s">الضريبة ${c.tax_rate}%</td><td class="num">${S.fmtN(c.tax)}</td></tr>` : ''}<tr><td class="s">الإجمالي</td><td class="num acc-t">${S.fmtN(c.total)}</td></tr></tfoot></table></div></div>
         <div class="sec-t">${ic('calendar')} الأقساط (${c.installments.length})</div>
@@ -157,9 +168,9 @@
         <button class="btn ghost" data-a="print">${ic('printer')} طباعة العقد</button><button class="btn ghost" data-close>إغلاق</button>`;
       f.querySelector('[data-close]').onclick = m.close;
       const A = {
-        act: async () => { await S.post(`/app/contracts/${id}/activate`); S.toast('تم تفعيل العقد', 'ok'); refresh(); reload && reload(); },
+        act: async () => { const r = await S.post(`/app/contracts/${id}/activate`); if (!(r && r._queued)) S.toast('تم تفعيل العقد', 'ok'); refresh(); reload && reload(); },
         edit: () => { m.close(); S.contractBuilder(c); },
-        del: async () => { if (await S.confirm('حذف العقد المسودة؟', 'حذف')) { await S.del('/app/contracts/' + id); S.toast('تم الحذف', 'ok'); m.close(); reload && reload(); } },
+        del: async () => { if (await S.confirm('حذف العقد المسودة؟', 'حذف')) { const r = await S.del('/app/contracts/' + id); if (!(r && r._queued)) S.toast('تم الحذف', 'ok'); m.close(); reload && reload(); } },
         cancel: async () => { if (await S.confirm('إلغاء العقد؟ ستُلغى الأقساط غير المدفوعة.', 'إلغاء العقد')) { await S.post(`/app/contracts/${id}/cancel`); S.toast('تم إلغاء العقد', 'ok'); refresh(); reload && reload(); } },
         pay: () => S.payDialog({ title: 'تسجيل دفعة — ' + c.student?.name, max: +c.remaining, onPay: async (v) => { const r = await S.post(`/app/contracts/${id}/payments`, v); S.toast(r.message, 'ok'); refresh(); reload && reload(); if (await S.confirm('طباعة سند القبض؟', 'طباعة', false)) S.printReceipt(r.voucher, { student: c.student?.name, contract: c.number, remaining: +c.remaining - +r.voucher.amount }); } }),
         print: () => printContract(c),

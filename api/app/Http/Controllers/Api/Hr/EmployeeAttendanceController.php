@@ -35,7 +35,7 @@ class EmployeeAttendanceController extends Controller
     public function save(Request $request)
     {
         $data = $request->validate([
-            'date'                => ['required', 'date', 'before_or_equal:today'],
+            'date'                => ['required', 'date', 'before_or_equal:'.now()->addDay()->toDateString() /* tolerate clients a timezone ahead of the server */],
             'marks'               => ['required', 'array'],
             'marks.*.employee_id' => ['required', 'integer', $this->owned('employees')],
             'marks.*.status'      => ['required', 'in:present,absent,late,leave'],

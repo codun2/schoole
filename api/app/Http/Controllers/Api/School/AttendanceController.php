@@ -38,7 +38,7 @@ class AttendanceController extends Controller
     {
         $data = $request->validate([
             'section_id'         => ['required', 'integer', $this->owned('sections')],
-            'date'               => ['required', 'date', 'before_or_equal:today'],
+            'date'               => ['required', 'date', 'before_or_equal:'.now()->addDay()->toDateString() /* tolerate clients a timezone ahead of the server */],
             'marks'              => ['required', 'array'],
             'marks.*.student_id' => ['required', 'integer'],
             'marks.*.status'     => ['required', 'in:present,absent,late,excused'],

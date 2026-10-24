@@ -21,7 +21,7 @@
 
       // ---- section grid editor
       function secTab() {
-        if (!lk.sections.length) { body.innerHTML = S.emptyHtml('لا توجد شعب', 'أنشئ الصفوف والشعب أولاً', 'columns'); return; }
+        if (!lk.sections.length) { body.innerHTML = S.emptyHtml('لا توجد شعب', 'أنشئ الصفوف والشعب أولاً', 'columns', `<a class="btn mt16" href="#/sections?new=1">${S.ic('plus')} إنشاء شعبة</a>`); return; }
         body.innerHTML = `<div class="filters"><label class="fld"><span>الشعبة</span><select class="inp" id="sec">${sectionOpts(lk).map(([v, l]) => `<option value="${v}" ${String(v) === String(params.section_id) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label><button class="btn" id="ld">${ic('search')} عرض الجدول</button></div><div id="grid"></div>`;
         const load = async () => {
           const wrap = body.querySelector('#grid'); wrap.innerHTML = S.spinner;

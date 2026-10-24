@@ -176,7 +176,7 @@
     m.$('[data-yes]').onclick = () => { m.remove(); resolve(true); };
   });
   S.spinner = '<div class="spin"></div>';
-  S.emptyHtml = (title, sub, icon) => `<div class="empty">${S.ic(icon || 'inbox')}<b>${esc(title || 'لا توجد بيانات')}</b>${sub ? `<div>${esc(sub)}</div>` : ''}</div>`;
+  S.emptyHtml = (title, sub, icon, action) => `<div class="empty">${S.ic(icon || 'inbox')}<b>${esc(title || 'لا توجد بيانات')}</b>${sub ? `<div>${esc(sub)}</div>` : ''}${action || ''}</div>`;
   S.badge = (map, key) => { const v = map[key]; return v ? `<span class="bdg ${v[1]}">${v[0]}</span>` : `<span class="bdg l-mut">${esc(key || '—')}</span>`; };
   S.prog = (p) => { p = Math.max(0, Math.min(100, +p || 0)); const c = p >= 100 ? 'var(--ok)' : p >= 60 ? 'var(--info)' : p >= 30 ? '#f2b33d' : p > 0 ? 'var(--orange)' : 'transparent'; return `<div class="prog"><i style="width:${Math.max(p, p ? 18 : 0)}%;background:${c}">${p ? p + '%' : ''}</i></div>`; };
   S.btnBusy = (b, on) => { if (!b) return; if (on) { b.dataset.html = b.innerHTML; b.disabled = true; b.innerHTML = '<span class="spin sm" style="border-top-color:#fff"></span>'; } else { b.disabled = false; if (b.dataset.html) b.innerHTML = b.dataset.html; } };

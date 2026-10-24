@@ -1438,4 +1438,5 @@ window.SCH_DICT = {
   '— عميل نقدي —': '— Cash Customer —',
   'نتائج الفصل': 'Term Results',
   '(أو استوردهم من Excel).': '(or import them from Excel).',
+  'إنشاء شعبة': 'Create Section',
 };

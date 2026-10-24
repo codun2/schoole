@@ -427,6 +427,7 @@ table.tt td,table.tt th{min-width:118px}
 .pending-pill svg{width:14px;height:14px}.pending-pill:hover{border-color:var(--warn)}
 .tbl tr.pending td{background:var(--warn-bg)}
 /* ---- sidebar sub-headings: cluster a long group's items under small labels */
-.nav .sub .sh{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.3px;padding:10px 14px 3px;margin-inline-start:6px;text-transform:uppercase}
+.nav .sub .sh{font-size:11.5px;font-weight:700;color:var(--text);letter-spacing:.2px;padding:12px 14px 4px;margin-inline-start:6px;opacity:.85}
+.nav .sub .sh::after{content:'';display:block;height:1px;background:var(--line);margin-top:4px}
 .nav .sub .sh:first-child{padding-top:6px}
 .nav .sub a{padding:6px 14px}

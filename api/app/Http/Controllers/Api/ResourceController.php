@@ -221,6 +221,20 @@ abstract class ResourceController extends Controller
         return (string) ($record->name ?? $record->title ?? $record->number ?? $record->name_ar ?? ('#'.$record->getKey()));
     }
 
+    // ----------------------------------------------------------- offline sync
+
+    /** Rows for the offline mirror: same eager loads as index(), without year/pagination filters. */
+    public function syncQuery(): Builder
+    {
+        return $this->baseQuery(request());
+    }
+
+    /** Same per-row shaping the list endpoint applies. */
+    public function syncTransform($rows)
+    {
+        return $this->transformAll($rows);
+    }
+
     // ---------------------------------------------------------------- helpers
 
     protected function find($id): Model

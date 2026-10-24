@@ -70,7 +70,24 @@
             $('#summary').innerHTML = cfg.summary ? cfg.summary(res, ctx) : '';
             renderTable(rows, res);
             renderPager(res);
-          } catch (e) { $('#tbl').innerHTML = S.emptyHtml('تعذّر تحميل البيانات', e.message, 'alert'); }
+          } catch (e) {
+            // server unreachable → serve the list from the offline mirror when this table is mirrored
+            if (S.local && S.local.isOfflineError(e)) {
+              try {
+                const slug = cfg.api.replace(/^\/app\//, '');
+                const tables = (await S.db.getMeta('tables')) || [];
+                if (!tables.includes(slug)) throw e;
+                const res = await S.local.query(slug, { q: state.q, f: { ...(cfg.fixed || {}), ...state.f }, year: cfg.year ? S.yearId() : undefined, page: state.page, sort: state.sort });
+                const rows = res.data; ctx.rows = rows; ctx.res = res;
+                $('#total').textContent = 'الإجمالي: ' + S.num(res.total);
+                const lastSync = await S.db.getMeta('last_sync_at');
+                $('#summary').innerHTML = `<div class="card pad mb16 row gap8" style="background:var(--warn-bg);border-color:transparent">${ic('alert')}<span class="sm"><b>بيانات محلية</b><span class="muted"> — تعرض النسخة المحفوظة على هذا الجهاز${lastSync ? ` (آخر مزامنة ${esc(S.ago(lastSync))})` : ''}</span></span></div>`;
+                renderTable(rows, res); renderPager(res);
+                return;
+              } catch {}
+            }
+            $('#tbl').innerHTML = S.emptyHtml('تعذّر تحميل البيانات', e.message, 'alert');
+          }
         }
         function renderTable(rows, res) {
           if (!rows.length) { $('#tbl').innerHTML = S.emptyHtml(cfg.emptyTitle || 'لا توجد بيانات', state.q ? 'لا نتائج مطابقة لبحثك' : cfg.emptySub || '', cfg.icon); return; }

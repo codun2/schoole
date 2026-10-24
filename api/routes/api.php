@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum', 'company'])->prefix('auth')->group(function (
 Route::middleware(['auth:sanctum', 'staff', 'company'])->prefix('app')->group(function () {
     Route::get('badges', [AuthController::class, 'badges']);
     Route::get('lookups', School\LookupController::class);
+    Route::get('sync', [School\SyncController::class, 'index']); // offline mirror feed (permission-filtered inside)
     Route::get('notifications', [School\NotificationController::class, 'index']);
     Route::post('notifications/read-all', [School\NotificationController::class, 'readAll']);
     Route::get('announcements', [School\NotificationController::class, 'announcements']);

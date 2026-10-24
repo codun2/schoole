@@ -48,7 +48,16 @@
   const cache = {};
   S.L = async function (keys) {
     const need = keys.filter((k) => !(k in cache));
-    if (need.length) { const d = await S.get('/app/lookups', { only: need.join(','), year: S.yearId() }); need.forEach((k) => (cache[k] = d[k] || [])); }
+    if (need.length) {
+      let d;
+      try { d = await S.get('/app/lookups', { only: need.join(','), year: S.yearId() }); }
+      catch (e) {
+        // offline → use the snapshot the mirror saved for this year
+        if (!(S.db && S.local && S.local.isOfflineError(e))) throw e;
+        d = (await S.db.getMeta('lookups:' + (S.yearId() || 'current'))) || {};
+      }
+      need.forEach((k) => (cache[k] = d[k] || []));
+    }
     const out = {}; keys.forEach((k) => (out[k] = cache[k])); return out;
   };
   S.L.clear = (...keys) => { (keys.length ? keys : Object.keys(cache)).forEach((k) => delete cache[k]); };
@@ -74,6 +83,7 @@
     window.addEventListener('hashchange', route);
     route();
     refreshBadges(); setInterval(refreshBadges, 60000);
+    if (S.sync) S.sync.schedule(); // offline mirror: delta sync now, every 10 min, and when back online
   };
 
   function navHtml(filter) {
@@ -114,6 +124,7 @@
               <a href="#/profile">${ic('user')} الملف الشخصي</a>
               <a href="#/profile">${ic('key')} تغيير كلمة المرور</a>
               ${S.can('settings') ? `<a href="#/settings">${ic('gear')} إعدادات المدرسة</a>` : ''}
+              <a href="#/local-data">${ic('shield')} النسخة المحلية</a>
               <button id="install-app" class="${installEvt ? '' : 'hide'}">${ic('download')} تثبيت التطبيق على الجهاز</button>
               <hr><button id="logout" style="color:var(--bad)">${ic('logout')} تسجيل الخروج</button>
             </div></div>

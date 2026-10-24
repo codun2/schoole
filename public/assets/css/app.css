@@ -99,7 +99,7 @@ body.collapsed .main{margin-inline-start:0}
 .tbtn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--text-2);position:relative;transition:.12s}
 .tbtn:hover{background:var(--soft);color:var(--accent)}
 .tbtn svg{width:20px;height:20px}
-.tbtn .dot{position:absolute;top:4px;inset-inline-end:4px;background:var(--bad);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:10px;display:grid;place-items:center;padding:0 4px;border:2px solid var(--card)}
+.tbtn .dot{position:absolute;top:3px;inset-inline-end:3px;background:var(--bad);color:#fff;font-size:8.5px;font-weight:700;line-height:1;min-width:13px;height:13px;border-radius:7px;display:grid;place-items:center;padding:0 3px;border:1.5px solid var(--card)}
 .tlang{font-size:13px;color:var(--text-2);padding:0 8px}
 .umenu{display:flex;align-items:center;gap:9px;padding:4px 8px 4px 4px;border-radius:12px;cursor:pointer;position:relative}
 .umenu:hover{background:var(--soft)}

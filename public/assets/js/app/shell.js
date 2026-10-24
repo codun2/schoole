@@ -196,7 +196,11 @@
     try {
       const b = await S.get('/app/badges');
       const set = (id, n) => { const d = document.getElementById(id); if (d) { d.textContent = n > 9 ? '9+' : n; d.classList.toggle('hide', !n); } };
-      set('bell-dot', b.notifications); set('ann-dot', b.announcements);
+      set('bell-dot', b.notifications);
+      // announcements have no server-side "seen" tracking, so track it client-side
+      let annSeen = 0; try { annSeen = +localStorage.getItem('sch_ann_seen') || 0; } catch {}
+      try { localStorage.setItem('sch_ann_total', String(b.announcements || 0)); } catch {}
+      set('ann-dot', Math.max(0, (b.announcements || 0) - annSeen));
       if (S.can('students')) { const a = await S.get('/app/applications', { status: 'new', per_page: 1 }); set('pill-app', a.total); }
     } catch {}
   }
@@ -204,6 +208,7 @@
 
   const NTYPE = { application: 'userPlus', installment: 'coins', license: 'shield', task: 'tasks', attendance: 'calCheck', info: 'info' };
   async function openNotifications() {
+    const bd = document.getElementById('bell-dot'); if (bd) bd.classList.add('hide'); // clear badge on open
     const m = S.modal({ title: 'الإشعارات', head: '<button class="btn ghost sm" id="readall">تحديد الكل كمقروء</button>', body: S.spinner, foot: false });
     const load = async () => {
       const d = await S.get('/app/notifications');
@@ -211,9 +216,12 @@
       m.body.querySelectorAll('a').forEach((a) => (a.onclick = () => m.close()));
     };
     m.$('#readall').onclick = async () => { await S.post('/app/notifications/read-all'); load(); refreshBadges(); };
-    load();
+    await load();
+    try { await S.post('/app/notifications/read-all'); } catch {} // opening = reading: keep the badge cleared
   }
   async function openAnnouncements() {
+    const ad = document.getElementById('ann-dot'); if (ad) ad.classList.add('hide'); // clear badge on open
+    try { localStorage.setItem('sch_ann_seen', localStorage.getItem('sch_ann_total') || '0'); } catch {}
     const m = S.modal({ title: 'الإعلانات والتعاميم', body: S.spinner, foot: S.can('settings') ? '<a class="btn soft" href="#/announcements">إدارة الإعلانات</a><button class="btn ghost" data-close>إغلاق</button>' : undefined });
     m.$('.mf a') && (m.$('.mf a').onclick = () => m.close());
     const d = await S.get('/app/announcements');

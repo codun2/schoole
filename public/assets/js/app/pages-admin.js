@@ -56,7 +56,7 @@
     perm: 'admin_affairs',
     async render(el) {
       let cur = new Date(); cur.setDate(1);
-      el.innerHTML = `${S.head('calendar')}<div class="toolbar"><button class="btn ghost icon" id="nx">${ic('chevR')}</button><h3 id="ttl" style="min-width:150px;text-align:center"></h3><button class="btn ghost icon" id="pv">${ic('chevL')}</button><button class="btn ghost sm" id="td">اليوم</button><div class="sp"></div><a class="btn danger" href="#/tasks?new=1">${ic('plus')} إضافة مهمة</a><a class="btn ghost" href="#/tasks">${ic('tasks')} عرض القائمة</a></div><div id="cal"></div>`;
+      el.innerHTML = `${S.head('calendar')}<div class="toolbar"><button class="btn ghost icon" id="nx">${ic('chevR')}</button><h3 id="ttl" style="min-width:150px;text-align:center"></h3><button class="btn ghost icon" id="pv">${ic('chevL')}</button><button class="btn ghost sm" id="td">اليوم</button><div class="sp"></div><a class="btn" href="#/tasks?new=1">${ic('plus')} إضافة مهمة</a><a class="btn ghost" href="#/tasks">${ic('tasks')} عرض القائمة</a></div><div id="cal"></div>`;
       const COL = { urgent: '#e0384c', important: '#d98a0b', normal: '#2f7ae5' };
       const draw = async () => {
         const y = cur.getFullYear(), mo = cur.getMonth();
@@ -124,7 +124,7 @@
   S.page('announcements', {
     perm: 'settings', title: 'الإعلانات والتعاميم',
     async render(el) {
-      el.innerHTML = `${S.head('announcements')}<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} إعلان جديد</button><span class="muted sm">تظهر الإعلانات للموظفين في الشريط العلوي، ولأولياء الأمور في بوابتهم حسب الجمهور المحدد.</span></div><div id="l"></div>`;
+      el.innerHTML = `${S.head('announcements')}<div class="toolbar"><button class="btn" id="add">${ic('plus')} إعلان جديد</button><span class="muted sm">تظهر الإعلانات للموظفين في الشريط العلوي، ولأولياء الأمور في بوابتهم حسب الجمهور المحدد.</span></div><div id="l"></div>`;
       const fields = [{ k: 'title', l: 'العنوان', req: true, full: true }, { k: 'audience', l: 'الجمهور', t: 'select', req: true, opts: [['all', 'الجميع'], ['staff', 'الموظفون'], ['guardians', 'أولياء الأمور']], def: 'all' }, { k: 'is_active', l: 'منشور', t: 'check', def: true }, { k: 'body', l: 'النص', t: 'textarea' }];
       const AUD = { all: 'الجميع', staff: 'الموظفون', guardians: 'أولياء الأمور' };
       const load = async () => {

@@ -36,14 +36,14 @@
             const opts = typeof f.opts === 'function' ? f.opts(lk) : f.opts;
             return `<label class="fld"><span>${esc(f.l)}</span><select class="inp" data-filter="${f.k}"><option value="">${esc(f.all || 'الكل')}</option>${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(state.f[f.k] ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
           }).join('')}
-          <button class="btn danger" id="go">${ic('search')} بحث</button>
+          <button class="btn" id="go">${ic('search')} بحث</button>
           ${cfg.exportCols ? `<button class="btn outline-ok" id="exp">${ic('download')} تصدير إكسل</button>` : ''}
         </div>` : '';
 
         el.innerHTML = `${S.head(rc.key, { year: cfg.year, title: cfg.title })}
           ${cfg.intro || ''}
           <div class="toolbar">
-            ${cfg.canAdd === false ? '' : `<button class="btn danger" id="add">${ic(cfg.addIcon || 'plus')} إضافة ${esc(cfg.singular || '')}</button>`}
+            ${cfg.canAdd === false ? '' : `<button class="btn" id="add">${ic(cfg.addIcon || 'plus')} إضافة ${esc(cfg.singular || '')}</button>`}
             ${cfg.importer ? `<button class="btn outline-ok" id="imp">${ic('upload')} استيراد من Excel</button>` : ''}
             ${(cfg.toolbar || []).map((b, i) => `<button class="btn ${b.cls || 'ghost'}" data-tb="${i}">${ic(b.ic || 'plus')} ${esc(b.l)}</button>`).join('')}
             ${cfg.chips ? `<div class="chips">${[['', 'الكل'], ...cfg.chips.items].map(([v, l]) => `<button class="chip ${String(state.f[cfg.chips.k] || '') === String(v) ? 'on' : ''}" data-chip="${esc(v)}">${esc(l)}</button>`).join('')}</div>` : ''}

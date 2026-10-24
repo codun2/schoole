@@ -44,7 +44,7 @@
     async schools() {
       const plans = (await S.get('/super/plans')).data;
       const st = { q: '', status: '' };
-      view.innerHTML = `<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} إضافة مدرسة</button><div class="chips">${[['', 'الكل'], ['active', 'مفعّلة'], ['pending', 'بانتظار التفعيل'], ['suspended', 'موقوفة']].map(([v, l]) => `<button class="chip ${v === '' ? 'on' : ''}" data-s="${v}">${l}</button>`).join('')}</div><div class="sp"></div><div class="search" style="min-width:260px">${ic('search')}<input class="inp" id="q" placeholder="بحث بالاسم أو البريد..."></div></div><div class="tbl-wrap"><div class="tbl-scroll" id="t"></div></div>`;
+      view.innerHTML = `<div class="toolbar"><button class="btn" id="add">${ic('plus')} إضافة مدرسة</button><div class="chips">${[['', 'الكل'], ['active', 'مفعّلة'], ['pending', 'بانتظار التفعيل'], ['suspended', 'موقوفة']].map(([v, l]) => `<button class="chip ${v === '' ? 'on' : ''}" data-s="${v}">${l}</button>`).join('')}</div><div class="sp"></div><div class="search" style="min-width:260px">${ic('search')}<input class="inp" id="q" placeholder="بحث بالاسم أو البريد..."></div></div><div class="tbl-wrap"><div class="tbl-scroll" id="t"></div></div>`;
       const fields = (row) => [{ k: 'name', l: 'اسم المدرسة', req: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'slug', l: 'المعرّف (slug)', dir: 'ltr', ph: 'تلقائي' }, { k: 'city', l: 'المدينة' }, { k: 'phone', l: 'الهاتف', t: 'tel' }, { k: 'email', l: 'البريد', t: 'email' }, { k: 'plan_id', l: 'الباقة', t: 'select', opts: plans.map((p) => [p.id, p.name]) }, { k: 'status', l: 'الحالة', t: 'select', opts: S.opts(S.ST.school), def: 'active' }, { k: 'trial_ends_at', l: 'نهاية التجربة', t: 'date' }, { k: 'subscription_ends_at', l: 'نهاية الاشتراك', t: 'date' }, ...(row ? [] : [{ t: 'sec', l: 'حساب مدير المدرسة' }, { k: 'admin_name', l: 'اسم المدير', req: true }, { k: 'admin_email', l: 'البريد', t: 'email', req: true }, { k: 'admin_password', l: 'كلمة المرور', t: 'password', req: true }])];
       const load = async () => {
         const d = await S.get('/super/schools', st);
@@ -67,7 +67,7 @@
       await load();
     },
     async plans() {
-      view.innerHTML = `<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} باقة جديدة</button></div><div class="grid g3" id="l"></div>`;
+      view.innerHTML = `<div class="toolbar"><button class="btn" id="add">${ic('plus')} باقة جديدة</button></div><div class="grid g3" id="l"></div>`;
       const fields = [{ k: 'name', l: 'اسم الباقة', req: true }, { k: 'description', l: 'الوصف' }, { k: 'price_monthly', l: 'السعر الشهري (ر.ع)', t: 'money' }, { k: 'price_yearly', l: 'السعر السنوي (ر.ع)', t: 'money' }, { k: 'max_students', l: 'الحد الأقصى للطلاب (0 = بلا حد)', t: 'number' }, { k: 'max_users', l: 'الحد الأقصى للمستخدمين (0 = بلا حد)', t: 'number' }, { k: 'sort', l: 'الترتيب', t: 'number' }, { k: 'is_active', l: 'متاحة للتسجيل', t: 'check', def: true }, { k: 'features_txt', l: 'المزايا (سطر لكل ميزة)', t: 'textarea' }];
       const pay = (v) => ({ ...v, features: (v.features_txt || '').split('\n').map((x) => x.trim()).filter(Boolean) });
       const load = async () => {
@@ -80,7 +80,7 @@
       await load();
     },
     async ann() {
-      view.innerHTML = `<div class="toolbar"><button class="btn danger" id="add">${ic('plus')} إعلان لكل المدارس</button></div><div id="l"></div>`;
+      view.innerHTML = `<div class="toolbar"><button class="btn" id="add">${ic('plus')} إعلان لكل المدارس</button></div><div id="l"></div>`;
       const AUD = { all: 'الجميع', staff: 'موظفو المدارس', guardians: 'أولياء الأمور' };
       const load = async () => { const d = (await S.get('/super/announcements')).data; view.querySelector('#l').innerHTML = d.length ? d.map((a) => `<div class="card pad mb8 row between"><div><b>${esc(a.title)}</b> <span class="bdg l-info">${AUD[a.audience]}</span><div class="t2 sm">${esc(a.body || '')}</div></div><button class="ibtn d" data-d="${a.id}">${ic('trash')}</button></div>`).join('') : S.emptyHtml('لا توجد إعلانات'); view.querySelectorAll('[data-d]').forEach((b) => (b.onclick = async () => { await S.del('/super/announcements/' + b.dataset.d); load(); })); };
       view.querySelector('#add').onclick = () => S.formModal({ title: 'إعلان منصة', fields: [{ k: 'title', l: 'العنوان', req: true, full: true }, { k: 'audience', l: 'الجمهور', t: 'select', req: true, opts: Object.entries(AUD), def: 'staff' }, { k: 'is_active', l: 'منشور', t: 'check', def: true }, { k: 'body', l: 'النص', t: 'textarea' }], values: { audience: 'staff', is_active: true }, onSave: async (v) => { await S.post('/super/announcements', v); load(); } });

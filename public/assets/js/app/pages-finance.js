@@ -58,7 +58,15 @@
     let studentsRes;
     try { studentsRes = await S.get('/app/students', { all: 1, year: S.yearId(), status: 'active' }); if (studentsRes._fromCache && S.local) throw Object.assign(new Error('cache'), { status: 503, offline: true }); }
     catch (e) { if (!(S.local && S.local.isOfflineError(e))) throw e; studentsRes = await S.local.query('students', { f: { status: 'active' }, year: S.yearId(), perPage: 5000, sort: ['name', 'asc'] }); } // offline: active students from the mirror
-    const students = studentsRes.data;
+    // one contract per student per academic year: hide students who already have a (non-cancelled) contract
+    let taken = new Set();
+    try {
+      let cr;
+      try { cr = await S.get('/app/contracts', { all: 1, year: S.yearId() }); if (cr._fromCache && S.local) throw Object.assign(new Error('cache'), { status: 503, offline: true }); }
+      catch (e) { if (!(S.local && S.local.isOfflineError(e))) throw e; cr = await S.local.query('contracts', { year: S.yearId(), perPage: 5000 }); }
+      taken = new Set((cr.data || []).filter((c) => c.status !== 'cancelled' && !(existing && String(c.id) === String(existing.id))).map((c) => String(c.student_id)));
+    } catch {}
+    const students = studentsRes.data.filter((x) => !taken.has(String(x.id)) || (existing && String(x.id) === String(existing.student_id)));
     const c = existing || {};
     const state = {
       student_id: c.student_id || preset.student_id || '',

@@ -1501,4 +1501,5 @@ window.SCH_DICT = {
   'سيأخذ رقمه الرسمي وتتولّد أقساطه عند الرفع إلى الخادم': 'It will get its official number and installments when uploaded to the server',
   'سيُفعَّل العقد وتتولّد أقساطه عند الرفع': 'The contract will be activated and its installments generated on upload',
   'لا توجد نسخة محفوظة من هذا العقد على الجهاز': 'No saved copy of this contract on the device',
+  'يوجد عقد لهذا الطالب في السنة الدراسية الحالية — عدّله أو ألغِه بدلاً من إنشاء عقد جديد.': 'This student already has a contract for the current academic year — edit or cancel it instead of creating a new one.',
 };

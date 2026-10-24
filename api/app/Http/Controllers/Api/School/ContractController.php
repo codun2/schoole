@@ -71,8 +71,12 @@ class ContractController extends ResourceController
     public function store(Request $request)
     {
         $data = $request->validate($this->rules($request, null));
-        $contract = DB::transaction(function () use ($data, $request) {
-            $student = Student::findOrFail($data['student_id']);
+        $student = Student::findOrFail($data['student_id']);
+        // one live contract per student per academic year (cancelled ones don't count)
+        if (Contract::where('student_id', $student->id)->where('academic_year_id', $student->academic_year_id)->where('status', '!=', 'cancelled')->exists()) {
+            return response()->json(['message' => 'يوجد عقد لهذا الطالب في السنة الدراسية الحالية — عدّله أو ألغِه بدلاً من إنشاء عقد جديد.'], 422);
+        }
+        $contract = DB::transaction(function () use ($data, $request, $student) {
             $year = AcademicYear::find($student->academic_year_id);
             $c = new Contract;
             $c->academic_year_id = $student->academic_year_id;

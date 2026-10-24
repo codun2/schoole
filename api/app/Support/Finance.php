@@ -52,20 +52,33 @@ class Finance
         if ((float) $c->paid > 0) {
             return; // never reshuffle a schedule that already has money on it
         }
-        $c->installments()->delete();
+        $c->installments()->get()->each->delete(); // per-model so offline mirrors get tombstones
 
-        $n = max(1, (int) $c->installments_count);
-        $start = Carbon::parse($c->first_due_date ?: $c->date);
-        $part = floor(((float) $c->total / $n) * 1000) / 1000;
-
-        for ($i = 1; $i <= $n; $i++) {
-            $amount = $i === $n ? self::r((float) $c->total - $part * ($n - 1)) : $part;
+        $rows = [];
+        $custom = is_array($c->schedule) ? array_values($c->schedule) : [];
+        if (count($custom)) {
+            // dates/amounts edited in the builder; the last row absorbs any rounding so the sum equals the total
+            $sumBut = 0;
+            foreach ($custom as $i => $x) {
+                $amount = $i === count($custom) - 1 ? self::r((float) $c->total - $sumBut) : self::r((float) ($x['amount'] ?? 0));
+                $sumBut += $amount;
+                $rows[] = ['due_date' => Carbon::parse($x['due_date'])->toDateString(), 'amount' => max(0, $amount)];
+            }
+        } else {
+            $n = max(1, (int) $c->installments_count);
+            $start = Carbon::parse($c->first_due_date ?: $c->date);
+            $part = floor(((float) $c->total / $n) * 1000) / 1000;
+            for ($i = 1; $i <= $n; $i++) {
+                $rows[] = ['due_date' => $start->copy()->addMonthsNoOverflow($i - 1)->toDateString(), 'amount' => $i === $n ? self::r((float) $c->total - $part * ($n - 1)) : $part];
+            }
+        }
+        foreach ($rows as $i => $r) {
             Installment::create([
                 'contract_id' => $c->id,
                 'student_id'  => $c->student_id,
-                'seq'         => $i,
-                'due_date'    => $start->copy()->addMonthsNoOverflow($i - 1)->toDateString(),
-                'amount'      => $amount,
+                'seq'         => $i + 1,
+                'due_date'    => $r['due_date'],
+                'amount'      => $r['amount'],
                 'paid'        => 0,
                 'status'      => 'pending',
             ]);

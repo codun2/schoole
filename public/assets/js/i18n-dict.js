@@ -1502,4 +1502,9 @@ window.SCH_DICT = {
   'سيُفعَّل العقد وتتولّد أقساطه عند الرفع': 'The contract will be activated and its installments generated on upload',
   'لا توجد نسخة محفوظة من هذا العقد على الجهاز': 'No saved copy of this contract on the device',
   'يوجد عقد لهذا الطالب في السنة الدراسية الحالية — عدّله أو ألغِه بدلاً من إنشاء عقد جديد.': 'This student already has a contract for the current academic year — edit or cancel it instead of creating a new one.',
+  'آخر قسط يُضبط تلقائياً ليكتمل الإجمالي': 'The last installment is adjusted automatically to complete the total',
+  'إعادة التوزيع بالتساوي': 'Redistribute evenly',
+  'يمكنك تعديل تاريخ أو مبلغ أي قسط؛ الأخير يُضبط تلقائياً.': 'You can edit the date or amount of any installment; the last one adjusts automatically.',
+  'المبالغ تتجاوز الإجمالي': 'Amounts exceed the total',
+  'مبالغ الأقساط تتجاوز إجمالي العقد — راجع الجدول': 'Installment amounts exceed the contract total — check the schedule',
 };

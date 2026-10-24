@@ -74,7 +74,14 @@
       items: (c.items || []).map((i) => ({ fee_item_id: i.fee_item_id, name: i.name, amount: +i.amount })),
       bus_id: c.bus_id || '', discount_type: c.discount_type || 'fixed', discount_value: +c.discount_value || 0, discount_reason: c.discount_reason || '',
       tax_rate: c.tax_rate != null ? +c.tax_rate : +(me.company.tax_rate || 0), installments_count: c.installments_count || 3, first_due_date: S.d(c.first_due_date) !== '—' ? S.d(c.first_due_date) : S.today(), notes: c.notes || '',
+      // null = even monthly split from first_due_date; an array = dates/amounts the user edited (kept in sync with the total)
+      schedule: (c.schedule && c.schedule.length) ? c.schedule.map((x) => ({ due_date: S.d(x.due_date), amount: +x.amount })) : (c.installments && c.installments.length ? c.installments.map((x) => ({ due_date: S.d(x.due_date), amount: +x.amount })) : null),
     };
+    const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; // local date, never shifted by the timezone
+    const r3 = (n) => Math.round((+n || 0) * 1000) / 1000;
+    const autoSchedule = (total) => { const n = Math.min(24, Math.max(1, +state.installments_count || 1)); const per = r3(total / n); return Array.from({ length: n }, (_, i) => { const d = new Date(state.first_due_date + 'T00:00:00'); d.setMonth(d.getMonth() + i); return { due_date: ymd(d), amount: i === n - 1 ? r3(total - per * (n - 1)) : per }; }); };
+    // current rows: custom ones re-balanced so they always add up to the contract total (last row absorbs the difference)
+    const schedule = (total) => { if (!state.schedule) return autoSchedule(total); const rows = state.schedule.map((x) => ({ ...x })); const sumBut = rows.slice(0, -1).reduce((a, x) => a + r3(x.amount), 0); rows[rows.length - 1].amount = r3(total - sumBut); return rows; };
     el.innerHTML = `<div class="crumbs"><a class="acc-t" href="#/contracts">العقود</a> ${ic('chevL')} <b>${existing ? 'تعديل' : 'عقد جديد'}</b></div>
       <div class="page-h"><div><h2>${existing ? 'تعديل العقد ' + esc(c.number) : 'عقد تسجيل جديد'}</h2><p>اختر الطالب وبنود الرسوم والخصم وجدولة الأقساط.</p></div>
         <div class="row"><a class="btn ghost" href="#/contracts">${ic('chevR')} رجوع للقائمة</a></div></div>
@@ -114,7 +121,8 @@
           <div class="r"><span>الإجمالي الفرعي</span><b>${S.money(k.sub)}</b></div><div class="r"><span>الخصم</span><b class="bad-t">− ${S.money(k.disc)}</b></div><div class="r"><span>الضريبة</span><b>${S.money(k.tax)}</b></div><div class="r t"><span>الإجمالي</span><span>${S.money(k.total)}</span></div></div>
         <div class="sec-t">${ic('calendar')} جدولة الأقساط</div>
         <div class="fgrid"><label class="fld"><span>عدد الأقساط</span><input class="inp" id="ic" type="number" min="1" max="24" value="${state.installments_count}" dir="ltr"></label><label class="fld"><span>تاريخ أول قسط</span><input class="inp" id="fd" type="date" value="${state.first_due_date}" dir="ltr"></label></div>
-        <div class="mt8">${Array.from({ length: Math.min(24, Math.max(1, +state.installments_count || 1)) }, (_, i) => { const d = new Date(state.first_due_date + 'T00:00:00'); d.setMonth(d.getMonth() + i); return `<div class="li" style="padding:6px 0"><span class="cnt m">${i + 1}</span><span class="t num sm">${d.toISOString().slice(0, 10)}</span><b class="num">${S.fmtN(k.per)}</b></div>`; }).join('')}</div>
+        <div class="mt8">${schedule(k.total).map((x, i, arr) => `<div class="li" style="padding:4px 0;gap:8px"><span class="cnt m">${i + 1}</span><input class="inp num" type="date" data-sd="${i}" value="${x.due_date}" dir="ltr" style="height:32px;flex:1"><input class="inp num" type="number" step="0.001" min="0" data-sa="${i}" value="${x.amount}" dir="ltr" style="height:32px;width:110px" ${i === arr.length - 1 ? 'readonly title="آخر قسط يُضبط تلقائياً ليكتمل الإجمالي"' : ''}>${x.amount < 0 ? '<span class="bad-t xs">المبالغ تتجاوز الإجمالي</span>' : ''}</div>`).join('')}
+          ${state.schedule ? `<button class="btn ghost xs mt8" id="sreset">${ic('refresh')} إعادة التوزيع بالتساوي</button>` : '<p class="muted xs mt8">يمكنك تعديل تاريخ أو مبلغ أي قسط؛ الأخير يُضبط تلقائياً.</p>'}</div>
       </div></div>`;
       const $ = (s) => root.querySelector(s);
       $('#st').onchange = (e) => { state.student_id = e.target.value; pickDefaults(); draw(); };
@@ -125,8 +133,12 @@
       $('#dr').oninput = (e) => (state.discount_reason = e.target.value);
       $('#tx').onchange = (e) => { state.tax_rate = +e.target.value || 0; draw(); };
       $('#nt').oninput = (e) => (state.notes = e.target.value);
-      $('#ic').onchange = (e) => { state.installments_count = Math.max(1, Math.min(24, +e.target.value || 1)); draw(); };
-      $('#fd').onchange = (e) => { state.first_due_date = e.target.value; draw(); };
+      $('#ic').onchange = (e) => { state.installments_count = Math.max(1, Math.min(24, +e.target.value || 1)); state.schedule = null; draw(); };
+      $('#fd').onchange = (e) => { state.first_due_date = e.target.value; state.schedule = null; draw(); };
+      const customize = () => { if (!state.schedule) state.schedule = schedule(calc().total); };
+      root.querySelectorAll('[data-sd]').forEach((inp) => (inp.onchange = () => { customize(); state.schedule[+inp.dataset.sd].due_date = inp.value; draw(); }));
+      root.querySelectorAll('[data-sa]').forEach((inp) => (inp.onchange = () => { customize(); state.schedule[+inp.dataset.sa].amount = r3(inp.value); draw(); }));
+      $('#sreset') && ($('#sreset').onclick = () => { state.schedule = null; draw(); });
       root.querySelectorAll('[data-fee]').forEach((b) => (b.onclick = () => { const f = lk.fee_items.find((x) => x.id === +b.dataset.fee); const i = state.items.findIndex((x) => x.fee_item_id === f.id); if (i >= 0) state.items.splice(i, 1); else state.items.push({ fee_item_id: f.id, name: f.name, amount: +f.amount }); draw(); }));
       root.querySelectorAll('[data-ln]').forEach((inp) => (inp.onchange = () => { const it = state.items[+inp.dataset.ln]; it[inp.dataset.k] = inp.dataset.k === 'amount' ? +inp.value || 0 : inp.value; draw(); }));
       root.querySelectorAll('[data-rm]').forEach((b) => (b.onclick = () => { state.items.splice(+b.dataset.rm, 1); draw(); }));
@@ -138,8 +150,9 @@
       if (!state.items.length && !state.bus_id) return S.toast('أضف بنداً واحداً على الأقل', 'bad');
       S.btnBusy(btn, true);
       try {
-        const k = calc();
-        const body = { ...state, items: state.items.filter((i) => i.name), activate, subtotal: k.sub, discount: k.disc, tax: k.tax, total: k.total }; // totals are recomputed by the server; they also feed the offline copy
+        const k = calc(), sched = schedule(k.total);
+        if (sched.some((x) => x.amount < 0)) { S.btnBusy(btn, false); return S.toast('مبالغ الأقساط تتجاوز إجمالي العقد — راجع الجدول', 'bad'); }
+        const body = { ...state, items: state.items.filter((i) => i.name), activate, subtotal: k.sub, discount: k.disc, tax: k.tax, total: k.total, installments_count: sched.length, schedule: sched }; // totals are recomputed by the server; they also feed the offline copy
         const r = existing ? await S.patch('/app/contracts/' + existing.id, body) : await S.post('/app/contracts', body);
         if (r && r._queued) { location.hash = '#/contracts'; return; } // saved offline: back to the list where it shows as pending
         S.toast(activate ? 'تم حفظ العقد وتفعيله وتوليد الأقساط' : 'تم حفظ العقد كمسودة', 'ok');
@@ -158,7 +171,7 @@
       let c;
       try { c = String(id).startsWith('tmp_') ? null : await S.get('/app/contracts/' + id); if (c && c._fromCache && S.db) c = null; }
       catch (e) { if (!(S.local && S.local.isOfflineError(e))) throw e; }
-      if (!c && S.db) { c = await S.db.get('contracts', id); if (c) c = { ...c, items: c.items || [], installments: c.installments || [], payments: c.payments || [] }; }
+      if (!c && S.db) { c = await S.db.get('contracts', id); if (c) c = { ...c, items: c.items || [], installments: (c.installments && c.installments.length) ? c.installments : (c.schedule || []).map((x, i) => ({ seq: i + 1, due_date: x.due_date, amount: x.amount, paid: 0, remaining: x.amount, status: 'pending' })), payments: c.payments || [] }; }
       if (!c) throw new Error('لا توجد نسخة محفوظة من هذا العقد على الجهاز');
       m.$('h3').innerHTML = `العقد <span class="num">${esc(c.number)}</span> ${S.badge(S.ST.contract, c.status)}`;
       const pct = +c.total ? Math.round((+c.paid * 100) / +c.total) : 0;

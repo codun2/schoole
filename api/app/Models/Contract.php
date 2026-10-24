@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Contract extends TenantModel
 {
-    protected $casts = ['date' => 'date:Y-m-d', 'first_due_date' => 'date:Y-m-d', 'subtotal' => 'decimal:3', 'discount_value' => 'decimal:3', 'discount' => 'decimal:3', 'tax' => 'decimal:3', 'total' => 'decimal:3', 'paid' => 'decimal:3', 'remaining' => 'decimal:3', 'tax_rate' => 'decimal:2'];
+    protected $casts = ['schedule' => 'array', 'date' => 'date:Y-m-d', 'first_due_date' => 'date:Y-m-d', 'subtotal' => 'decimal:3', 'discount_value' => 'decimal:3', 'discount' => 'decimal:3', 'tax' => 'decimal:3', 'total' => 'decimal:3', 'paid' => 'decimal:3', 'remaining' => 'decimal:3', 'tax_rate' => 'decimal:2'];
     public function student(): BelongsTo { return $this->belongsTo(Student::class); }
     public function guardian(): BelongsTo { return $this->belongsTo(Guardian::class); }
     public function grade(): BelongsTo { return $this->belongsTo(Grade::class); }

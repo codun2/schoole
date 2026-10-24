@@ -56,6 +56,9 @@ class ContractController extends ResourceController
             'tax_rate'           => ['nullable', 'numeric', 'min:0', 'max:100'],
             'installments_count' => ['required', 'integer', 'min:1', 'max:24'],
             'first_due_date'     => ['nullable', 'date'],
+            'schedule'           => ['nullable', 'array', 'max:24'],
+            'schedule.*.due_date' => ['required', 'date'],
+            'schedule.*.amount'  => ['required', 'numeric', 'min:0'],
             'notes'              => ['nullable', 'string'],
             'activate'           => ['boolean'],
         ];
@@ -127,6 +130,7 @@ class ContractController extends ResourceController
             'tax_rate'           => $data['tax_rate'] ?? 0,
             'installments_count' => $data['installments_count'],
             'first_due_date'     => $data['first_due_date'] ?? $data['date'],
+            'schedule'           => ! empty($data['schedule']) ? array_values($data['schedule']) : null, // edited dates/amounts; null = even split
             'notes'              => $data['notes'] ?? null,
         ]);
         $c->status = $c->status ?: 'draft';

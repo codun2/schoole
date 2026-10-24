@@ -45,7 +45,7 @@ class ContractController extends ResourceController
         return [
             'student_id'         => ['required', 'integer', $this->owned('students')],
             'date'               => ['required', 'date'],
-            'items'              => ['required', 'array', 'min:1'],
+            'items'              => ['nullable', 'array'], // optional: a contract may be bus-only (or even empty)
             'items.*.fee_item_id' => ['nullable', 'integer'],
             'items.*.name'       => ['required', 'string', 'max:255'],
             'items.*.amount'     => ['required', 'numeric', 'min:0'],
@@ -109,7 +109,7 @@ class ContractController extends ResourceController
 
     private function fillContract(Contract $c, Student $student, array $data): void
     {
-        $items = $data['items'];
+        $items = $data['items'] ?? [];
         if (! empty($data['bus_id'])) {
             $bus = \App\Models\Bus::find($data['bus_id']);
             if ($bus && ! collect($items)->contains(fn ($i) => str_contains($i['name'], 'حافلة'))) {

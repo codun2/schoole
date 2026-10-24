@@ -147,7 +147,8 @@
     draw();
     const save = async (activate, btn) => {
       if (!state.student_id) return S.toast('اختر الطالب', 'bad');
-      if (!state.items.length && !state.bus_id) return S.toast('أضف بنداً واحداً على الأقل', 'bad');
+      // items are optional (a contract may be bus-only); just make sure a zero-total contract is intentional
+      if (calc().total <= 0 && !(await S.confirm('إجمالي هذا العقد صفر — لا بنود ولا حافلة. هل تريد حفظه على أي حال؟', 'حفظ', false))) return;
       S.btnBusy(btn, true);
       try {
         const k = calc(), sched = schedule(k.total);

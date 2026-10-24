@@ -1509,4 +1509,5 @@ window.SCH_DICT = {
   'مبالغ الأقساط تتجاوز إجمالي العقد — راجع الجدول': 'Installment amounts exceed the contract total — check the schedule',
   '— كل الطلاب النشطين لديهم عقود لهذه السنة —': '— All active students already have contracts this year —',
   '— لا يوجد طلاب نشطون في هذه السنة —': '— No active students this year —',
+  'إجمالي هذا العقد صفر — لا بنود ولا حافلة. هل تريد حفظه على أي حال؟': 'This contract totals zero — no items and no bus. Save it anyway?',
 };

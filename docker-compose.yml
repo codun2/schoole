@@ -30,7 +30,7 @@ services:
     environment:
       APP_ENV: production
       PHP_CLI_SERVER_WORKERS: "6"
-      APP_URL: http://109.199.98.171:8099
+      APP_URL: https://schoole.smartunita.com
       DB_CONNECTION: mysql
       DB_HOST: schoole-db
       DB_PORT: "3306"

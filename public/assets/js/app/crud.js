@@ -60,10 +60,24 @@
           if (state.sort) { q.sort = state.sort[0]; q.dir = state.sort[1]; }
           return q;
         };
+        const slug = cfg.api.replace(/^\/app\//, '');
+        const mirrored = async () => !!(S.db && S.local && ((await S.db.getMeta('tables')) || []).includes(slug));
+        // the offline mirror: server rows + changes made offline (flagged pending)
+        async function loadLocal() {
+          const res = await S.local.query(slug, { q: state.q, f: { ...(cfg.fixed || {}), ...state.f }, year: cfg.year ? S.yearId() : undefined, page: state.page, sort: state.sort });
+          const rows = res.data; ctx.rows = rows; ctx.res = res;
+          $('#total').textContent = 'الإجمالي: ' + S.num(res.total);
+          const lastSync = await S.db.getMeta('last_sync_at');
+          $('#summary').innerHTML = `<div class="card pad mb16 row gap8" style="background:var(--warn-bg);border-color:transparent">${ic('alert')}<span class="sm"><b>بيانات محلية</b><span class="muted"> — تعرض النسخة المحفوظة على هذا الجهاز${lastSync ? ` (آخر مزامنة ${esc(S.ago(lastSync))})` : ''}</span></span></div>`;
+          renderTable(rows, res); renderPager(res);
+        }
         async function load() {
           $('#tbl').innerHTML = S.spinner;
           try {
+            // offline: the mirror beats the service worker's stale cached list (it includes offline changes)
+            if (navigator.onLine === false && (await mirrored())) { await loadLocal(); return; }
             const res = await S.get(cfg.api, query());
+            if (res && res._fromCache && (await mirrored())) { await loadLocal(); return; }
             const rows = res.data || [];
             ctx.rows = rows; ctx.res = res;
             $('#total').textContent = 'الإجمالي: ' + S.num(res.total ?? rows.length);
@@ -72,20 +86,7 @@
             renderPager(res);
           } catch (e) {
             // server unreachable → serve the list from the offline mirror when this table is mirrored
-            if (S.local && S.local.isOfflineError(e)) {
-              try {
-                const slug = cfg.api.replace(/^\/app\//, '');
-                const tables = (await S.db.getMeta('tables')) || [];
-                if (!tables.includes(slug)) throw e;
-                const res = await S.local.query(slug, { q: state.q, f: { ...(cfg.fixed || {}), ...state.f }, year: cfg.year ? S.yearId() : undefined, page: state.page, sort: state.sort });
-                const rows = res.data; ctx.rows = rows; ctx.res = res;
-                $('#total').textContent = 'الإجمالي: ' + S.num(res.total);
-                const lastSync = await S.db.getMeta('last_sync_at');
-                $('#summary').innerHTML = `<div class="card pad mb16 row gap8" style="background:var(--warn-bg);border-color:transparent">${ic('alert')}<span class="sm"><b>بيانات محلية</b><span class="muted"> — تعرض النسخة المحفوظة على هذا الجهاز${lastSync ? ` (آخر مزامنة ${esc(S.ago(lastSync))})` : ''}</span></span></div>`;
-                renderTable(rows, res); renderPager(res);
-                return;
-              } catch {}
-            }
+            if (S.local && S.local.isOfflineError(e)) { try { if (await mirrored()) { await loadLocal(); return; } } catch {} }
             $('#tbl').innerHTML = S.emptyHtml('تعذّر تحميل البيانات', e.message, 'alert');
           }
         }

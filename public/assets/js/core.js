@@ -46,6 +46,8 @@
     }
     // keep the offline mirror in step with writes that succeeded online
     if (method !== 'GET' && !opts.replay && S.outbox && S.outbox.afterOnlineWrite) S.outbox.afterOnlineWrite(method, path, data).catch(() => {});
+    // served by the service worker from its cache (network down): callers may prefer the local mirror
+    if (data && typeof data === 'object' && res.headers.get('X-Sch-Cache') === 'fallback') Object.defineProperty(data, '_fromCache', { value: true, enumerable: false });
     return data;
   };
   S.get = (p, query) => S.api(p, { query });

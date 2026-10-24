@@ -57,6 +57,17 @@
         d = (await S.db.getMeta('lookups:' + (S.yearId() || 'current'))) || {};
       }
       need.forEach((k) => (cache[k] = d[k] || []));
+      // rows created offline (still pending upload) must be selectable in dropdowns too
+      if (S.db && S.outbox) {
+        const SLUG = { grades: 'grades', sections: 'sections', guardians: 'guardians', buses: 'buses', fee_items: 'fee-items', branches: 'branches', departments: 'departments', job_titles: 'job-titles', employees: 'employees', teachers: 'employees', leave_types: 'leave-types', cash_accounts: 'cash-accounts', customers: 'customers', suppliers: 'suppliers', expense_categories: 'expense-categories', correspondence_categories: 'correspondence-categories', subjects: 'subjects', exam_terms: 'exam-terms', eval_criteria: 'evaluation-criteria', eval_periods: 'evaluation-periods' };
+        for (const k of need) {
+          if (!SLUG[k]) continue;
+          try {
+            const pending = (await S.db.all(SLUG[k])).filter((r) => r._pending && String(r.id).startsWith('tmp_') && (k !== 'teachers' || r.is_teacher));
+            if (pending.length) cache[k] = [...cache[k].filter((x) => !pending.some((p) => p.id === x.id)), ...pending];
+          } catch {}
+        }
+      }
     }
     const out = {}; keys.forEach((k) => (out[k] = cache[k])); return out;
   };

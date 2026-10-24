@@ -73,7 +73,12 @@ async function networkFirst(req, cacheName, fallbackPath) {
   } catch (err) {
     const c = await caches.open(cacheName);
     const hit = await c.match(req, { ignoreVary: true }) || (fallbackPath ? await c.match(fallbackPath) : null);
-    if (hit) return hit;
+    if (hit) {
+      if (cacheName !== API_CACHE) return hit;
+      // mark cache-served API data so the app can prefer its (fresher) local mirror for mirrored tables
+      const h = new Headers(hit.headers); h.set('X-Sch-Cache', 'fallback');
+      return new Response(hit.body, { status: hit.status, statusText: hit.statusText, headers: h });
+    }
     if (cacheName === API_CACHE) {
       return new Response(JSON.stringify({ offline: true, message: 'أنت غير متصل بالإنترنت ولا توجد نسخة محفوظة من هذه البيانات على الجهاز.' }), {
         status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8' },

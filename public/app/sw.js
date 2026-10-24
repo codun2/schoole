@@ -38,8 +38,9 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
+let apiPausedUntil = 0; // after a logout wipe, ignore late in-flight responses for a few seconds
 self.addEventListener('message', (e) => {
-  if (e.data === 'CLEAR_API') e.waitUntil(caches.delete(API_CACHE)); // on logout: never leak data between accounts
+  if (e.data === 'CLEAR_API') { apiPausedUntil = Date.now() + 5000; e.waitUntil(caches.delete(API_CACHE)); } // on logout: never leak data between accounts
 });
 
 const isApi = (url) => url.pathname.startsWith('/api/');
@@ -67,7 +68,7 @@ self.addEventListener('fetch', (e) => {
 async function networkFirst(req, cacheName, fallbackPath) {
   try {
     const res = await fetch(req);
-    if (res && res.ok) { const c = await caches.open(cacheName); c.put(req, res.clone()).catch(() => {}); }
+    if (res && res.ok && !(cacheName === API_CACHE && Date.now() < apiPausedUntil)) { const c = await caches.open(cacheName); c.put(req, res.clone()).catch(() => {}); }
     return res;
   } catch (err) {
     const c = await caches.open(cacheName);

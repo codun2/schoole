@@ -53,7 +53,7 @@ Route::middleware(['auth:sanctum', 'company'])->prefix('auth')->group(function (
 | School dashboard (admin + staff)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'staff', 'company'])->prefix('app')->group(function () {
+Route::middleware(['auth:sanctum', 'staff', 'company', 'idem'])->prefix('app')->group(function () {
     Route::get('badges', [AuthController::class, 'badges']);
     Route::get('lookups', School\LookupController::class);
     Route::get('sync', [School\SyncController::class, 'index']); // offline mirror feed (permission-filtered inside)
@@ -83,7 +83,7 @@ Route::middleware(['auth:sanctum', 'staff', 'company'])->prefix('app')->group(fu
         crud('subjects', School\SubjectController::class);
         crud('exam-terms', School\ExamTermController::class);
         Route::get('grades/sheet', [School\MarkController::class, 'sheet']);
-        Route::post('grades', [School\MarkController::class, 'save']);
+        Route::post('grades/sheet', [School\MarkController::class, 'save']); // was POST grades — it shadowed GradeController@store (creating a grade)
         Route::get('grades/report-card/{student}', [School\MarkController::class, 'reportCard'])->whereNumber('student');
         Route::get('grades/class-results', [School\MarkController::class, 'classResults']);
 

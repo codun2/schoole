@@ -111,7 +111,7 @@
               </tbody></table></div>`;
             sh.querySelectorAll('input[data-i]').forEach((inp) => (inp.oninput = () => { const i = +inp.dataset.i; let v = inp.value === '' ? null : Math.min(max, Math.max(0, +inp.value)); st[i].mark = v; sh.querySelector(`[data-g="${i}"]`).innerHTML = v != null ? gBadge(gradeOf((v / max) * 100)) : '—'; }));
             sh.querySelectorAll('input[data-n]').forEach((inp) => (inp.oninput = () => (st[+inp.dataset.n].note = inp.value)));
-            const sv = sh.querySelector('#save'); if (sv) sv.onclick = async (e) => { S.btnBusy(e.currentTarget, true); try { await S.post('/app/grades', { section_id: body.querySelector('#sec').value, subject_id: subjId, exam_term_id: body.querySelector('#term').value, marks: st.map((x) => ({ student_id: x.id, mark: x.mark, note: x.note })) }); S.toast('تم حفظ الدرجات', 'ok'); d.saved = true; draw(); } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(e.currentTarget, false); } };
+            const sv = sh.querySelector('#save'); if (sv) sv.onclick = async (e) => { S.btnBusy(e.currentTarget, true); try { await S.post('/app/grades/sheet', { section_id: body.querySelector('#sec').value, subject_id: subjId, exam_term_id: body.querySelector('#term').value, marks: st.map((x) => ({ student_id: x.id, mark: x.mark, note: x.note })) }); S.toast('تم حفظ الدرجات', 'ok'); d.saved = true; draw(); } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(e.currentTarget, false); } };
           };
           draw();
         };

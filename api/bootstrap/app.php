@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super'   => \App\Http\Middleware\EnsureSuperAdmin::class,
             'guardian' => \App\Http\Middleware\EnsureGuardian::class,
             'teacher' => \App\Http\Middleware\EnsureTeacher::class,
+            'idem'    => \App\Http\Middleware\IdempotencyKey::class,
         ]);
 
         // CRITICAL (multi-tenant isolation): the tenant context must be bound

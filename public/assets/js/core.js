@@ -13,18 +13,27 @@
 
   // ---------------------------------------------------------------------- api
   S.api = async function (path, opts = {}) {
-    const headers = { Accept: 'application/json' };
+    const headers = { Accept: 'application/json', ...(opts.headers || {}) };
     const t = S.token(); if (t) headers.Authorization = 'Bearer ' + t;
-    let body = opts.body;
+    const method = (opts.method || 'GET').toUpperCase();
+    const rawBody = opts.body;
+    let body = rawBody;
     if (body && !(body instanceof FormData)) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
     let url = '/api' + path;
     if (opts.query) {
       const q = Object.entries(opts.query).filter(([, v]) => v !== undefined && v !== null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
       if (q) url += (url.includes('?') ? '&' : '?') + q;
     }
+    // Offline-first writes: when the network is gone, safe writes go to the local outbox (S.outbox,
+    // offline-db.js) and are replayed automatically later. Replays themselves (opts.replay) never re-queue.
+    const queueable = method !== 'GET' && !opts.replay && S.outbox && !(rawBody instanceof FormData) && S.outbox.canQueue(method, path);
+    if (queueable && navigator.onLine === false) return S.outbox.enqueue({ method, path, query: opts.query, body: rawBody });
     let res;
-    try { res = await fetch(url, { method: opts.method || 'GET', headers, body }); }
-    catch { const off = typeof navigator !== 'undefined' && navigator.onLine === false; const e = new Error(off ? 'أنت غير متصل بالإنترنت — هذه العملية تحتاج اتصالاً، أعد المحاولة عند عودة الشبكة.' : 'تعذّر الاتصال بالخادم، تحقق من الإنترنت.'); e.status = 0; throw e; }
+    try { res = await fetch(url, { method, headers, body }); }
+    catch {
+      if (queueable) return S.outbox.enqueue({ method, path, query: opts.query, body: rawBody });
+      const off = typeof navigator !== 'undefined' && navigator.onLine === false; const e = new Error(off ? 'أنت غير متصل بالإنترنت — هذه العملية تحتاج اتصالاً، أعد المحاولة عند عودة الشبكة.' : 'تعذّر الاتصال بالخادم، تحقق من الإنترنت.'); e.status = 0; throw e;
+    }
     if (res.status === 401 && !opts.noRedirect) { S.clearSession(); location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.hash); throw new Error('unauth'); }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -35,6 +44,8 @@
       if (data.offline) msg = data.message || 'أنت غير متصل بالإنترنت.'; // 503 synthesized by the service worker, not a server fault
       const e = new Error(msg); e.status = res.status; e.data = data; e.offline = !!data.offline; throw e;
     }
+    // keep the offline mirror in step with writes that succeeded online
+    if (method !== 'GET' && !opts.replay && S.outbox && S.outbox.afterOnlineWrite) S.outbox.afterOnlineWrite(method, path, data).catch(() => {});
     return data;
   };
   S.get = (p, query) => S.api(p, { query });

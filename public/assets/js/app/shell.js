@@ -114,6 +114,7 @@
           <div class="sp"></div>
           <div class="clock"><b id="clk-t" class="num"></b><span id="clk-d" class="num"></span></div>
           <button class="tbtn" id="t-settings" title="الإعدادات">${ic('gear')}</button>
+          <button class="pending-pill hide" id="pending-pill" title="تغييرات محفوظة على الجهاز بانتظار الرفع — اضغط للرفع الآن">${ic('upload')}<b>0</b></button>
           <button class="tbtn" id="t-lang" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button>
           <button class="tbtn" id="t-mode" title="الوضع الليلي">${ic('moon')}</button>
           <button class="tbtn" id="t-help" title="المساعدة">${ic('help')}</button>
@@ -166,13 +167,23 @@
     };
     const ib = document.getElementById('install-app');
     ib.onclick = async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch {} installEvt = null; ib.classList.add('hide'); };
-    // offline indicator — phase 1: reading works offline, writing needs the network
+    // connection state: offline → work continues on the local copy (changes queue up and upload later);
+    // online with queued changes → a small pill in the top bar until they are uploaded
+    let pendingN = 0;
+    const pendingText = () => (pendingN ? `${S.num(pendingN)} ${pendingN === 1 ? 'تغيير بانتظار الرفع' : 'تغييرات بانتظار الرفع'}` : 'التغييرات تُحفظ على الجهاز وتُرفع تلقائياً عند عودة الاتصال');
     const netState = () => {
       const off = !navigator.onLine; let bar = document.getElementById('netbar');
       document.body.classList.toggle('is-offline', off);
-      if (off && !bar) { bar = document.createElement('div'); bar.id = 'netbar'; bar.className = 'netbar'; bar.innerHTML = `${ic('alert')}<b>غير متصل بالإنترنت</b><span>تعرض آخر بيانات محفوظة على هذا الجهاز (قراءة فقط)</span>`; document.body.appendChild(bar); }
+      if (off && !bar) { bar = document.createElement('div'); bar.id = 'netbar'; bar.className = 'netbar'; bar.innerHTML = `${ic('alert')}<b>تعمل بدون اتصال</b><span id="netbar-n"></span>`; document.body.appendChild(bar); }
       else if (!off && bar) { bar.remove(); S.toast('عاد الاتصال بالإنترنت', 'ok'); }
+      const n = document.getElementById('netbar-n'); if (n) n.textContent = pendingText();
+      const pill = document.getElementById('pending-pill');
+      if (pill) { pill.classList.toggle('hide', off || !pendingN); pill.querySelector('b').textContent = S.num(pendingN); }
     };
+    document.addEventListener('outboxchange', (e) => { pendingN = (e.detail && e.detail.pending) || 0; netState(); });
+    document.addEventListener('outboxflushed', () => { if (!document.querySelector('.modal, .mbox')) route(); }); // refresh the screen with the server's version
+    const pp = document.getElementById('pending-pill'); if (pp) pp.onclick = () => S.outbox && S.outbox.flush();
+    if (S.outbox) S.outbox.pending().then((n) => { pendingN = n; netState(); });
     window.addEventListener('online', netState); window.addEventListener('offline', netState); netState();
     const tick = () => { const d = new Date(); document.getElementById('clk-t').textContent = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); document.getElementById('clk-d').textContent = S.today(); };
     tick(); setInterval(tick, 1000);

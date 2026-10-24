@@ -290,7 +290,12 @@
         if (!lk.sections.length) { body.querySelector('#sheet').innerHTML = S.emptyHtml('لا توجد شعب', 'أنشئ الصفوف والشعب أولاً', 'columns'); return; }
         const load = async () => {
           const sh = body.querySelector('#sheet'); sh.innerHTML = S.spinner;
-          const d = await S.get('/app/attendance/sheet', { section_id: body.querySelector('#sec').value, date: body.querySelector('#dt').value });
+          let d;
+          try { d = await S.get('/app/attendance/sheet', { section_id: body.querySelector('#sec').value, date: body.querySelector('#dt').value }); }
+          catch (e) { // offline: build the sheet from the local mirror (students of the section + saved marks)
+            if (!(S.local && S.local.attendanceSheet && S.local.isOfflineError(e))) throw e;
+            d = await S.local.attendanceSheet(body.querySelector('#sec').value, body.querySelector('#dt').value);
+          }
           if (!d.students.length) { sh.innerHTML = S.emptyHtml('لا يوجد طلاب نشطون في هذه الشعبة'); return; }
           const st = d.students.map((s) => ({ ...s, status: s.status || 'present' }));
           const opts = ['present', 'absent', 'late', 'excused'];

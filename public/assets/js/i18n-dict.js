@@ -1476,4 +1476,21 @@ window.SCH_DICT = {
   'المراسلات': 'Correspondence',
   'هذه الشاشة لم تُحفظ على هذا الجهاز بعد — افتحها مرة وأنت متصل لتصبح متاحة بدون إنترنت.': 'This screen has not been saved on this device yet — open it once while online and it will be available offline.',
   'أنت غير متصل بالإنترنت.': 'You are offline.',
+
+  // ---- offline writes (outbox)
+  'تعمل بدون اتصال': 'Working offline',
+  'التغييرات تُحفظ على الجهاز وتُرفع تلقائياً عند عودة الاتصال': 'Changes are saved on this device and uploaded automatically when back online',
+  'حُفظ على الجهاز وسيُرفع تلقائياً عند عودة الاتصال': 'Saved on this device — it will upload automatically when back online',
+  'بانتظار الرفع': 'Pending upload',
+  'تغيير بانتظار الرفع': 'change pending upload',
+  'تغييرات بانتظار الرفع': 'changes pending upload',
+  'يعتمد على سجل لم يُرفع بعد': 'Depends on a record that has not been uploaded yet',
+  'تغييرات محفوظة على الجهاز بانتظار الرفع — اضغط للرفع الآن': 'Changes saved on this device awaiting upload — click to upload now',
+  'لا توجد نسخة محفوظة من هذا السجل على الجهاز': 'No saved copy of this record on the device',
+  'التغييرات المعلّقة': 'Pending Changes',
+  'رفع الآن': 'Upload Now',
+  'إعادة المحاولة': 'Retry',
+  'تجاهل': 'Discard',
+  'لا توجد تغييرات بانتظار الرفع': 'No changes pending upload',
+  'فشل الرفع': 'Upload failed',
 };

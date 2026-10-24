@@ -421,3 +421,8 @@ table.tt td,table.tt th{min-width:118px}
 #udrop #install-app{color:var(--accent)}
 /* while offline, lift toasts above the netbar so both stay readable */
 .is-offline #toasts{bottom:76px}
+/* ---- offline writes (outbox) */
+.toast.warn{background:var(--warn)}
+.pending-pill{height:30px;padding:0 10px;border-radius:20px;background:var(--warn-bg);color:var(--warn);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent}
+.pending-pill svg{width:14px;height:14px}.pending-pill:hover{border-color:var(--warn)}
+.tbl tr.pending td{background:var(--warn-bg)}

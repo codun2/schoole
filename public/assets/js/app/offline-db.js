@@ -10,7 +10,7 @@
   const { esc, ic } = S;
 
   // ------------------------------------------------------------- IndexedDB
-  const DB_VERSION = 1;
+  const DB_VERSION = 2; // v2: + outbox store (offline writes)
   let dbP = null;
   const dbName = () => { const me = S.me(); return 'schoole_' + ((me && me.company && me.company.id) || 'x'); };
   function open() {
@@ -22,6 +22,7 @@
         const d = r.result;
         if (!d.objectStoreNames.contains('rows')) d.createObjectStore('rows', { keyPath: 'k' }).createIndex('t', 't');
         if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'k' });
+        if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'id' });
       };
       r.onsuccess = () => res(r.result);
       r.onerror = () => { dbP = null; rej(r.error); };
@@ -39,7 +40,12 @@
     async count(table) { const s = await store('rows', 'readonly'); return req(s.index('t').count(IDBKeyRange.only(table))); },
     async getMeta(k) { const s = await store('meta', 'readonly'); const v = await req(s.get(k)); return v ? v.v : undefined; },
     async setMeta(k, v) { const s = await store('meta', 'readwrite'); s.put({ k, v }); await done(s.transaction); },
-    async wipe() { const d = await open(); const t = d.transaction(['rows', 'meta'], 'readwrite'); t.objectStore('rows').clear(); t.objectStore('meta').clear(); await done(t); },
+    async get(table, id) { const s = await store('rows', 'readonly'); const v = await req(s.get(table + ':' + id)); return v ? v.r : undefined; },
+    async wipe() { const d = await open(); const t = d.transaction(['rows', 'meta', 'outbox'], 'readwrite'); t.objectStore('rows').clear(); t.objectStore('meta').clear(); t.objectStore('outbox').clear(); await done(t); },
+    // outbox (queued offline writes)
+    async ops() { const s = await store('outbox', 'readonly'); return (await req(s.getAll())).sort((a, b) => a.ts - b.ts); },
+    async putOp(op) { const s = await store('outbox', 'readwrite'); s.put(op); await done(s.transaction); },
+    async delOp(id) { const s = await store('outbox', 'readwrite'); s.delete(id); await done(s.transaction); },
   });
 
   // ------------------------------------------------------------------ sync
@@ -105,9 +111,130 @@
 
   sync.schedule = function () {
     if (sync._scheduled) return; sync._scheduled = true;
-    setTimeout(() => sync.run(), 1500);                      // right after boot, off the critical path
-    setInterval(() => sync.run(), 10 * 60 * 1000);
-    window.addEventListener('online', () => setTimeout(() => sync.run(), 2000));
+    const cycle = async () => { if (S.outbox) await S.outbox.flush(); await sync.run(); }; // upload our changes first, then pull
+    setTimeout(cycle, 1500);                                 // right after boot, off the critical path
+    setInterval(cycle, 10 * 60 * 1000);
+    window.addEventListener('online', () => setTimeout(cycle, 2000));
+  };
+
+  // ---------------------------------------------------------------- outbox
+  // Offline writes. S.api hands any safe POST/PATCH/DELETE here when the network is gone: the change is
+  // applied to the mirror at once (so screens show it, flagged _pending) and queued; flush() replays the
+  // queue in order with an Idempotency-Key, mapping temporary ids of offline-created rows to real ones.
+  const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16); }));
+  // ResourceController-backed tables whose create/update/delete are plain enough to replay later.
+  // Money/numbering flows (contracts, invoices, vouchers, expenses, advances) stay online-only.
+  const QUEUE_CRUD = ['academic-years', 'grades', 'sections', 'buses', 'fee-items', 'custom-fields', 'subjects', 'exam-terms', 'guardians', 'students', 'applications',
+    'cash-accounts', 'customers', 'suppliers', 'expense-categories', 'branches', 'departments', 'job-titles', 'employees', 'leave-types', 'leave-requests', 'adjustments',
+    'employee-contracts', 'evaluation-criteria', 'evaluation-periods', 'correspondence-categories', 'correspondences', 'licenses', 'tasks'];
+  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/\d+)?$/];
+  // field → mirrored table, to rebuild the nested relation objects list screens expect (r.grade.name_ar …)
+  const REL = { grade_id: 'grades', section_id: 'sections', guardian_id: 'guardians', bus_id: 'buses', student_id: 'students', employee_id: 'employees', teacher_id: 'employees', department_id: 'departments', branch_id: 'branches', job_title_id: 'job-titles', customer_id: 'customers', supplier_id: 'suppliers', cash_account_id: 'cash-accounts', leave_type_id: 'leave-types', subject_id: 'subjects', period_id: 'evaluation-periods', exam_term_id: 'exam-terms' };
+  const parse = (path) => { const m = path.match(/^\/app\/([a-z-]+)(?:\/([^/?]+))?$/); return m ? { slug: m[1], rid: m[2] } : {}; };
+  const isTmp = (v) => typeof v === 'string' && v.startsWith('tmp_');
+  const emitOutbox = async () => { const ops = await DB.ops(); document.dispatchEvent(new CustomEvent('outboxchange', { detail: { pending: ops.filter((o) => o.status !== 'failed').length, failed: ops.filter((o) => o.status === 'failed').length } })); };
+  async function decorate(slug, row) {
+    for (const [f, t] of Object.entries(REL)) {
+      if (row[f] === undefined || row[f] === null || row[f] === '') continue;
+      const rel = f.replace(/_id$/, '');
+      if (row[rel] && typeof row[rel] === 'object') continue;
+      const r = await DB.get(t, row[f]); if (r) row[rel] = r;
+    }
+    return row;
+  }
+  const outbox = (S.outbox = {
+    canQueue(method, path) {
+      if (!['POST', 'PATCH', 'DELETE'].includes(method)) return false;
+      if (QUEUE_PATHS.some((re) => re.test(path))) return true;
+      const { slug, rid } = parse(path);
+      if (!slug || !QUEUE_CRUD.includes(slug)) return false;
+      return method === 'POST' ? !rid : !!rid;
+    },
+    async enqueue({ method, path, query, body }) {
+      const now = new Date().toISOString();
+      const op = { id: uuid(), ts: Date.now(), method, path, query: query || null, body: body || null, idem: uuid(), status: 'pending', tries: 0, error: null };
+      const { slug, rid } = parse(path);
+      let result = { message: 'حُفظ على الجهاز وسيُرفع تلقائياً عند عودة الاتصال', _queued: true };
+      const crud = slug && QUEUE_CRUD.includes(slug) && !(body && Array.isArray(body.marks));
+      if (crud && method === 'POST') {
+        op.tmp = 'tmp_' + op.idem.slice(0, 8); op.table = slug;
+        const row = await decorate(slug, { ...body, id: op.tmp, academic_year_id: body.academic_year_id || body.year || undefined, created_at: now, updated_at: now, _pending: true });
+        await DB.putMany(slug, [row]); result = { ...row, _queued: true };
+      } else if (crud && method === 'PATCH' && rid) {
+        op.table = slug; op.rid = rid;
+        if (isTmp(rid)) { // edit of a row created offline: fold it into the pending create
+          const prev = (await DB.ops()).find((o) => o.tmp === rid && o.status !== 'failed');
+          if (prev) { prev.body = { ...prev.body, ...body }; await DB.putOp(prev); const cur = (await DB.get(slug, rid)) || {}; const row = await decorate(slug, { ...cur, ...body, _pending: true }); await DB.putMany(slug, [row]); await emitOutbox(); S.toast(result.message, 'warn'); return { ...row, _queued: true }; }
+        }
+        const cur = (await DB.get(slug, rid)) || { id: isNaN(+rid) ? rid : +rid };
+        const row = await decorate(slug, { ...cur, ...body, _pending: true, updated_at: now });
+        await DB.putMany(slug, [row]); result = { ...row, _queued: true };
+      } else if (crud && method === 'DELETE' && rid) {
+        op.table = slug; op.rid = rid;
+        await DB.del(slug, rid);
+        if (isTmp(rid)) { // never reached the server: just drop its pending operations
+          for (const o of await DB.ops()) if (o.tmp === rid || o.rid === rid) await DB.delOp(o.id);
+          await emitOutbox(); return { message: 'تم الحذف', _queued: true };
+        }
+      } else if (path === '/app/attendance' && body && Array.isArray(body.marks)) {
+        // mirror the sheet so it shows as saved offline; rows tagged with the op are replaced by real ones after upload
+        op.att = true;
+        const all = (await DB.all('student-attendance')).filter((r) => String(r.section_id) === String(body.section_id) && String(r.date || '').slice(0, 10) === body.date);
+        const rows = body.marks.map((m) => { const ex = all.find((r) => String(r.student_id) === String(m.student_id)); return { ...(ex || { id: 'tmp_' + uuid().slice(0, 8), student_id: m.student_id, section_id: body.section_id, date: body.date }), status: m.status, note: m.note || null, _pending: true, _op: op.id }; });
+        await DB.putMany('student-attendance', rows);
+      }
+      await DB.putOp(op); await emitOutbox();
+      S.toast(result.message, 'warn');
+      return result;
+    },
+    async flush() {
+      if (outbox._flushing || navigator.onLine === false) return { sent: 0, failed: 0 };
+      outbox._flushing = true;
+      const idmap = (await DB.getMeta('idmap')) || {};
+      let sent = 0, failed = 0;
+      try {
+        for (const op of (await DB.ops()).filter((o) => o.status !== 'failed')) {
+          const path = op.path.replace(/tmp_[\w-]+/g, (t) => idmap[t] || t);
+          if (/tmp_/.test(path)) { op.status = 'failed'; op.error = 'يعتمد على سجل لم يُرفع بعد'; await DB.putOp(op); failed++; continue; }
+          const body = op.body == null ? undefined : JSON.parse(JSON.stringify(op.body), (k, v) => (isTmp(v) && idmap[v] ? idmap[v] : v));
+          try {
+            const res = await S.api(path, { method: op.method, body, query: op.query || undefined, replay: true, headers: { 'Idempotency-Key': op.idem } });
+            if (op.tmp && res && res.id) { idmap[op.tmp] = res.id; await DB.setMeta('idmap', idmap); await DB.del(op.table, op.tmp); await DB.putMany(op.table, [res]); }
+            else if (op.table && op.method === 'PATCH' && res && res.id) await DB.putMany(op.table, [res]);
+            if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
+            await DB.delOp(op.id); sent++;
+          } catch (e) {
+            if (!e || !e.status || e.status >= 500 || e.offline) break;            // still offline / server down → try again later
+            op.status = 'failed'; op.error = e.message; op.tries++; await DB.putOp(op); failed++; // 4xx → needs the user's attention
+          }
+        }
+      } finally { outbox._flushing = false; await emitOutbox(); }
+      if (sent) { S.L.clear(); S.toast(`تم رفع ${sent} ${sent === 1 ? 'تغيير' : 'تغييرات'} إلى الخادم`, 'ok'); document.dispatchEvent(new Event('outboxflushed')); }
+      return { sent, failed };
+    },
+    async retry(id) { const op = (await DB.ops()).find((o) => o.id === id); if (op) { op.status = 'pending'; op.error = null; await DB.putOp(op); } return outbox.flush(); },
+    async discard(id) {
+      const op = (await DB.ops()).find((o) => o.id === id); if (!op) return;
+      if (op.tmp) await DB.del(op.table, op.tmp);
+      if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
+      await DB.delOp(op.id); await emitOutbox();
+    },
+    list: () => DB.ops(),
+    async pending() { return (await DB.ops()).filter((o) => o.status !== 'failed').length; },
+    /** After a write succeeded online, keep the mirror current without waiting for the next delta sync. */
+    async afterOnlineWrite(method, path, data) {
+      const { slug, rid } = parse(path); if (!slug || !QUEUE_CRUD.includes(slug) && !['contracts', 'service-invoices', 'vouchers', 'expenses', 'advances'].includes(slug)) return;
+      if (method === 'DELETE' && rid) return DB.del(slug, rid);
+      if (data && data.id && (method === 'POST' || method === 'PATCH') && !(data.message && !data.id)) return DB.putMany(slug, [data]);
+    },
+  });
+
+  /** Offline attendance sheet built from the mirror (same shape as GET /app/attendance/sheet). */
+  S.local.attendanceSheet = async function (sectionId, date) {
+    const students = (await DB.all('students')).filter((s) => String(s.section_id) === String(sectionId) && s.status === 'active').sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
+    const marks = {}; (await DB.all('student-attendance')).forEach((r) => { if (String(r.section_id) === String(sectionId) && String(r.date || '').slice(0, 10) === date) marks[r.student_id] = r; });
+    return { section: await DB.get('sections', sectionId), date, saved: Object.keys(marks).length > 0, local: true,
+      students: students.map((s) => ({ id: s.id, name: s.name, student_no: s.student_no, gender: s.gender, status: marks[s.id] ? marks[s.id].status : null, note: marks[s.id] ? marks[s.id].note : null })) };
   };
 
   sync.status = async () => ({ last: await DB.getMeta('last_sync_at'), tables: (await DB.getMeta('tables')) || [] });
@@ -163,6 +290,9 @@
         const counts = []; for (const t of st.tables) counts.push([t, await DB.count(t)]);
         const totalRows = counts.reduce((a, [, c]) => a + c, 0);
         const status = s.running ? `<span class="bdg l-info">جارٍ المزامنة… ${esc(LABEL[s.table] || s.table || '')} (${s.done}/${s.total})</span>` : s.error ? `<span class="bdg l-bad">${esc(s.error)}</span>` : st.last ? '<span class="bdg l-ok">محدّثة</span>' : '<span class="bdg l-warn">لم تتم بعد</span>';
+        const ops = await DB.ops();
+        const opLabel = (o) => { const { slug, rid } = parse(o.path); const verb = o.method === 'POST' ? (rid ? 'حفظ' : 'إضافة') : o.method === 'PATCH' ? 'تعديل' : 'حذف'; const what = o.att ? 'حضور الطلاب' : (LABEL[slug] || slug || o.path); const nm = o.body && (o.body.name_ar || o.body.name || o.body.title || o.body.number); return `${verb} — ${what}${nm ? ` «${esc(String(nm))}»` : ''}`; };
+        const opsHtml = ops.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">العملية</th><th>الوقت</th><th>الحالة</th><th></th></tr></thead><tbody>${ops.map((o) => `<tr><td class="s">${opLabel(o)}</td><td class="num muted">${esc(S.ago(new Date(o.ts).toISOString()))}</td><td>${o.status === 'failed' ? `<span class="bdg l-bad" title="${esc(o.error || '')}">فشل الرفع</span><div class="muted xs" style="white-space:normal;max-width:260px">${esc(o.error || '')}</div>` : '<span class="bdg l-warn">بانتظار الرفع</span>'}</td><td><div class="acts">${o.status === 'failed' ? `<button class="btn ghost xs" data-retry="${o.id}">إعادة المحاولة</button>` : ''}<button class="btn ghost xs" data-discard="${o.id}" style="color:var(--bad)">تجاهل</button></div></td></tr>`).join('')}</tbody></table></div>` : S.emptyHtml('لا توجد تغييرات بانتظار الرفع', '', 'check');
         el.innerHTML = `<div class="page-h"><div><h2>النسخة المحلية</h2><p>نسخة كاملة من بيانات مدرستك على هذا الجهاز — تعمل عند انقطاع الإنترنت أو تعطّل الخادم</p></div></div>
           <div class="grid g-2-1">
             <div class="card"><div class="hd"><h3>${ic('shield')} حالة النسخة المحلية</h3></div><div class="bd">
@@ -171,7 +301,11 @@
               <p class="muted sm mt16">تُحفظ نسخة كاملة من بيانات مدرستك على هذا الجهاز وتُحدَّث تلقائياً عند الدخول وكل 10 دقائق وعند عودة الاتصال. عند انقطاع الإنترنت أو تعطّل الخادم تستطيع الاطّلاع على كل البيانات، وتنزيل نسخة احتياطية تحتفظ بها خارج النظام.</p>
             </div></div>
             <div class="card"><div class="hd"><h3>${ic('layers')} الجداول المحفوظة</h3></div><div class="bd">${counts.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>الجدول</th><th>السجلات</th></tr></thead><tbody>${counts.map(([t, c]) => `<tr><td>${esc(LABEL[t] || t)}</td><td class="num">${S.num(c)}</td></tr>`).join('')}</tbody></table></div>` : S.emptyHtml('لا توجد بيانات محلية بعد', 'اضغط «زامن الآن» لإنشاء النسخة المحلية', 'shield')}</div></div>
-          </div>`;
+          </div>
+          <div class="card mt16"><div class="hd"><h3>${ic('upload')} التغييرات المعلّقة</h3><div class="sp"></div>${ops.some((o) => o.status !== 'failed') ? `<button class="btn sm" id="flush" ${navigator.onLine ? '' : 'disabled'}>${ic('upload')} رفع الآن</button>` : ''}</div><div class="bd">${opsHtml}</div></div>`;
+        const fl = el.querySelector('#flush'); if (fl) fl.onclick = () => outbox.flush();
+        el.querySelectorAll('[data-retry]').forEach((b) => (b.onclick = () => outbox.retry(b.dataset.retry)));
+        el.querySelectorAll('[data-discard]').forEach((b) => (b.onclick = async () => { if (await S.confirm('تجاهل هذا التغيير نهائياً؟ لن يُرفع إلى الخادم.', 'تجاهل')) await outbox.discard(b.dataset.discard); }));
         el.querySelector('#now').onclick = () => sync.run();
         el.querySelector('#full').onclick = () => sync.run({ full: true });
         el.querySelector('#bk').onclick = async (e) => { const b = e.currentTarget; S.btnBusy(b, true); try { await sync.exportBackup(); S.toast('تم تنزيل النسخة الاحتياطية', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } S.btnBusy(b, false); };
@@ -182,7 +316,7 @@
         if (!document.body.contains(el)) { document.removeEventListener('syncstate', onState); document.removeEventListener('syncdone', onState); return; }
         clearTimeout(timer); timer = setTimeout(draw, Date.now() - last > 600 ? 0 : 600); // throttle redraws while tables stream in
       };
-      document.addEventListener('syncstate', onState); document.addEventListener('syncdone', onState);
+      document.addEventListener('syncstate', onState); document.addEventListener('syncdone', onState); document.addEventListener('outboxchange', onState);
     },
   });
 })();

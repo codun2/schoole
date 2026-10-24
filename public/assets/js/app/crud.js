@@ -101,7 +101,7 @@
             return h;
           };
           $('#tbl').innerHTML = `<table class="tbl"><thead><tr><th style="width:44px">#</th>${cfg.columns.map((c) => `<th class="${c.s ? 's' : ''}" ${c.w ? `style="width:${c.w}"` : ''}>${esc(c.l)}</th>`).join('')}${cfg.noActions ? '' : '<th>الإجراءات</th>'}</tr></thead>
-            <tbody>${rows.map((r, i) => `<tr data-i="${i}" class="${cfg.rowClass ? cfg.rowClass(r) : ''}"><td class="muted">${off + i + 1}</td>${cfg.columns.map((c) => `<td class="${c.s ? 's' : ''}">${c.v(r, ctx) ?? '—'}</td>`).join('')}${cfg.noActions ? '' : `<td><div class="acts">${acts(r)}</div></td>`}</tr>`).join('')}</tbody>
+            <tbody>${rows.map((r, i) => `<tr data-i="${i}" class="${cfg.rowClass ? cfg.rowClass(r) : ''}${r._pending ? ' pending' : ''}"><td class="muted">${off + i + 1}${r._pending ? ' <span class="bdg l-warn" title="بانتظار الرفع" style="padding:0 5px">⏳</span>' : ''}</td>${cfg.columns.map((c) => `<td class="${c.s ? 's' : ''}">${c.v(r, ctx) ?? '—'}</td>`).join('')}${cfg.noActions ? '' : `<td><div class="acts">${acts(r)}</div></td>`}</tr>`).join('')}</tbody>
             ${cfg.foot ? `<tfoot>${cfg.foot(rows, res, ctx)}</tfoot>` : ''}</table>`;
           $('#tbl').querySelectorAll('tbody tr').forEach((tr) => {
             const r = rows[+tr.dataset.i];
@@ -123,16 +123,17 @@
         async function openForm(row) {
           if (cfg.editPage) { location.hash = '#/' + cfg.editPage + (row && row.id ? '/' + row.id : ''); return; }
           let full = row;
-          if (row && cfg.loadForEdit) { try { full = await S.get(cfg.api + '/' + row.id); } catch (e) { return S.toast(e.message, 'bad'); } }
+          if (row && cfg.loadForEdit && !String(row.id).startsWith('tmp_')) { try { full = await S.get(cfg.api + '/' + row.id); } catch (e) { if (!(S.local && S.local.isOfflineError(e))) return S.toast(e.message, 'bad'); full = row; /* offline: edit the mirrored copy */ } }
           if (cfg.customForm) return cfg.customForm(full, ctx);
           const fields = cfg.fields(lk, full || null, ctx);
           S.formModal({
             title: (row ? 'تعديل ' : 'إضافة ') + (cfg.singular || ''), fields, values: full ? (cfg.toForm ? cfg.toForm(full) : full) : { ...(cfg.newDefaults ? cfg.newDefaults(state, lk) : {}) }, size: cfg.formSize, cols: cfg.formCols,
             onSave: async (vals) => {
               const body = cfg.toPayload ? cfg.toPayload(vals, row) : vals;
-              if (row) await S.api(cfg.api + '/' + row.id, { method: body instanceof FormData ? 'POST' : 'PATCH', body });
-              else await S.api(cfg.api, { method: 'POST', body: body instanceof FormData ? body : { ...body, ...(cfg.year && !(body instanceof FormData) ? { year: S.yearId() } : {}) }, query: cfg.year ? { year: S.yearId() } : undefined });
-              S.toast(row ? 'تم حفظ التعديلات' : 'تمت الإضافة بنجاح', 'ok');
+              let res;
+              if (row) res = await S.api(cfg.api + '/' + row.id, { method: body instanceof FormData ? 'POST' : 'PATCH', body });
+              else res = await S.api(cfg.api, { method: 'POST', body: body instanceof FormData ? body : { ...body, ...(cfg.year && !(body instanceof FormData) ? { year: S.yearId() } : {}) }, query: cfg.year ? { year: S.yearId() } : undefined });
+              if (!(res && res._queued)) S.toast(row ? 'تم حفظ التعديلات' : 'تمت الإضافة بنجاح', 'ok'); // queued offline → S.api already said so
               (cfg.invalidate || []).forEach((k) => S.L.clear(k));
               load();
             },
@@ -145,7 +146,7 @@
         }
         async function del(row) {
           if (!(await S.confirm(`حذف ${cfg.singular || 'السجل'} «${row.name || row.title || row.number || row.name_ar || '#' + row.id}»؟ لا يمكن التراجع.`, 'حذف'))) return;
-          try { await S.del(cfg.api + '/' + row.id); S.toast('تم الحذف', 'ok'); (cfg.invalidate || []).forEach((k) => S.L.clear(k)); load(); } catch (e) { S.toast(e.message, 'bad'); }
+          try { const r = await S.del(cfg.api + '/' + row.id); if (!(r && r._queued)) S.toast('تم الحذف', 'ok'); (cfg.invalidate || []).forEach((k) => S.L.clear(k)); load(); } catch (e) { S.toast(e.message, 'bad'); }
         }
         ctx.openForm = openForm; ctx.openView = openView; ctx.del = del;
 
@@ -190,7 +191,10 @@
         let row = null;
         if (id) {
           el.innerHTML = S.spinner;
-          try { row = await S.get(cfg.api + '/' + id); } catch (e) { el.innerHTML = S.emptyHtml('تعذّر تحميل السجل', e.message, 'alert'); return; }
+          try { row = String(id).startsWith('tmp_') ? null : await S.get(cfg.api + '/' + id); }
+          catch (e) { if (!(S.local && S.local.isOfflineError(e))) { el.innerHTML = S.emptyHtml('تعذّر تحميل السجل', e.message, 'alert'); return; } }
+          if (!row && S.db) row = await S.db.get(cfg.api.replace(/^\/app\//, ''), id); // offline (or created offline): edit the mirrored copy
+          if (!row) { el.innerHTML = S.emptyHtml('تعذّر تحميل السجل', 'لا توجد نسخة محفوظة من هذا السجل على الجهاز', 'alert'); return; }
         }
         const ctx = { lk, params, row };
         const fields = cfg.fields(lk, row, ctx);
@@ -218,10 +222,11 @@
           const body = cfg.toPayload ? cfg.toPayload(vals, row) : vals;
           S.btnBusy(ev.currentTarget, true);
           try {
-            if (id) await S.api(cfg.api + '/' + id, { method: body instanceof FormData ? 'POST' : 'PATCH', body });
-            else await S.api(cfg.api, { method: 'POST', body: body instanceof FormData ? body : { ...body, ...(cfg.year ? { year: S.yearId() } : {}) }, query: cfg.year ? { year: S.yearId() } : undefined });
+            let res;
+            if (id) res = await S.api(cfg.api + '/' + id, { method: body instanceof FormData ? 'POST' : 'PATCH', body });
+            else res = await S.api(cfg.api, { method: 'POST', body: body instanceof FormData ? body : { ...body, ...(cfg.year ? { year: S.yearId() } : {}) }, query: cfg.year ? { year: S.yearId() } : undefined });
             (cfg.invalidate || []).forEach((k) => S.L.clear(k));
-            S.toast(id ? 'تم حفظ التعديلات' : 'تمت الإضافة بنجاح', 'ok');
+            if (!(res && res._queued)) S.toast(id ? 'تم حفظ التعديلات' : 'تمت الإضافة بنجاح', 'ok');
             location.hash = '#/' + cfg.backTo;
           } catch (er) { S.showErrors(form, er); S.btnBusy(ev.currentTarget, false); S.toast(er.message || 'تعذّر الحفظ', 'bad'); }
         };

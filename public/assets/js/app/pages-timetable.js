@@ -9,7 +9,9 @@
     perm: 'school',
     async render(el, params) {
       const lk = await S.L(['years', 'sections', 'grades', 'subjects', 'teachers']);
-      let cfg = await S.get('/app/timetable/config');
+      let cfg;
+      try { cfg = await S.get('/app/timetable/config'); }
+      catch (e) { if (!(S.local && S.local.isOfflineError(e))) throw e; cfg = { days: [0, 1, 2, 3, 4], periods: 7 }; } // offline without a cached config: sensible default
       let tab = params.tab || 'section';
       el.innerHTML = `${S.head('timetable', { year: true })}
         <div class="tabs"><button data-t="section">جدول الشعب</button><button data-t="teacher">جدول المعلم</button><button data-t="load">نصاب المعلمين</button><button data-t="settings">إعدادات الجدول</button></div><div id="body"></div>`;
@@ -25,7 +27,15 @@
         body.innerHTML = `<div class="filters"><label class="fld"><span>الشعبة</span><select class="inp" id="sec">${sectionOpts(lk).map(([v, l]) => `<option value="${v}" ${String(v) === String(params.section_id) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label><button class="btn" id="ld">${ic('search')} عرض الجدول</button></div><div id="grid"></div>`;
         const load = async () => {
           const wrap = body.querySelector('#grid'); wrap.innerHTML = S.spinner;
-          const d = await S.get('/app/timetable/section', { section_id: body.querySelector('#sec').value });
+          const secId = body.querySelector('#sec').value;
+          let d;
+          try {
+            if (navigator.onLine === false && S.local && S.local.timetableSection) d = await S.local.timetableSection(secId, cfg);
+            else { d = await S.get('/app/timetable/section', { section_id: secId }); if (d._fromCache && S.local && S.local.timetableSection) d = await S.local.timetableSection(secId, cfg); }
+          } catch (e) {
+            if (!(S.local && S.local.timetableSection && S.local.isOfflineError(e))) { wrap.innerHTML = S.emptyHtml('تعذّر تحميل الجدول', e.message, 'alert'); return; }
+            d = await S.local.timetableSection(secId, cfg);
+          }
           const grid = { ...d.entries };
           const subjOpts = lk.subjects.filter((su) => !su.grade_id || su.grade_id === d.section.grade_id);
           const draw = () => {
@@ -54,7 +64,7 @@
           const save = async (e) => {
             S.btnBusy(e.currentTarget, true);
             const entries = Object.entries(grid).map(([k, c]) => { const [day, period] = k.split('-'); return { day: +day, period: +period, subject_id: c.subject_id || null, teacher_id: c.teacher_id || null, room: c.room || null }; });
-            try { await S.post('/app/timetable/section', { section_id: body.querySelector('#sec').value, entries }); S.toast('تم حفظ الجدول', 'ok'); }
+            try { const r = await S.post('/app/timetable/section', { section_id: body.querySelector('#sec').value, entries }); if (!(r && r._queued)) S.toast('تم حفظ الجدول', 'ok'); }
             catch (er) { S.toast(er.message, 'bad'); if (er.data && er.data.clashes) S.modal({ title: 'تعذّر الحفظ — تعارض', size: 'narrow', body: `<div class="bad-t b mb8">${esc(er.message)}</div><ul style="padding-inline-start:18px;line-height:2">${er.data.clashes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` }); }
             S.btnBusy(e.currentTarget, false);
           };
@@ -70,7 +80,15 @@
         body.innerHTML = `<div class="filters"><label class="fld"><span>المعلم</span><select class="inp" id="t">${lk.teachers.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label></div><div id="g"></div>`;
         const load = async () => {
           const wrap = body.querySelector('#g'); wrap.innerHTML = S.spinner;
-          const d = await S.get('/app/timetable/teacher/' + body.querySelector('#t').value);
+          const tid = body.querySelector('#t').value;
+          let d;
+          try {
+            if (navigator.onLine === false && S.local && S.local.timetableTeacher) d = await S.local.timetableTeacher(tid, cfg);
+            else { d = await S.get('/app/timetable/teacher/' + tid); if (d._fromCache && S.local && S.local.timetableTeacher) d = await S.local.timetableTeacher(tid, cfg); }
+          } catch (e) {
+            if (!(S.local && S.local.timetableTeacher && S.local.isOfflineError(e))) { wrap.innerHTML = S.emptyHtml('تعذّر تحميل الجدول', e.message, 'alert'); return; }
+            d = await S.local.timetableTeacher(tid, cfg);
+          }
           wrap.innerHTML = `<div class="toolbar"><span class="bdg l-info">نصاب أسبوعي: ${d.load} حصة</span><div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة</button></div>
             <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>الحصة ${i + 1}</th>`).join('')}</tr></thead><tbody>
             ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const c = d.entries[day + '-' + (pi + 1)]; return `<td>${c ? `<div class="b sm acc-t">${esc(c.subject || '')}</div><div class="muted xs">${esc(c.section || '')}${c.room ? ' · ' + esc(c.room) : ''}</div>` : '<span class="muted xs">—</span>'}</td>`; }).join('')}</tr>`).join('')}
@@ -83,7 +101,14 @@
       // ---- teaching load
       async function loadTab() {
         body.innerHTML = S.spinner;
-        const d = await S.get('/app/timetable/load');
+        let d;
+        try {
+          if (navigator.onLine === false && S.local && S.local.timetableLoad) d = await S.local.timetableLoad();
+          else { d = await S.get('/app/timetable/load'); if (d._fromCache && S.local && S.local.timetableLoad) d = await S.local.timetableLoad(); }
+        } catch (e) {
+          if (!(S.local && S.local.timetableLoad && S.local.isOfflineError(e))) { body.innerHTML = S.emptyHtml('تعذّر تحميل البيانات', e.message, 'alert'); return; }
+          d = await S.local.timetableLoad();
+        }
         body.innerHTML = `<div class="card"><div class="hd"><h3>${ic('chart')} نصاب المعلمين الأسبوعي</h3></div><div class="bd" id="bars"></div></div>`;
         S.chart.hbars(el.querySelector('#bars'), d.filter((t) => t.lessons).map((t, i) => ({ label: t.name, value: t.lessons, color: S.PALETTE[i % 10] })), (v) => v + ' حصة');
         if (!d.some((t) => t.lessons)) body.querySelector('#bars').innerHTML = S.emptyHtml('لم تُسنَد حصص للمعلمين بعد');
@@ -100,7 +125,7 @@
         body.querySelector('#sv').onclick = async (e) => {
           if (!sel.size) return S.toast('اختر يوم دوام واحداً على الأقل', 'bad');
           S.btnBusy(e.currentTarget, true);
-          try { cfg = await S.patch('/app/timetable/config', { days: [...sel].sort(), periods: +body.querySelector('#per').value }); S.toast('تم الحفظ', 'ok'); } catch (er) { S.toast(er.message, 'bad'); }
+          try { const r = await S.patch('/app/timetable/config', { days: [...sel].sort(), periods: +body.querySelector('#per').value }); cfg = r && r._queued ? { ...cfg, days: [...sel].sort(), periods: +body.querySelector('#per').value } : r; if (!(r && r._queued)) S.toast('تم الحفظ', 'ok'); } catch (er) { S.toast(er.message, 'bad'); }
           S.btnBusy(e.currentTarget, false);
         };
       }

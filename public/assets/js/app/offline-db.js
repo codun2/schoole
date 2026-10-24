@@ -147,7 +147,7 @@
   const QUEUE_CRUD = ['academic-years', 'grades', 'sections', 'buses', 'fee-items', 'custom-fields', 'subjects', 'exam-terms', 'guardians', 'students', 'applications',
     'cash-accounts', 'customers', 'suppliers', 'expense-categories', 'branches', 'departments', 'job-titles', 'employees', 'leave-types', 'leave-requests', 'adjustments',
     'employee-contracts', 'evaluation-criteria', 'evaluation-periods', 'correspondence-categories', 'correspondences', 'licenses', 'tasks'];
-  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/\d+)?$/];
+  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/\d+)?$/];
   // field → mirrored table, to rebuild the nested relation objects list screens expect (r.grade.name_ar …)
   const REL = { grade_id: 'grades', section_id: 'sections', guardian_id: 'guardians', bus_id: 'buses', student_id: 'students', employee_id: 'employees', teacher_id: 'employees', department_id: 'departments', branch_id: 'branches', job_title_id: 'job-titles', customer_id: 'customers', supplier_id: 'suppliers', cash_account_id: 'cash-accounts', leave_type_id: 'leave-types', subject_id: 'subjects', period_id: 'evaluation-periods', exam_term_id: 'exam-terms' };
   const parse = (path) => { const m = path.match(/^\/app\/([a-z-]+)(?:\/([^/?]+))?$/); return m ? { slug: m[1], rid: m[2] } : {}; };
@@ -202,6 +202,14 @@
         const all = (await DB.all('student-attendance')).filter((r) => String(r.section_id) === String(body.section_id) && String(r.date || '').slice(0, 10) === body.date);
         const rows = body.marks.map((m) => { const ex = all.find((r) => String(r.student_id) === String(m.student_id)); return { ...(ex || { id: 'tmp_' + uuid().slice(0, 8), student_id: m.student_id, section_id: body.section_id, date: body.date }), status: m.status, note: m.note || null, _pending: true, _op: op.id }; });
         await DB.putMany('student-attendance', rows);
+      } else if (path === '/app/timetable/section' && body && Array.isArray(body.entries)) {
+        // mirror the new grid: current rows of the section are hidden (restored if the upload is discarded),
+        // the new cells are added as temporary rows tagged with the op
+        op.tt = body.section_id;
+        const sec = await DB.get('sections', body.section_id);
+        const cur = (await DB.all('timetable-entries')).filter((r) => String(r.section_id) === String(body.section_id));
+        await DB.putMany('timetable-entries', cur.map((r) => ({ ...r, _hidden: op.id })));
+        await DB.putMany('timetable-entries', body.entries.filter((e) => e.subject_id || e.teacher_id).map((e) => ({ id: 'tmp_' + uuid().slice(0, 8), section_id: body.section_id, academic_year_id: sec ? sec.academic_year_id : undefined, day: e.day, period: e.period, subject_id: e.subject_id || null, teacher_id: e.teacher_id || null, room: e.room || null, _pending: true, _op: op.id })));
       }
       await DB.putOp(op); await emitOutbox();
       S.toast(result.message, 'warn');
@@ -222,6 +230,7 @@
             if (op.tmp && res && res.id) { idmap[op.tmp] = res.id; await DB.setMeta('idmap', idmap); await DB.del(op.table, op.tmp); await DB.putMany(op.table, [res]); }
             else if (op.table && op.method === 'PATCH' && res && res.id) await DB.putMany(op.table, [res]);
             if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
+            if (op.tt) { for (const r of await DB.all('timetable-entries')) if (r._op === op.id || r._hidden === op.id) await DB.del('timetable-entries', r.id); } // real rows arrive with the next delta sync
             await DB.delOp(op.id); sent++;
           } catch (e) {
             if (!e || !e.status || e.status >= 500 || e.offline) break;            // still offline / server down → try again later
@@ -237,6 +246,7 @@
       const op = (await DB.ops()).find((o) => o.id === id); if (!op) return;
       if (op.tmp) await DB.del(op.table, op.tmp);
       if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
+      if (op.tt) { for (const r of await DB.all('timetable-entries')) { if (r._op === op.id) await DB.del('timetable-entries', r.id); else if (r._hidden === op.id) { const { _hidden, ...rest } = r; await DB.putMany('timetable-entries', [rest]); } } }
       await DB.delOp(op.id); await emitOutbox();
     },
     list: () => DB.ops(),
@@ -248,6 +258,28 @@
       if (data && data.id && (method === 'POST' || method === 'PATCH') && !(data.message && !data.id)) return DB.putMany(slug, [data]);
     },
   });
+
+  /** Offline timetable views built from the mirror (same shapes as the /app/timetable/* endpoints). */
+  const ttKey = (e) => e.day + '-' + e.period;
+  const ttEntries = async () => (await DB.all('timetable-entries')).filter((e) => !e._hidden);
+  const byId = async (table) => { const m = {}; (await DB.all(table)).forEach((r) => (m[r.id] = r)); return m; };
+  S.local.timetableSection = async function (sectionId, cfg) {
+    const section = (await DB.get('sections', sectionId)) || { id: sectionId, name: '' };
+    const subj = await byId('subjects'), emp = await byId('employees'), entries = {};
+    (await ttEntries()).filter((e) => String(e.section_id) === String(sectionId)).forEach((e) => { entries[ttKey(e)] = { subject_id: e.subject_id, subject: subj[e.subject_id] ? subj[e.subject_id].name_ar : null, teacher_id: e.teacher_id, teacher: emp[e.teacher_id] ? emp[e.teacher_id].name : null, room: e.room || null }; });
+    return { section, entries, days: cfg.days, periods: cfg.periods, local: true };
+  };
+  S.local.timetableTeacher = async function (teacherId, cfg) {
+    const t = (await DB.get('employees', teacherId)) || { id: teacherId, name: '' };
+    const subj = await byId('subjects'), secs = await byId('sections'), entries = {};
+    const rows = (await ttEntries()).filter((e) => String(e.teacher_id) === String(teacherId));
+    rows.forEach((e) => { const s = secs[e.section_id]; entries[ttKey(e)] = { subject: subj[e.subject_id] ? subj[e.subject_id].name_ar : null, section: s ? ((s.grade && s.grade.name_ar ? s.grade.name_ar + ' / ' : '') + s.name) : '', room: e.room || null }; });
+    return { teacher: { id: t.id, name: t.name, number: t.number }, entries, load: rows.length, days: cfg.days, periods: cfg.periods, local: true };
+  };
+  S.local.timetableLoad = async function () {
+    const counts = {}; (await ttEntries()).forEach((e) => { if (e.teacher_id) counts[e.teacher_id] = (counts[e.teacher_id] || 0) + 1; });
+    return (await DB.all('employees')).filter((e) => e.is_teacher && e.status !== 'terminated').sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar')).map((t) => ({ id: t.id, name: t.name, number: t.number, lessons: counts[t.id] || 0 }));
+  };
 
   /** Offline attendance sheet built from the mirror (same shape as GET /app/attendance/sheet). */
   S.local.attendanceSheet = async function (sectionId, date) {

@@ -94,7 +94,7 @@ class TimetableController extends Controller
         }
 
         DB::transaction(function () use ($section, $data) {
-            TimetableEntry::where('section_id', $section->id)->delete();
+            TimetableEntry::where('section_id', $section->id)->get()->each->delete(); // per-model so sync tombstones are written
             foreach ($data['entries'] as $e) {
                 if (empty($e['subject_id']) && empty($e['teacher_id'])) {
                     continue;

@@ -80,6 +80,6 @@ class AdvanceController extends ResourceController
 
     protected function beforeDelete(Model $record): void
     {
-        Voucher::where('source_type', 'advance')->where('source_id', $record->id)->delete();
+        Voucher::where('source_type', 'advance')->where('source_id', $record->id)->get()->each->delete(); // per-model → sync tombstones
     }
 }

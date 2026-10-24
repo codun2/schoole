@@ -1495,4 +1495,5 @@ window.SCH_DICT = {
   'فشل الرفع': 'Upload failed',
   'يتوفر تحديث جديد للنظام': 'A new version is available',
   'إعادة التحميل الآن': 'Reload now',
+  'تعذّر تحميل الجدول': 'Could not load the timetable',
 };

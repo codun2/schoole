@@ -118,7 +118,7 @@ class ExpenseController extends ResourceController
 
     protected function beforeDelete(Model $record): void
     {
-        Voucher::where('source_type', 'expense')->where('source_id', $record->id)->delete();
+        Voucher::where('source_type', 'expense')->where('source_id', $record->id)->get()->each->delete(); // per-model → sync tombstones
         $this->deleteImage($record->attachment);
     }
 }

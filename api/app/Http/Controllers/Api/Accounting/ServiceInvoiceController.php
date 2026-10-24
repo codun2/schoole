@@ -146,6 +146,6 @@ class ServiceInvoiceController extends ResourceController
 
     protected function beforeDelete(Model $record): void
     {
-        Voucher::where('source_type', 'service_invoice')->where('source_id', $record->id)->delete();
+        Voucher::where('source_type', 'service_invoice')->where('source_id', $record->id)->get()->each->delete(); // per-model → sync tombstones
     }
 }

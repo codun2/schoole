@@ -41,6 +41,8 @@ class LookupController extends Controller
             'exam_terms'     => fn () => Models\ExamTerm::where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name', 'weight', 'is_locked']),
             'eval_criteria'  => fn () => Models\EvaluationCriterion::orderBy('sort')->get(['id', 'name', 'weight', 'max_score']),
             'eval_periods'   => fn () => Models\EvaluationPeriod::orderByDesc('id')->get(['id', 'name', 'status']),
+            'inv_categories' => fn () => Models\InventoryCategory::orderBy('sort')->orderBy('name')->get(['id', 'name']),
+            'inv_locations'  => fn () => Models\InventoryLocation::orderBy('name')->get(['id', 'name']),
         ];
 
         $out = ['year_id' => $yearId];

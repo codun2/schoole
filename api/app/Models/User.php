@@ -16,7 +16,7 @@ class User extends Authenticatable
     protected $hidden = ['password', 'remember_token'];
 
     /** Section permissions a school staff member can be granted. */
-    public const PERMISSIONS = ['school', 'students', 'finance', 'accounting', 'hr', 'admin_affairs', 'settings', 'users'];
+    public const PERMISSIONS = ['school', 'students', 'finance', 'accounting', 'hr', 'admin_affairs', 'inventory', 'settings', 'users'];
 
     /** Roles: super (platform owner), admin (school owner/principal), staff, guardian. */
     public function isStaff(): bool

@@ -118,7 +118,7 @@
     },
   });
 
-  const PERMS = [['school', 'الهيكل المدرسي والحضور'], ['students', 'الطلاب وأولياء الأمور'], ['finance', 'العقود والأقساط والتحصيل'], ['accounting', 'المحاسبة'], ['hr', 'الموارد البشرية'], ['admin_affairs', 'الشؤون الإدارية'], ['settings', 'الإعدادات'], ['users', 'المستخدمون والصلاحيات']];
+  const PERMS = [['school', 'الهيكل المدرسي والحضور'], ['students', 'الطلاب وأولياء الأمور'], ['finance', 'العقود والأقساط والتحصيل'], ['accounting', 'المحاسبة'], ['hr', 'الموارد البشرية'], ['admin_affairs', 'الشؤون الإدارية'], ['inventory', 'المخزن والأصول'], ['settings', 'الإعدادات'], ['users', 'المستخدمون والصلاحيات']];
   S.page('users', S.crud({
     title: 'المستخدمون والصلاحيات', singular: 'مستخدم', api: '/app/users', perm: 'users', icon: 'users', invalidate: ['users'], formSize: 'wide',
     search: 'بحث بالاسم أو البريد...',

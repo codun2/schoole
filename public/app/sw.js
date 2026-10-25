@@ -17,7 +17,7 @@ const SHELL = [
   '/assets/js/app/shell.js', '/assets/js/app/offline-db.js', '/assets/js/app/crud.js',
   '/assets/js/app/pages-dashboards.js', '/assets/js/app/pages-school.js', '/assets/js/app/pages-academic.js',
   '/assets/js/app/pages-timetable.js', '/assets/js/app/pages-finance.js', '/assets/js/app/pages-accounting.js',
-  '/assets/js/app/pages-hr.js', '/assets/js/app/pages-hr2.js', '/assets/js/app/pages-admin.js',
+  '/assets/js/app/pages-hr.js', '/assets/js/app/pages-hr2.js', '/assets/js/app/pages-admin.js', '/assets/js/app/pages-inventory.js',
   '/manifest.webmanifest', '/assets/icons/icon.svg', '/assets/icons/icon-192.png', '/assets/icons/icon-512.png',
 ];
 

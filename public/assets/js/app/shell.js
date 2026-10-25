@@ -36,6 +36,11 @@
       ['-', 'الرواتب'], ['payrolls', 'الرواتب الشهرية'], ['advances', 'سلف الموظفين'], ['bonuses', 'المكافآت'], ['deductions', 'الاستقطاعات'],
       ['-', 'التقييم'], ['evaluations', 'التقييمات'], ['evaluation-criteria', 'معايير التقييم'], ['evaluation-periods', 'فترات التقييم'],
     ]],
+    ['g-inventory', 'المخزن والأصول', 'box', 'inventory', [
+      ['inventory', 'لوحة المخزن'],
+      ['-', 'الأصناف والحركات'], ['inventory-items', 'الأصناف'], ['inventory-movements', 'حركات المخزن'],
+      ['-', 'الإعداد'], ['inventory-categories', 'فئات المخزون'], ['inventory-locations', 'المواقع والمخازن'],
+    ]],
     ['g-admin', 'الشؤون الإدارية', 'briefcase', 'admin_affairs', [
       ['admin', 'لوحة التحكم'],
       ['-', 'المراسلات'], ['corr-in', 'المراسلات الواردة'], ['corr-out', 'المراسلات الصادرة'], ['corr-internal', 'المراسلات الداخلية'], ['corr-categories', 'فئات المراسلات'],
@@ -65,7 +70,7 @@
       need.forEach((k) => (cache[k] = d[k] || []));
       // rows created offline (still pending upload) must be selectable in dropdowns too
       if (S.db && S.outbox) {
-        const SLUG = { grades: 'grades', sections: 'sections', guardians: 'guardians', buses: 'buses', fee_items: 'fee-items', branches: 'branches', departments: 'departments', job_titles: 'job-titles', employees: 'employees', teachers: 'employees', leave_types: 'leave-types', cash_accounts: 'cash-accounts', customers: 'customers', suppliers: 'suppliers', expense_categories: 'expense-categories', correspondence_categories: 'correspondence-categories', subjects: 'subjects', exam_terms: 'exam-terms', eval_criteria: 'evaluation-criteria', eval_periods: 'evaluation-periods' };
+        const SLUG = { grades: 'grades', sections: 'sections', guardians: 'guardians', buses: 'buses', fee_items: 'fee-items', branches: 'branches', departments: 'departments', job_titles: 'job-titles', employees: 'employees', teachers: 'employees', leave_types: 'leave-types', cash_accounts: 'cash-accounts', customers: 'customers', suppliers: 'suppliers', expense_categories: 'expense-categories', correspondence_categories: 'correspondence-categories', subjects: 'subjects', exam_terms: 'exam-terms', eval_criteria: 'evaluation-criteria', eval_periods: 'evaluation-periods', inv_categories: 'inventory-categories', inv_locations: 'inventory-locations' };
         for (const k of need) {
           if (!SLUG[k]) continue;
           try {

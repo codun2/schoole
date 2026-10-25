@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Hr;
 use App\Http\Controllers\Api\Portal\PortalController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\School;
+use App\Http\Controllers\Api\Inventory;
 use App\Http\Controllers\Api\Teacher\TeacherController;
 use App\Http\Controllers\Api\Super\PlatformController;
 use Illuminate\Support\Facades\Route;
@@ -180,6 +181,17 @@ Route::middleware(['auth:sanctum', 'staff', 'company', 'idem'])->prefix('app')->
         Route::get('tasks-calendar', [Admin\TaskController::class, 'calendar']);
         crud('documents', Admin\DocumentController::class);
         Route::get('document-categories', [Admin\DocumentController::class, 'categories']);
+    });
+
+    // ---- Inventory: assets & consumables
+    Route::middleware('perm:inventory')->group(function () {
+        Route::get('dashboard/inventory', [Inventory\InventoryMovementController::class, 'dashboard']);
+        crud('inventory-categories', Inventory\InventoryCategoryController::class);
+        crud('inventory-locations', Inventory\InventoryLocationController::class);
+        crud('inventory-items', Inventory\InventoryItemController::class);
+        Route::get('inventory-movements', [Inventory\InventoryMovementController::class, 'index']);
+        Route::post('inventory-movements', [Inventory\InventoryMovementController::class, 'store']);
+        Route::delete('inventory-movements/{id}', [Inventory\InventoryMovementController::class, 'destroy'])->whereNumber('id');
     });
 
     // ---- Settings & users

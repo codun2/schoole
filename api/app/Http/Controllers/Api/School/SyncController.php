@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\School;
 use App\Http\Controllers\Api\Accounting;
 use App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Api\Hr;
+use App\Http\Controllers\Api\Inventory;
 use App\Http\Controllers\Api\ResourceController;
 use App\Http\Controllers\Api\School;
 use App\Http\Controllers\Controller;
@@ -72,6 +73,11 @@ class SyncController extends Controller
         'evaluation-criteria' => ['ctrl' => Hr\EvaluationCriterionController::class, 'perm' => 'hr'],
         'evaluation-periods' => ['ctrl' => Hr\EvaluationPeriodController::class, 'perm' => 'hr'],
         'evaluations'        => ['model' => Models\Evaluation::class, 'with' => ['employee:id,name', 'period:id,name', 'scores'], 'perm' => 'hr'],
+        // perm:inventory
+        'inventory-categories' => ['ctrl' => Inventory\InventoryCategoryController::class, 'perm' => 'inventory'],
+        'inventory-locations'  => ['ctrl' => Inventory\InventoryLocationController::class, 'perm' => 'inventory'],
+        'inventory-items'      => ['ctrl' => Inventory\InventoryItemController::class, 'perm' => 'inventory'],
+        'inventory-movements'  => ['model' => Models\InventoryMovement::class, 'with' => ['item:id,name,unit', 'fromLocation:id,name', 'toLocation:id,name'], 'perm' => 'inventory'],
         // perm:admin_affairs
         'correspondence-categories' => ['ctrl' => Admin\CorrespondenceCategoryController::class, 'perm' => 'admin_affairs'],
         'correspondences'    => ['ctrl' => Admin\CorrespondenceController::class, 'perm' => 'admin_affairs'],

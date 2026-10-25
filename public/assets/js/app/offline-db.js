@@ -96,6 +96,7 @@
         S.get('/app/installments', { year: S.yearId(), state: 'unpaid', q: '', grade_id: '', from: '', to: '', page: 1, per_page: 25 }),
         S.get('/app/settings'), S.get('/app/school-announcements'),
         S.get('/app/timetable/config'), S.get('/app/timetable/load'),
+        S.get('/app/dashboard/inventory'),
       ]);
       // next delta starts a little before this server time — the overlap is harmless (upserts are idempotent)
       const t = new Date(man.server_time); t.setMinutes(t.getMinutes() - 2);
@@ -160,15 +161,17 @@
   const QUEUE_CRUD = ['academic-years', 'grades', 'sections', 'buses', 'fee-items', 'custom-fields', 'subjects', 'exam-terms', 'guardians', 'students', 'applications',
     'cash-accounts', 'customers', 'suppliers', 'expense-categories', 'branches', 'departments', 'job-titles', 'employees', 'leave-types', 'leave-requests', 'adjustments',
     'employee-contracts', 'evaluation-criteria', 'evaluation-periods', 'correspondence-categories', 'correspondences', 'licenses', 'tasks',
-    'contracts']; // contracts: drafted/activated offline, numbered and scheduled by the server on upload; payments stay online
-  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/contracts\/[^/]+\/activate$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/[\w-]+)?$/];
+    'contracts', 'inventory-items', 'inventory-categories', 'inventory-locations']; // contracts: drafted/activated offline, numbered and scheduled by the server on upload; payments stay online
+  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/contracts\/[^/]+\/activate$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/[\w-]+)?$/, /^\/app\/inventory-movements(\/\d+)?$/];
   // field → mirrored table, to rebuild the nested relation objects list screens expect (r.grade.name_ar …)
   const REL = { grade_id: 'grades', section_id: 'sections', guardian_id: 'guardians', bus_id: 'buses', student_id: 'students', employee_id: 'employees', teacher_id: 'employees', department_id: 'departments', branch_id: 'branches', job_title_id: 'job-titles', customer_id: 'customers', supplier_id: 'suppliers', cash_account_id: 'cash-accounts', leave_type_id: 'leave-types', subject_id: 'subjects', period_id: 'evaluation-periods', exam_term_id: 'exam-terms' };
+  // per-table relations whose field names are ambiguous across tables
+  const REL_BY_SLUG = { 'inventory-items': { category_id: 'inventory-categories', location_id: 'inventory-locations' }, 'inventory-movements': { item_id: 'inventory-items', from_location_id: 'inventory-locations', to_location_id: 'inventory-locations' } };
   const parse = (path) => { const m = path.match(/^\/app\/([a-z-]+)(?:\/([^/?]+))?$/); return m ? { slug: m[1], rid: m[2] } : {}; };
   const isTmp = (v) => typeof v === 'string' && v.startsWith('tmp_');
   const emitOutbox = async () => { const ops = await DB.ops(); document.dispatchEvent(new CustomEvent('outboxchange', { detail: { pending: ops.filter((o) => o.status !== 'failed').length, failed: ops.filter((o) => o.status === 'failed').length } })); };
   async function decorate(slug, row) {
-    for (const [f, t] of Object.entries(REL)) {
+    for (const [f, t] of Object.entries({ ...REL, ...(REL_BY_SLUG[slug] || {}) })) {
       if (row[f] === undefined || row[f] === null || row[f] === '') continue;
       const rel = f.replace(/_id$/, '');
       if (row[rel] && typeof row[rel] === 'object') continue;
@@ -243,6 +246,18 @@
         const row = { ...base, id: rid || ('tmp_' + op.idem.slice(0, 8)), employee_id: +body.employee_id, period_id: +body.period_id, notes: body.notes || null, total_score: total, date: base.date || now.slice(0, 10), employee: emp ? { id: emp.id, name: emp.name, number: emp.number } : base.employee, period: per ? { id: per.id, name: per.name } : base.period, scores: body.scores.map((s) => ({ criterion_id: s.criterion_id, score: +s.score, note: s.note || null })), _pending: true };
         op.table = 'evaluations'; if (rid) op.rid = rid; else op.tmp = row.id;
         await DB.putMany('evaluations', [row]); result = { ...row, _queued: true };
+      } else if (path === '/app/inventory-movements' && method === 'POST' && body && body.item_id) {
+        // stock movement: apply it to the mirrored item right away and show a temporary ledger row
+        const it = await DB.get('inventory-items', body.item_id);
+        if (it) {
+          const q = +body.quantity || 0, t = body.type;
+          const delta = t === 'in' ? q : (t === 'out' || t === 'dispose') ? -q : t === 'adjust' ? q : 0;
+          const row = { ...it, quantity: Math.max(0, (+it.quantity || 0) + delta), _pending: true };
+          if (t === 'transfer' && body.to_location_id) { row.location_id = body.to_location_id; row.location = (await DB.get('inventory-locations', body.to_location_id)) || row.location; }
+          await DB.putMany('inventory-items', [row]);
+          op.inv = { item_id: it.id, delta, prevLoc: it.location_id, prevLocObj: it.location || null };
+          await DB.putMany('inventory-movements', [{ id: 'tmp_' + uuid().slice(0, 8), item_id: it.id, type: t, quantity: q, from_location_id: body.from_location_id || null, to_location_id: body.to_location_id || null, date: body.date || now.slice(0, 10), reason: body.reason || null, item: { id: it.id, name: it.name, unit: it.unit }, from_location: body.from_location_id ? await DB.get('inventory-locations', body.from_location_id) : null, to_location: body.to_location_id ? await DB.get('inventory-locations', body.to_location_id) : null, _pending: true, _op: op.id }]);
+        }
       } else if (/^\/app\/evaluations\/[\w-]+$/.test(path) && method === 'DELETE') {
         op.table = 'evaluations'; op.rid = rid;
         await DB.del('evaluations', rid);
@@ -269,6 +284,7 @@
             else if (op.table && op.method === 'PATCH' && res && res.id) { const prev = await DB.get(op.table, op.rid); const merged = { ...(prev || {}), ...res }; delete merged._pending; await DB.putMany(op.table, [merged]); }
             if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
             if (op.tt) { for (const r of await DB.all('timetable-entries')) if (r._op === op.id || r._hidden === op.id) await DB.del('timetable-entries', r.id); } // real rows arrive with the next delta sync
+            if (op.inv) { for (const r of await DB.all('inventory-movements')) if (r._op === op.id) await DB.del('inventory-movements', r.id); if (res && res.item) await DB.putMany('inventory-items', [res.item]); if (res && res.movement) await DB.putMany('inventory-movements', [res.movement]); }
             await DB.delOp(op.id); sent++;
           } catch (e) {
             if (!e || !e.status || e.status >= 500 || e.offline) break;            // still offline / server down → try again later
@@ -285,12 +301,19 @@
       if (op.tmp) await DB.del(op.table, op.tmp);
       if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
       if (op.tt) { for (const r of await DB.all('timetable-entries')) { if (r._op === op.id) await DB.del('timetable-entries', r.id); else if (r._hidden === op.id) { const { _hidden, ...rest } = r; await DB.putMany('timetable-entries', [rest]); } } }
+      if (op.inv) { // undo the optimistic stock change
+        for (const r of await DB.all('inventory-movements')) if (r._op === op.id) await DB.del('inventory-movements', r.id);
+        const it = await DB.get('inventory-items', op.inv.item_id);
+        if (it) { const { _pending, ...rest } = it; await DB.putMany('inventory-items', [{ ...rest, quantity: Math.max(0, (+it.quantity || 0) - op.inv.delta), location_id: op.inv.prevLoc, location: op.inv.prevLocObj }]); }
+      }
       await DB.delOp(op.id); await emitOutbox();
     },
     list: () => DB.ops(),
     async pending() { return (await DB.ops()).filter((o) => o.status !== 'failed').length; },
     /** After a write succeeded online, keep the mirror current without waiting for the next delta sync. */
     async afterOnlineWrite(method, path, data) {
+      if (path === '/app/inventory-movements' && data && data.item) { await DB.putMany('inventory-items', [data.item]); if (data.movement) await DB.putMany('inventory-movements', [data.movement]); return; }
+      if (/^\/app\/inventory-movements\/\d+$/.test(path) && method === 'DELETE') { await DB.del('inventory-movements', path.split('/')[3]); if (data && data.item) await DB.putMany('inventory-items', [data.item]); return; }
       const { slug, rid } = parse(path); if (!slug || !QUEUE_CRUD.includes(slug) && !['contracts', 'service-invoices', 'vouchers', 'expenses', 'advances'].includes(slug)) return;
       if (method === 'DELETE' && rid) return DB.del(slug, rid);
       if (data && data.id && (method === 'POST' || method === 'PATCH') && !(data.message && !data.id)) return DB.putMany(slug, [data]);
@@ -400,6 +423,7 @@
     branches: 'الفروع', departments: 'الأقسام', 'job-titles': 'المسميات الوظيفية', employees: 'الموظفون', 'employee-attendance': 'الحضور والانصراف', 'leave-types': 'أنواع الإجازات', 'leave-requests': 'طلبات الإجازات',
     advances: 'سلف الموظفين', adjustments: 'المكافآت والاستقطاعات', payrolls: 'الرواتب الشهرية', 'employee-contracts': 'عقود الموظفين', 'evaluation-criteria': 'معايير التقييم', 'evaluation-periods': 'فترات التقييم', evaluations: 'التقييمات',
     'correspondence-categories': 'فئات المراسلات', correspondences: 'المراسلات', licenses: 'التراخيص', tasks: 'المهام والمواعيد', documents: 'الأرشفة الإلكترونية',
+    'inventory-items': 'أصناف المخزن', 'inventory-movements': 'حركات المخزن', 'inventory-categories': 'فئات المخزون', 'inventory-locations': 'المواقع والمخازن',
   };
   S.page('local-data', {
     title: 'النسخة المحلية',

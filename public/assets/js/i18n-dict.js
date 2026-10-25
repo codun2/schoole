@@ -1519,4 +1519,9 @@ window.SCH_DICT = {
   'الإعداد': 'Setup',
   'الطلاب والتسجيل': 'Students & Admission',
   'الموظفون والهيكل': 'Staff & Structure',
+  'تعذّر فتح النموذج': 'Could not open the form',
+  'تعذّر تحميل التقييمات': 'Could not load evaluations',
+  'تعذّر تحميل التقييم': 'Could not load the evaluation',
+  'لا توجد نسخة محفوظة من هذا التقييم على الجهاز': 'No saved copy of this evaluation on the device',
+  'تم الحذف وسيُرفع عند الاتصال': 'Deleted — will upload when back online',
 };

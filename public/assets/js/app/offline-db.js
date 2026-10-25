@@ -148,7 +148,7 @@
     'cash-accounts', 'customers', 'suppliers', 'expense-categories', 'branches', 'departments', 'job-titles', 'employees', 'leave-types', 'leave-requests', 'adjustments',
     'employee-contracts', 'evaluation-criteria', 'evaluation-periods', 'correspondence-categories', 'correspondences', 'licenses', 'tasks',
     'contracts']; // contracts: drafted/activated offline, numbered and scheduled by the server on upload; payments stay online
-  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/contracts\/[^/]+\/activate$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/\d+)?$/];
+  const QUEUE_PATHS = [/^\/app\/attendance$/, /^\/app\/employee-attendance$/, /^\/app\/grades\/sheet$/, /^\/app\/timetable\/section$/, /^\/app\/timetable\/config$/, /^\/app\/contracts\/[^/]+\/activate$/, /^\/app\/students\/bulk$/, /^\/app\/school-announcements(\/\d+)?$/, /^\/app\/settings$/, /^\/app\/evaluations(\/[\w-]+)?$/];
   // field → mirrored table, to rebuild the nested relation objects list screens expect (r.grade.name_ar …)
   const REL = { grade_id: 'grades', section_id: 'sections', guardian_id: 'guardians', bus_id: 'buses', student_id: 'students', employee_id: 'employees', teacher_id: 'employees', department_id: 'departments', branch_id: 'branches', job_title_id: 'job-titles', customer_id: 'customers', supplier_id: 'suppliers', cash_account_id: 'cash-accounts', leave_type_id: 'leave-types', subject_id: 'subjects', period_id: 'evaluation-periods', exam_term_id: 'exam-terms' };
   const parse = (path) => { const m = path.match(/^\/app\/([a-z-]+)(?:\/([^/?]+))?$/); return m ? { slug: m[1], rid: m[2] } : {}; };
@@ -216,6 +216,25 @@
         const cur = (await DB.all('timetable-entries')).filter((r) => String(r.section_id) === String(body.section_id));
         await DB.putMany('timetable-entries', cur.map((r) => ({ ...r, _hidden: op.id })));
         await DB.putMany('timetable-entries', body.entries.filter((e) => e.subject_id || e.teacher_id).map((e) => ({ id: 'tmp_' + uuid().slice(0, 8), section_id: body.section_id, academic_year_id: sec ? sec.academic_year_id : undefined, day: e.day, period: e.period, subject_id: e.subject_id || null, teacher_id: e.teacher_id || null, room: e.room || null, _pending: true, _op: op.id })));
+      } else if (/^\/app\/evaluations(\/[\w-]+)?$/.test(path) && body && Array.isArray(body.scores)) {
+        // employee evaluation: compute the weighted total locally so the list/row shows it, keep the scores
+        const lk = await S.L(['eval_criteria', 'employees', 'eval_periods']);
+        const crit = {}; (lk.eval_criteria || []).forEach((c) => (crit[c.id] = c));
+        const wsum = (lk.eval_criteria || []).reduce((a, c) => a + +c.weight, 0) || 100;
+        let weighted = 0, any = false;
+        body.scores.forEach((s) => { const c = crit[s.criterion_id]; if (c && s.score != null && s.score !== '') { any = true; weighted += (Math.min(+s.score, +c.max_score) / +c.max_score) * 100 * (+c.weight / wsum); } });
+        const total = any ? Math.round(weighted * 100) / 100 : 0;
+        const emp = (lk.employees || []).find((e) => String(e.id) === String(body.employee_id));
+        const per = (lk.eval_periods || []).find((p) => String(p.id) === String(body.period_id));
+        const base = rid ? (await DB.get('evaluations', rid)) || {} : {};
+        const row = { ...base, id: rid || ('tmp_' + op.idem.slice(0, 8)), employee_id: +body.employee_id, period_id: +body.period_id, notes: body.notes || null, total_score: total, date: base.date || now.slice(0, 10), employee: emp ? { id: emp.id, name: emp.name, number: emp.number } : base.employee, period: per ? { id: per.id, name: per.name } : base.period, scores: body.scores.map((s) => ({ criterion_id: s.criterion_id, score: +s.score, note: s.note || null })), _pending: true };
+        op.table = 'evaluations'; if (rid) op.rid = rid; else op.tmp = row.id;
+        await DB.putMany('evaluations', [row]); result = { ...row, _queued: true };
+      } else if (/^\/app\/evaluations\/[\w-]+$/.test(path) && method === 'DELETE') {
+        op.table = 'evaluations'; op.rid = rid;
+        await DB.del('evaluations', rid);
+        if (isTmp(rid)) { for (const o of await DB.ops()) if (o.tmp === rid || o.rid === rid) await DB.delOp(o.id); await emitOutbox(); return { message: 'تم الحذف', _queued: true }; }
+        result = { message: 'تم الحذف وسيُرفع عند الاتصال', _queued: true };
       }
       await DB.putOp(op); await emitOutbox();
       S.toast(result.message, 'warn');
@@ -233,8 +252,8 @@
           const body = op.body == null ? undefined : JSON.parse(JSON.stringify(op.body), (k, v) => (isTmp(v) && idmap[v] ? idmap[v] : v));
           try {
             const res = await S.api(path, { method: op.method, body, query: op.query || undefined, replay: true, headers: { 'Idempotency-Key': op.idem } });
-            if (op.tmp && res && res.id) { idmap[op.tmp] = res.id; await DB.setMeta('idmap', idmap); await DB.del(op.table, op.tmp); await DB.putMany(op.table, [res]); }
-            else if (op.table && op.method === 'PATCH' && res && res.id) await DB.putMany(op.table, [res]);
+            if (op.tmp && res && res.id) { idmap[op.tmp] = res.id; await DB.setMeta('idmap', idmap); const prev = await DB.get(op.table, op.tmp); await DB.del(op.table, op.tmp); const merged = { ...(prev || {}), ...res }; delete merged._pending; await DB.putMany(op.table, [merged]); }
+            else if (op.table && op.method === 'PATCH' && res && res.id) { const prev = await DB.get(op.table, op.rid); const merged = { ...(prev || {}), ...res }; delete merged._pending; await DB.putMany(op.table, [merged]); }
             if (op.att) { for (const r of await DB.all('student-attendance')) if (r._op === op.id) await DB.del('student-attendance', r.id); }
             if (op.tt) { for (const r of await DB.all('timetable-entries')) if (r._op === op.id || r._hidden === op.id) await DB.del('timetable-entries', r.id); } // real rows arrive with the next delta sync
             await DB.delOp(op.id); sent++;
@@ -285,6 +304,37 @@
   S.local.timetableLoad = async function () {
     const counts = {}; (await ttEntries()).forEach((e) => { if (e.teacher_id) counts[e.teacher_id] = (counts[e.teacher_id] || 0) + 1; });
     return (await DB.all('employees')).filter((e) => e.is_teacher && e.status !== 'terminated').sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar')).map((t) => ({ id: t.id, name: t.name, number: t.number, lessons: counts[t.id] || 0 }));
+  };
+
+  /** Offline employee-evaluation views, built from the mirror + the criteria lookup snapshot. */
+  const evalTotal = (criteria, scores) => { // same weighted formula as the form/server
+    const crit = {}; criteria.forEach((c) => (crit[c.id] = c));
+    const wsum = criteria.reduce((a, c) => a + +c.weight, 0) || 100;
+    let w = 0, any = false;
+    scores.forEach((s) => { const c = crit[s.criterion_id]; if (c && s.score != null && s.score !== '') { any = true; w += (Math.min(+s.score, +c.max_score) / +c.max_score) * 100 * (+c.weight / wsum); } });
+    return any ? Math.round(w * 100) / 100 : 0;
+  };
+  S.local.evalList = async (periodId, q) => {
+    let rows = await DB.all('evaluations');
+    if (periodId) rows = rows.filter((r) => String(r.period_id) === String(periodId));
+    const qq = (q || '').trim().toLowerCase();
+    if (qq) rows = rows.filter((r) => ((r.employee && r.employee.name) || '').toLowerCase().includes(qq));
+    rows.sort((a, b) => (String(b.id) > String(a.id) ? 1 : -1));
+    return { data: rows, local: true };
+  };
+  S.local.evaluationForm = async (employeeId, periodId) => {
+    const lk = await S.L(['eval_criteria']);
+    const criteria = lk.eval_criteria || [];
+    const existing = (await DB.all('evaluations')).find((r) => String(r.employee_id) === String(employeeId) && String(r.period_id) === String(periodId)) || null;
+    const byC = {}; ((existing && existing.scores) || []).forEach((s) => (byC[s.criterion_id] = s));
+    const scores = {}; criteria.forEach((c) => (scores[c.id] = { score: byC[c.id] ? byC[c.id].score : null, note: byC[c.id] ? byC[c.id].note : null }));
+    return { criteria, evaluation: existing, scores, local: true };
+  };
+  S.local.evaluation = async (id, gradeOf) => { // one evaluation's detail (GET /app/evaluations/:id shape)
+    const lk = await S.L(['eval_criteria']);
+    const e = await DB.get('evaluations', id); if (!e) return null;
+    const total = e.total_score != null ? +e.total_score : evalTotal(lk.eval_criteria || [], e.scores || []);
+    return { ...e, total_score: total, criteria: lk.eval_criteria || [], scores: e.scores || [], grade_info: gradeOf ? gradeOf(total) : {} };
   };
 
   /** Offline attendance sheet built from the mirror (same shape as GET /app/attendance/sheet). */

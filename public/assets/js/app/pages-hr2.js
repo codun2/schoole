@@ -61,7 +61,9 @@
 
   // ---------------------------------------------------------------- evaluations
   async function evalForm(lk, employeeId, periodId, done) {
-    const form = await S.get('/app/evaluations/form', { employee_id: employeeId, period_id: periodId });
+    let form;
+    try { form = await S.get('/app/evaluations/form', { employee_id: employeeId, period_id: periodId }); if (form._fromCache && S.local) throw { offline: true }; }
+    catch (e) { if (!(S.local && S.local.evaluationForm && S.local.isOfflineError(e))) { S.toast((e && e.message) || 'تعذّر فتح النموذج', 'bad'); return; } form = await S.local.evaluationForm(employeeId, periodId); }
     if (!form.criteria.length) { S.toast('عرّف معايير التقييم أولاً', 'bad'); return; }
     const emp = lk.employees.find((e) => String(e.id) === String(employeeId));
     const state = {}; form.criteria.forEach((c) => (state[c.id] = { score: form.scores[c.id]?.score ?? '', note: form.scores[c.id]?.note ?? '' }));
@@ -86,7 +88,7 @@
       if (!scores.length) return S.toast('أدخل درجة واحدة على الأقل', 'bad');
       const _btn = e.currentTarget; S.btnBusy(_btn, true);
       const payload = { employee_id: employeeId, period_id: periodId, notes: m.$('#notes').value, scores };
-      try { form.evaluation ? await S.patch('/app/evaluations/' + form.evaluation.id, payload) : await S.post('/app/evaluations', payload); S.toast('تم حفظ التقييم', 'ok'); m.close(); done && done(); }
+      try { const r = form.evaluation ? await S.patch('/app/evaluations/' + form.evaluation.id, payload) : await S.post('/app/evaluations', payload); if (!(r && r._queued)) S.toast('تم حفظ التقييم', 'ok'); m.close(); done && done(); }
       catch (er) { S.toast(er.message, 'bad'); S.btnBusy(_btn, false); }
     };
   }
@@ -105,7 +107,9 @@
       let rows = [];
       const load = async () => {
         $('#list').innerHTML = S.spinner;
-        const d = await S.get('/app/evaluations', { period_id: st.period_id, q: st.q, per_page: 100 });
+        let d;
+        try { if (navigator.onLine === false && S.local && S.local.evalList) d = await S.local.evalList(st.period_id, st.q); else { d = await S.get('/app/evaluations', { period_id: st.period_id, q: st.q, per_page: 100 }); if (d._fromCache && S.local && S.local.evalList) d = await S.local.evalList(st.period_id, st.q); } }
+        catch (e) { if (!(S.local && S.local.evalList && S.local.isOfflineError(e))) { $('#list').innerHTML = S.emptyHtml('تعذّر تحميل التقييمات', e.message, 'alert'); return; } d = await S.local.evalList(st.period_id, st.q); }
         rows = d.data;
         $('#list').innerHTML = rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الموظف</th><th>الفترة</th><th>التاريخ</th><th>النتيجة</th><th>التقدير</th><th>المقيّم</th><th>الإجراءات</th></tr></thead><tbody>
           ${rows.map((r, i) => { const g = gradeOf(+r.total_score); return `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(r.employee?.name)}<div class="muted xs num">${esc(r.employee?.number || '')}</div></td><td>${esc(r.period?.name || '')}</td><td class="num">${S.d(r.date)}</td><td class="num b" style="color:${g.color}">${S.fmtN(r.total_score, 1)}%</td><td>${gBadge(g)}</td><td>${esc(r.evaluator?.name || '—')}</td><td><div class="acts"><button class="ibtn v" data-v="${i}" title="عرض">${ic('eye')}</button><button class="ibtn e" data-e="${i}" title="تعديل">${ic('edit')}</button><button class="ibtn d" data-d="${r.id}" title="حذف">${ic('trash')}</button></div></td></tr>`; }).join('')}
@@ -116,8 +120,12 @@
       };
       async function viewEval(id) {
         const m = S.modal({ title: 'تفاصيل التقييم', size: 'wide', body: S.spinner });
-        const e = await S.get('/app/evaluations/' + id);
-        const scByC = {}; e.scores.forEach((s) => (scByC[s.criterion_id] = s));
+        let e;
+        try { e = String(id).startsWith('tmp_') ? null : await S.get('/app/evaluations/' + id); if (e && e._fromCache && S.local) e = null; }
+        catch (er) { if (!(S.local && S.local.evaluation && S.local.isOfflineError(er))) { m.body.innerHTML = S.emptyHtml('تعذّر تحميل التقييم', er.message, 'alert'); return; } }
+        if (!e && S.local && S.local.evaluation) e = await S.local.evaluation(id, gradeOf);
+        if (!e) { m.body.innerHTML = S.emptyHtml('لا توجد نسخة محفوظة من هذا التقييم على الجهاز'); return; }
+        const scByC = {}; (e.scores || []).forEach((s) => (scByC[s.criterion_id] = s));
         m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(e.employee?.name))}</span><div class="grow"><h3>${esc(e.employee?.name)}</h3><div class="muted">${esc(e.period?.name || '')} · ${S.d(e.date)}</div></div><div style="text-align:center"><div class="v" style="font-family:var(--head);font-size:24px;font-weight:700;color:${e.grade_info.color}">${S.fmtN(e.total_score, 1)}%</div>${gBadge(e.grade_info)}</div></div>
           <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">المعيار</th><th>الوزن</th><th>الدرجة</th><th>النسبة</th><th class="s">ملاحظة</th></tr></thead><tbody>
           ${e.criteria.map((c) => { const sc = scByC[c.id]; const pct = sc ? (sc.score / c.max_score) * 100 : null; return `<tr><td class="s b">${esc(c.name)}</td><td class="num">${S.fmtN(c.weight, 0)}%</td><td class="num">${sc ? S.fmtN(sc.score, 1) + ' / ' + S.fmtN(c.max_score, 0) : '—'}</td><td class="num">${pct != null ? S.fmtN(pct, 0) + '%' : '—'}</td><td class="s muted">${esc(sc?.note || '')}</td></tr>`; }).join('')}

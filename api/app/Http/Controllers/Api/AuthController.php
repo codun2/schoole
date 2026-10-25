@@ -125,6 +125,7 @@ class AuthController extends Controller
                 'currency'    => $company->currency,
                 'tax_rate'    => $company->tax_rate,
                 'theme'       => $company->theme,
+                'modules'     => (object) ($company->settings['modules'] ?? []),
                 'status'      => $company->status,
                 'trial_ends_at' => $company->trial_ends_at,
                 'current_year_id' => $company->currentYearId(),

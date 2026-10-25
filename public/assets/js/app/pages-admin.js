@@ -99,6 +99,7 @@
       el.innerHTML = `${S.head('settings')}<div class="grid g-2-1"><div class="card"><div class="hd"><h3>${ic('building')} الملف التعريفي للمدرسة</h3></div><div class="bd" id="f">${S.formHtml(fields, c)}<div class="row mt16" style="justify-content:flex-end"><button class="btn" id="sv">${ic('check')} حفظ الإعدادات</button></div></div></div>
         <div class="col gap16"><div class="card"><div class="hd"><h3>${ic('star')} الشعار</h3></div><div class="bd" style="text-align:center"><div style="width:110px;height:110px;border-radius:22px;margin:0 auto 12px;background:var(--soft);display:grid;place-items:center;overflow:hidden;border:1px solid var(--line)" id="lg">${c.logo ? `<img src="${esc(c.logo)}" style="width:100%;height:100%;object-fit:cover">` : `<span class="muted">${ic('building')}</span>`}</div><label class="btn ghost sm">${ic('upload')} رفع شعار<input type="file" accept="image/*" id="lf" hidden></label></div></div>
         <div class="card"><div class="hd"><h3>${ic('sun')} لون الواجهة</h3></div><div class="bd"><div class="chips">${THEMES.map(([k, col, n]) => `<button class="chip ${c.theme === k ? 'on' : ''}" data-th="${k}"><i style="width:12px;height:12px;border-radius:50%;background:${col}"></i>${n}</button>`).join('')}</div></div></div>
+        <div class="card"><div class="hd"><h3>${ic('layers')} الوحدات الاختيارية</h3></div><div class="bd"><label class="row gap8" style="cursor:pointer;align-items:flex-start"><input type="checkbox" id="mod-corr" ${c.settings?.modules?.correspondence ? 'checked' : ''} style="margin-top:3px"><span><b>المراسلات</b><div class="muted sm">إظهار المراسلات الواردة والصادرة والداخلية وفئاتها في القائمة. أوقفها إذا كانت مدرستك لا تستخدم أرشفة المراسلات الرسمية.</div></span></label></div></div>
         <div class="card"><div class="hd"><h3>${ic('shield')} الاشتراك</h3></div><div class="bd">${S.kv([['الباقة', esc(c.plan?.name || '—')], ['الحالة', S.badge(S.ST.school, c.status)], ['التجربة تنتهي', c.trial_ends_at ? S.d(c.trial_ends_at) : '—'], ['الاشتراك ينتهي', c.subscription_ends_at ? S.d(c.subscription_ends_at) : '—'], ['رابط التسجيل', `<span class="ltr xs">/apply.html?school=${esc(c.slug)}</span>`]]).replace('class="kv"', 'class="kv" style="grid-template-columns:1fr"')}</div></div></div></div>`;
       el.querySelector('#sv').onclick = async (e) => {
         const f = el.querySelector('#f form'); if (!S.validate(f, fields)) return;
@@ -109,6 +110,11 @@
       };
       el.querySelector('#lf').onchange = async (e) => { const fd = new FormData(); fd.append('logo', e.target.files[0]); try { const r = await S.api('/app/settings/logo', { method: 'POST', body: fd }); el.querySelector('#lg').innerHTML = `<img src="${esc(r.logo)}" style="width:100%;height:100%;object-fit:cover">`; const me = S.me(); me.company.logo = r.logo; S.setSession(null, me); S.toast('تم رفع الشعار', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } };
       el.querySelectorAll('[data-th]').forEach((b) => (b.onclick = async () => { await S.patch('/app/settings', { theme: b.dataset.th }); localStorage.removeItem('sch_accent'); const me = S.me(); me.company.theme = b.dataset.th; S.setSession(null, me); S.applyTheme(); el.querySelectorAll('[data-th]').forEach((x) => x.classList.toggle('on', x === b)); }));
+      el.querySelector('#mod-corr').onchange = async (e) => {
+        const on = e.target.checked;
+        try { await S.patch('/app/settings', { settings: { modules: { correspondence: on } } }); const me = S.me(); me.company.modules = { ...(me.company.modules || {}), correspondence: on }; S.setSession(null, me); S.toast('تم الحفظ — سيظهر التغيير في القائمة بعد التحديث', 'ok'); setTimeout(() => location.reload(), 700); }
+        catch (er) { S.toast(er.message, 'bad'); e.target.checked = !on; }
+      };
     },
   });
 

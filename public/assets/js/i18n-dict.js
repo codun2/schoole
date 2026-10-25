@@ -1524,4 +1524,7 @@ window.SCH_DICT = {
   'تعذّر تحميل التقييم': 'Could not load the evaluation',
   'لا توجد نسخة محفوظة من هذا التقييم على الجهاز': 'No saved copy of this evaluation on the device',
   'تم الحذف وسيُرفع عند الاتصال': 'Deleted — will upload when back online',
+  'الوحدات الاختيارية': 'Optional Modules',
+  'إظهار المراسلات الواردة والصادرة والداخلية وفئاتها في القائمة. أوقفها إذا كانت مدرستك لا تستخدم أرشفة المراسلات الرسمية.': 'Show incoming, outgoing and internal correspondence and their categories in the menu. Turn it off if your school does not use official correspondence archiving.',
+  'تم الحفظ — سيظهر التغيير في القائمة بعد التحديث': 'Saved — the change will appear in the menu after refresh',
 };

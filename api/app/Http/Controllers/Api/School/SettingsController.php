@@ -37,6 +37,9 @@ class SettingsController extends Controller
             'theme'           => ['nullable', 'in:indigo,emerald,rose,amber,sky,slate'],
             'settings'        => ['nullable', 'array'],
         ]);
+        if (array_key_exists('settings', $data)) {
+            $data['settings'] = array_merge($company->settings ?? [], $data['settings']); // merge so other keys (timetable config) survive
+        }
         $company->update($data);
 
         return response()->json($company->fresh());

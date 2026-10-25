@@ -108,7 +108,9 @@
     const hl = (t) => (f ? esc(t).replace(new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), (m) => `<mark>${m}</mark>`) : esc(t));
     return NAV.map(([k, label, icon, perm, kids, href]) => {
       if (!kids) return !f || label.includes(f) ? `<a class="it" data-r="home" href="${href}">${ic(icon, 'ic')}<span>${hl(label)}</span></a>` : '';
-      const visible = kids.filter(([r, l, p]) => r === '-' || (S.can(p || perm) && (!f || l.includes(f) || label.includes(f))));
+      const mods = (S.me() && S.me().company && S.me().company.modules) || {};
+      const moduleOff = (r) => r.startsWith('corr-') && !mods.correspondence; // correspondence hidden unless enabled in settings
+      const visible = kids.filter(([r, l, p]) => r === '-' || (!moduleOff(r) && S.can(p || perm) && (!f || l.includes(f) || label.includes(f))));
       if (!visible.some(([r]) => r !== '-')) return '';
       // sub-headings are shown only above items the user can see, and hidden while searching
       let sub = '', heading = null;

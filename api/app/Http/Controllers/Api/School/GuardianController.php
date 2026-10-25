@@ -26,7 +26,15 @@ class GuardianController extends ResourceController
     {
         return [
             'name'        => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
-            'national_id' => ['nullable', 'string', 'max:40'],
+            'national_id' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) use ($record) {
+                if ($value === null || trim((string) $value) === '') {
+                    return;
+                }
+                $taken = Guardian::where('national_id', trim((string) $value))->when($record, fn ($q) => $q->where('id', '!=', $record->id))->exists();
+                if ($taken) {
+                    $fail('رقم الهوية مستخدم لولي أمر آخر في المدرسة.');
+                }
+            }],
             'nationality' => ['nullable', 'string', 'max:80'],
             'phone'       => ['nullable', 'string', 'max:40'],
             'phone2'      => ['nullable', 'string', 'max:40'],

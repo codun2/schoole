@@ -38,7 +38,18 @@ class StudentController extends ResourceController
         return [
             'name'          => [$req, 'string', 'max:255'],
             'name_en'       => ['nullable', 'string', 'max:255'],
-            'national_id'   => ['nullable', 'string', 'max:40'],
+            'national_id'   => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) use ($request, $record) {
+                // civil ID must be unique within the same academic year (a student re-enrolls each year
+                // as a new record with the same ID). Student queries are already scoped to the company.
+                if ($value === null || trim((string) $value) === '') {
+                    return;
+                }
+                $yearId = $record ? $record->academic_year_id : $this->yearId($request);
+                $taken = Student::where('national_id', trim((string) $value))->where('academic_year_id', $yearId)->when($record, fn ($q) => $q->where('id', '!=', $record->id))->exists();
+                if ($taken) {
+                    $fail('رقم الهوية مستخدم لطالب آخر في نفس السنة الدراسية.');
+                }
+            }],
             'student_no'    => ['nullable', 'string', 'max:40'],
             'gender'        => ['nullable', 'in:male,female'],
             'birth_date'    => ['nullable', 'date'],

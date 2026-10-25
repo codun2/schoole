@@ -161,7 +161,12 @@ class TeacherController extends Controller
             'name'           => ['required', 'string', 'max:255'],
             'name_en'        => ['nullable', 'string', 'max:255'],
             'gender'         => ['nullable', 'in:male,female'],
-            'national_id'    => ['nullable', 'string', 'max:40'],
+            'national_id'    => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) use ($request) {
+                $yearId = $request->user()->company?->currentYearId();
+                if ($value !== null && trim((string) $value) !== '' && \App\Models\Student::where('national_id', trim((string) $value))->where('academic_year_id', $yearId)->exists()) {
+                    $fail('رقم الهوية مستخدم لطالب آخر في نفس السنة الدراسية.');
+                }
+            }],
             'birth_date'     => ['nullable', 'date'],
             'guardian_name'  => ['nullable', 'string', 'max:255'],
             'guardian_phone' => ['nullable', 'string', 'max:40'],
@@ -203,7 +208,11 @@ class TeacherController extends Controller
             'name'        => ['sometimes', 'string', 'max:255'],
             'name_en'     => ['nullable', 'string', 'max:255'],
             'gender'      => ['nullable', 'in:male,female'],
-            'national_id' => ['nullable', 'string', 'max:40'],
+            'national_id' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) use ($student) {
+                if ($value !== null && trim((string) $value) !== '' && \App\Models\Student::where('national_id', trim((string) $value))->where('academic_year_id', $student->academic_year_id)->where('id', '!=', $student->id)->exists()) {
+                    $fail('رقم الهوية مستخدم لطالب آخر في نفس السنة الدراسية.');
+                }
+            }],
             'birth_date'  => ['nullable', 'date'],
             'status'      => ['nullable', 'in:active,suspended'],
         ]);

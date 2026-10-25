@@ -1528,4 +1528,6 @@ window.SCH_DICT = {
   'إظهار المراسلات الواردة والصادرة والداخلية وفئاتها في القائمة. أوقفها إذا كانت مدرستك لا تستخدم أرشفة المراسلات الرسمية.': 'Show incoming, outgoing and internal correspondence and their categories in the menu. Turn it off if your school does not use official correspondence archiving.',
   'تم الحفظ — سيظهر التغيير في القائمة بعد التحديث': 'Saved — the change will appear in the menu after refresh',
   'خروج رغم ذلك': 'Sign out anyway',
+  'رقم الهوية مستخدم لطالب آخر في نفس السنة الدراسية.': 'This civil ID is already used by another student in the same academic year.',
+  'رقم الهوية مستخدم لولي أمر آخر في المدرسة.': 'This civil ID is already used by another guardian in the school.',
 };

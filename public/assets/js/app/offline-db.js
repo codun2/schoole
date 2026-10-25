@@ -128,8 +128,21 @@
   }
   sync.checkUpdate = checkUpdate;
 
+  // Ask the browser to make this site's storage persistent, so it is never evicted under disk
+  // pressure — important because the outbox can hold not-yet-uploaded data. Best-effort.
+  sync.requestPersist = async function () {
+    try {
+      if (!navigator.storage || !navigator.storage.persist) return null;
+      const already = navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      const ok = already || (await navigator.storage.persist());
+      await DB.setMeta('persisted', !!ok);
+      return ok;
+    } catch { return null; }
+  };
+
   sync.schedule = function () {
     if (sync._scheduled) return; sync._scheduled = true;
+    sync.requestPersist();
     checkUpdate(); // records the stamp of the code this window is running
     const cycle = async () => { await checkUpdate(); if (S.outbox) await S.outbox.flush(); await sync.run(); }; // upload our changes first, then pull
     setTimeout(cycle, 1500);                                 // right after boot, off the critical path

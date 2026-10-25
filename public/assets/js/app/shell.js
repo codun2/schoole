@@ -184,6 +184,9 @@
     um.onclick = (e) => { e.stopPropagation(); ud.classList.toggle('show'); };
     document.addEventListener('click', () => ud.classList.remove('show'));
     document.getElementById('logout').onclick = async () => {
+      // never let someone sign out (clearing the device session) while changes are still waiting to upload
+      const pend = S.outbox ? await S.outbox.pending() : 0;
+      if (pend > 0 && !(await S.confirm(`لديك ${S.num(pend)} ${pend === 1 ? 'تغيير' : 'تغييراً'} لم يُرفع إلى الخادم بعد. إذا سجّلت الخروج الآن قد لا تُرفع من هذا الجهاز. تأكّد من الاتصال بالإنترنت ليكتمل الرفع أولاً. هل تريد الخروج رغم ذلك؟`, 'خروج رغم ذلك'))) return;
       if (S.sync && S.sync.stop) S.sync.stop(); // don't let a background sync refill the caches we are about to wipe
       try { await S.post('/auth/logout'); } catch {}
       S.clearSession(); localStorage.removeItem('sch_year');
@@ -206,7 +209,9 @@
       const pill = document.getElementById('pending-pill');
       if (pill) { pill.classList.toggle('hide', off || !pendingN); pill.querySelector('b').textContent = S.num(pendingN); }
     };
-    document.addEventListener('outboxchange', (e) => { pendingN = (e.detail && e.detail.pending) || 0; netState(); });
+    document.addEventListener('outboxchange', (e) => { pendingN = (e.detail && e.detail.pending) || 0; S._pending = pendingN; netState(); });
+    // warn before closing/leaving the app while changes are still queued (financial safety)
+    window.addEventListener('beforeunload', (e) => { if (S._pending > 0) { e.preventDefault(); e.returnValue = ''; return ''; } });
     document.addEventListener('outboxflushed', () => { if (!document.querySelector('.modal, .mbox')) route(); }); // refresh the screen with the server's version
     const pp = document.getElementById('pending-pill'); if (pp) pp.onclick = () => S.outbox && S.outbox.flush();
     if (S.outbox) S.outbox.pending().then((n) => { pendingN = n; netState(); });

@@ -402,6 +402,30 @@
   S.templateXlsx = async (filename, headers, sample) => { const X = await S.xlsx(); const ws = X.utils.aoa_to_sheet([headers, ...(sample || [])]); ws['!cols'] = headers.map(() => ({ wch: 22 })); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Sheet1'); X.writeFile(wb, filename + '.xlsx'); };
 
   // ------------------------------------------------------------------- print
+  /** Official grade report / certificate — shared by the admin app and the teacher portal. */
+  S.printReportCard = function (d) {
+    const s = d.student, ov = d.overall || {}, terms = d.terms || [], res = d.result || {}, scale = d.scale || [];
+    const g = (x) => (x ? (x.letter || '') + (x.remark ? ' — ' + x.remark : '') : '—');
+    const html = `
+      <h2>كشف درجات${d.year ? ' — العام الدراسي ' + esc(d.year.name) : ''}</h2>
+      <div class="kv">
+        <div><span>الطالب</span><b>${esc(s.name)}</b></div>
+        <div><span>الرقم المدرسي</span><b>${esc(s.student_no || '—')}</b></div>
+        <div><span>رقم الهوية</span><b>${esc(s.national_id || '—')}</b></div>
+        <div><span>الصف / الشعبة</span><b>${esc((s.grade && s.grade.name_ar || '') + ' / ' + (s.section && s.section.name || ''))}</b></div>
+        <div><span>ولي الأمر</span><b>${esc(s.guardian && s.guardian.name || '—')}</b></div>
+        <div><span>تاريخ الإصدار</span><b>${S.d(d.issued_at || S.today())}</b></div>
+      </div>
+      <table><thead><tr><th>المادة</th>${terms.map((t) => `<th>${esc(t.name)} (${S.fmtN(t.weight, 0)}%)</th>`).join('')}<th>النتيجة</th><th>التقدير</th></tr></thead><tbody>
+      ${d.rows.map((r) => `<tr><td style="text-align:right">${esc(r.subject.name_ar)} <small style="color:#777">(من ${S.fmtN(r.subject.max_mark, 0)})</small></td>${terms.map((t) => `<td>${r.term_marks[t.id] != null ? S.fmtN(r.term_marks[t.id], 1) : '—'}</td>`).join('')}<td>${r.percent != null ? S.fmtN(r.percent, 1) + '%' : '—'}</td><td>${g(r.grade)}</td></tr>`).join('')}
+      <tr class="tot"><td>المعدل العام</td><td colspan="${terms.length}"></td><td>${ov.percent != null ? S.fmtN(ov.percent, 1) + '%' : '—'}</td><td>${g(ov.grade)}</td></tr>
+      </tbody></table>
+      <div class="big" style="color:${res.pass ? '#14a06b' : '#e0384c'}">النتيجة النهائية: ${esc(res.status || '—')}${res.failed ? ' (راسب في ' + S.num(res.failed) + ' مادة)' : ''}${d.rank && d.rank.position ? ' · الترتيب ' + S.num(d.rank.position) + ' من ' + S.num(d.rank.of) : ''}</div>
+      ${scale.length ? `<div style="margin-top:10px;font-size:12px"><b>مفتاح التقديرات:</b> ${scale.map((x) => `${x.letter} (${esc(x.remark)}) ${S.fmtN(x.min, 0)}% فأكثر`).join(' &nbsp;·&nbsp; ')}</div>` : ''}
+      <div class="sig"><div>معلم الفصل</div><div>مدير المدرسة</div><div>ولي الأمر</div></div>`;
+    S.print('كشف درجات — ' + s.name, html);
+  };
+
   S.print = function (title, html, opts = {}) {
     const me = S.me() || {}; const co = me.company || opts.company || {};
     const w = window.open('', '_blank', 'width=900,height=1000'); if (!w) { S.toast('اسمح بالنوافذ المنبثقة للطباعة', 'bad'); return; }
@@ -416,7 +440,7 @@
     .tot{font-weight:700;background:#f7f7f7}.sig{display:flex;justify-content:space-between;margin-top:60px}.sig div{text-align:center;width:30%;border-top:1px solid #333;padding-top:6px}
     .big{font-size:22px;font-weight:700;text-align:center;border:2px dashed #333;padding:12px;border-radius:10px;margin:14px 0}
     .foot{margin-top:30px;color:#777;font-size:11px;text-align:center}@media print{body{padding:10px}}</style></head><body>
-    <div class="ph"><div><h1>${esc(co.name || 'سكوول')}</h1><div class="m">${esc(co.name_en || '')}<br>${new Date().toLocaleString('ar-OM-u-nu-latn')}</div></div>${co.logo ? `<img src="${esc(co.logo)}">` : ''}</div>
+    <div class="ph"><div><h1>${esc(co.name || 'سكوول')}</h1><div class="m">${co.name_en ? esc(co.name_en) + '<br>' : ''}${co.license_number ? 'ترخيص الوزارة: ' + esc(co.license_number) : ''}${co.license_number && co.cr_number ? ' · ' : ''}${co.cr_number ? 'س.ت: ' + esc(co.cr_number) : ''}${co.license_number || co.cr_number ? '<br>' : ''}${co.phone ? esc(co.phone) + (co.city ? ' · ' + esc(co.city) : '') + '<br>' : ''}${new Date().toLocaleString('ar-OM-u-nu-latn')}</div></div>${co.logo ? `<img src="${esc(co.logo)}">` : ''}</div>
     ${html}<div class="foot">طُبع من نظام سكوول لإدارة المدارس</div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
     w.document.close();
   };

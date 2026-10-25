@@ -129,12 +129,22 @@ class MarkController extends Controller
         }
         $overall = $counted ? Grading::round($overallSum / $counted) : null;
 
+        // final result: failed subjects (graded + below 50%) decide ناجح/راسب
+        $failed = collect($rows)->filter(fn ($r) => $r['percent'] !== null && $r['percent'] < 50)->count();
+        $result = $overall === null
+            ? ['status' => '—', 'pass' => false, 'failed' => 0]
+            : ['status' => $failed === 0 ? 'ناجح' : 'راسب', 'pass' => $failed === 0, 'failed' => $failed];
+
         return response()->json([
             'student' => $student,
+            'year'    => \App\Models\AcademicYear::find($yearId)?->only(['id', 'name']),
             'terms'   => $terms,
             'rows'    => $rows,
             'overall' => ['percent' => $overall, 'grade' => Grading::grade($overall)],
             'rank'    => $overall !== null ? $this->rankOf($student, $overall) : null,
+            'result'  => $result,
+            'scale'   => collect(Grading::SCALE)->map(fn ($s) => ['min' => $s[0], 'letter' => $s[1], 'remark' => $s[2], 'color' => $s[3]])->values(),
+            'issued_at' => now()->toDateString(),
         ]);
     }
 

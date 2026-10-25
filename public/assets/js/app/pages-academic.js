@@ -55,14 +55,7 @@
       </tbody><tfoot><tr><td class="s">المعدل العام</td><td colspan="${d.terms.length}"></td><td class="num b" style="color:${ov.grade.color}">${ov.percent != null ? S.fmtN(ov.percent, 1) + '%' : '—'}</td><td>${ov.grade.letter}</td></tr></tfoot></table></div>
       <p class="muted sm mt8">* النتيجة لكل مادة محسوبة بوزن كل فصل، على الفصول المرصودة فقط.</p>`;
     m.body.innerHTML = body;
-    m.$('#pr').onclick = () => {
-      S.print('كشف درجات ' + s.name, `<h2>كشف الدرجات — ${esc(s.grade?.name_ar || '')} ${esc(s.section?.name || '')}</h2>
-        <div class="kv"><div><span>الطالب</span><b>${esc(s.name)}</b></div><div><span>الرقم المدرسي</span><b>${esc(s.student_no || '')}</b></div><div><span>ولي الأمر</span><b>${esc(s.guardian?.name || '—')}</b></div><div><span>المعدل العام</span><b>${ov.percent != null ? S.fmtN(ov.percent, 1) + '% (' + ov.grade.letter + ' - ' + ov.grade.remark + ')' : '—'}</b></div>${d.rank && d.rank.position ? `<div><span>الترتيب</span><b>${d.rank.position} من ${d.rank.of}</b></div>` : ''}</div>
-        <table><thead><tr><th>المادة</th>${d.terms.map((t) => `<th>${esc(t.name)} (${S.fmtN(t.weight, 0)}%)</th>`).join('')}<th>النتيجة</th><th>التقدير</th></tr></thead><tbody>
-        ${d.rows.map((r) => `<tr><td style="text-align:right">${esc(r.subject.name_ar)}</td>${d.terms.map((t) => `<td>${r.term_marks[t.id] != null ? S.fmtN(r.term_marks[t.id], 1) : '—'}</td>`).join('')}<td>${r.percent != null ? S.fmtN(r.percent, 1) + '%' : '—'}</td><td>${r.grade.letter}</td></tr>`).join('')}
-        <tr class="tot"><td>المعدل العام</td><td colspan="${d.terms.length}"></td><td>${ov.percent != null ? S.fmtN(ov.percent, 1) + '%' : '—'}</td><td>${ov.grade.letter}</td></tr></tbody></table>
-        <div class="sig"><div>معلم الفصل</div><div>المدير</div><div>ولي الأمر</div></div>`);
-    };
+    m.$('#pr').onclick = () => S.printReportCard(d);
   };
 
   // ---------------------------------------------------------------- marks page

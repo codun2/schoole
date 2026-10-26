@@ -68,7 +68,12 @@
           const rows = res.data; ctx.rows = rows; ctx.res = res;
           $('#total').textContent = 'الإجمالي: ' + S.num(res.total);
           const lastSync = await S.db.getMeta('last_sync_at');
-          $('#summary').innerHTML = `<div class="card pad mb16 row gap8" style="background:var(--warn-bg);border-color:transparent">${ic('alert')}<span class="sm"><b>بيانات محلية</b><span class="muted"> — تعرض النسخة المحفوظة على هذا الجهاز${lastSync ? ` (آخر مزامنة ${esc(S.ago(lastSync))})` : ''}</span></span></div>`;
+          const online = navigator.onLine !== false; // online but the server was unreachable for this request
+          const title = online ? 'تعذّر الوصول للخادم الآن' : 'بيانات محلية';
+          const sub = online ? ' — نعرض آخر نسخة محفوظة على الجهاز، وسنعيد المزامنة تلقائياً' : ' — تعرض النسخة المحفوظة على هذا الجهاز';
+          $('#summary').innerHTML = `<div class="card pad mb16 row gap8" style="background:var(--warn-bg);border-color:transparent">${ic('alert')}<span class="sm grow"><b>${title}</b><span class="muted">${sub}${lastSync ? ` (آخر مزامنة ${esc(S.ago(lastSync))})` : ''}</span></span><button class="btn ghost xs" id="lsync">${ic('refresh')} إعادة المحاولة</button></div>`;
+          const btn = $('#lsync');
+          if (btn) btn.onclick = async (e) => { const _b = e.currentTarget; S.btnBusy(_b, true); try { if (S.outbox) await S.outbox.flush(); if (S.sync) await S.sync.run(); } catch {} await load(); };
           renderTable(rows, res); renderPager(res);
         }
         async function load() {
@@ -77,7 +82,12 @@
             // offline: the mirror beats the service worker's stale cached list (it includes offline changes)
             if (navigator.onLine === false && (await mirrored())) { await loadLocal(); return; }
             const res = await S.get(cfg.api, query());
-            if (res && res._fromCache && (await mirrored())) { await loadLocal(); return; }
+            if (res && res._fromCache && (await mirrored())) {
+              await loadLocal();
+              // online but this request fell back to cache → the server blipped; recover now instead of waiting for the 10-min cycle
+              if (navigator.onLine !== false && S.sync && !load._recovering) { load._recovering = true; (async () => { try { if (S.outbox) await S.outbox.flush(); await S.sync.run(); await load(); } catch {} finally { load._recovering = false; } })(); }
+              return;
+            }
             const rows = res.data || [];
             ctx.rows = rows; ctx.res = res;
             $('#total').textContent = 'الإجمالي: ' + S.num(res.total ?? rows.length);

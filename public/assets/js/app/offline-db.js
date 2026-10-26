@@ -268,6 +268,20 @@
       S.toast(result.message || (fileDeferred ? 'حُفظ على الجهاز بدون المرفق — سيُرفع عند عودة الاتصال، وتقدر تضيف الملف لاحقاً بالتعديل' : 'حُفظ على الجهاز وسيُرفع تلقائياً عند عودة الاتصال'), 'warn');
       return result;
     },
+    // Before an online write: swap any tmp ids (offline-created rows) for their real server ids via the idmap.
+    // Returns the mapped body plus any tmp ids that are still unknown (their row hasn't uploaded yet).
+    async resolveTmp(body) {
+      if (!body || typeof body !== 'object') return { body, unresolved: [] };
+      const idmap = (await DB.getMeta('idmap')) || {};
+      const unresolved = [];
+      const walk = (v) => {
+        if (isTmp(v)) { if (idmap[v] != null) return idmap[v]; unresolved.push(v); return v; }
+        if (Array.isArray(v)) return v.map(walk);
+        if (v && typeof v === 'object') { const o = {}; for (const k in v) o[k] = walk(v[k]); return o; }
+        return v;
+      };
+      return { body: walk(body), unresolved: [...new Set(unresolved)] };
+    },
     async flush() {
       if (outbox._flushing || navigator.onLine === false) return { sent: 0, failed: 0 };
       outbox._flushing = true;

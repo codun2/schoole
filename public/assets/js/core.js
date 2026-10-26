@@ -32,6 +32,12 @@
     // a form with a file becomes FormData; offline we still queue its text fields and defer only the attachment
     const queueFD = () => { const { obj, dropped } = S.fdToObj(rawBody); return S.outbox.enqueue({ method, path, query: opts.query, body: obj, fileDeferred: dropped.length > 0 }); };
     if (navigator.onLine === false) { if (queueable) return S.outbox.enqueue({ method, path, query: opts.query, body: rawBody }); if (canQ && rawIsFD) return queueFD(); }
+    // going online: swap tmp ids of offline-created rows for their real ids; block if a referenced row isn't uploaded yet
+    if (method !== 'GET' && !opts.replay && rawBody && !rawIsFD && S.outbox && S.outbox.resolveTmp) {
+      const rt = await S.outbox.resolveTmp(rawBody);
+      if (rt.unresolved.length) { const e = new Error('تعذّر الحفظ: أحد الحقول يشير إلى عنصر أُضيف بدون اتصال ولم يُرفع بعد — انتظر اكتمال المزامنة أو راجع «التغييرات المعلّقة».'); e.status = 422; e.data = {}; throw e; }
+      body = JSON.stringify(rt.body);
+    }
     let res;
     try { res = await fetch(url, { method, headers, body }); }
     catch {

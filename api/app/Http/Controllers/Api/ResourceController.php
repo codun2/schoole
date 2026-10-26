@@ -62,6 +62,9 @@ abstract class ResourceController extends Controller
         $sort = in_array($request->sort, $this->sortable, true) ? $request->sort : $this->order;
         $dir = $request->dir === 'asc' ? 'asc' : ($request->dir === 'desc' ? 'desc' : $this->dir);
         $query->orderBy($sort, $dir);
+        if ($sort !== 'id') {
+            $query->orderBy('id', $dir); // stable tiebreaker → within equal values the newest row leads (for desc)
+        }
 
         if ($request->boolean('all')) {
             $rows = $query->limit(5000)->get();

@@ -92,7 +92,7 @@ class MarkController extends Controller
         $yearId = $student->academic_year_id;
         $terms = ExamTerm::where('academic_year_id', $yearId)->orderBy('sort')->get();
         $subjects = Subject::where('academic_year_id', $yearId)
-            ->where(fn ($q) => $q->whereNull('grade_id')->orWhere('grade_id', $student->grade_id))->orderBy('sort')->get();
+            ->where(fn ($q) => $q->whereNull('grade_ids')->orWhereJsonContains('grade_ids', (int) $student->grade_id))->orderBy('sort')->get();
 
         $marks = GradeMark::where('student_id', $student->id)->get()->keyBy(fn ($m) => $m->subject_id.'-'.$m->exam_term_id);
         $weightSum = max(0.0001, (float) $terms->sum('weight'));
@@ -156,7 +156,7 @@ class MarkController extends Controller
         $terms = ExamTerm::where('academic_year_id', $section->academic_year_id)->get();
         $weightSum = max(0.0001, (float) $terms->sum('weight'));
         $subjects = Subject::where('academic_year_id', $section->academic_year_id)
-            ->where(fn ($q) => $q->whereNull('grade_id')->orWhere('grade_id', $section->grade_id))->get()->keyBy('id');
+            ->where(fn ($q) => $q->whereNull('grade_ids')->orWhereJsonContains('grade_ids', (int) $section->grade_id))->get()->keyBy('id');
         $students = Student::where('section_id', $section->id)->where('status', 'active')->get(['id', 'name', 'student_no']);
         $allMarks = GradeMark::where('section_id', $section->id)->get()->groupBy('student_id');
 
@@ -216,7 +216,7 @@ class MarkController extends Controller
         $terms = ExamTerm::where('academic_year_id', $section->academic_year_id)->get();
         $weightSum = max(0.0001, (float) $terms->sum('weight'));
         $subjects = Subject::where('academic_year_id', $section->academic_year_id)
-            ->where(fn ($q) => $q->whereNull('grade_id')->orWhere('grade_id', $section->grade_id))->get();
+            ->where(fn ($q) => $q->whereNull('grade_ids')->orWhereJsonContains('grade_ids', (int) $section->grade_id))->get();
         $peers = Student::where('section_id', $section->id)->where('status', 'active')->pluck('id');
         $allMarks = GradeMark::whereIn('student_id', $peers)->get()->groupBy('student_id');
 

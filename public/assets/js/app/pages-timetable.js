@@ -37,7 +37,7 @@
             d = await S.local.timetableSection(secId, cfg);
           }
           const grid = { ...d.entries };
-          const subjOpts = lk.subjects.filter((su) => !su.grade_id || su.grade_id === d.section.grade_id);
+          const subjOpts = lk.subjects.filter((su) => !(su.grade_ids || []).length || su.grade_ids.map(Number).includes(Number(d.section.grade_id)));
           const draw = () => {
             wrap.innerHTML = `<div class="toolbar"><div class="total-l">${esc((d.section.grade?.name_ar || '') + ' / ' + d.section.name)}</div><div class="sp"></div><button class="btn ghost" id="print">${ic('printer')} طباعة</button><button class="btn success" id="save">${ic('check')} حفظ الجدول</button></div>
               <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>الحصة ${i + 1}</th>`).join('')}</tr></thead><tbody>

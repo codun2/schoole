@@ -239,7 +239,7 @@
     if (f.t === 'sec') return `<div class="fsec">${esc(f.l)}</div>`;
     const val = v == null ? (f.def ?? '') : v;
     const req = f.req ? ' <i>*</i>' : '';
-    const cls = 'fld' + (f.full || f.t === 'textarea' || f.t === 'perms' ? ' full' : '');
+    const cls = 'fld' + (f.full || f.t === 'textarea' || f.t === 'perms' || f.t === 'checks' ? ' full' : '');
     const attrs = `name="${f.k}" ${f.req ? 'data-req="1"' : ''} ${f.ro ? 'readonly' : ''} ${f.ph ? `placeholder="${esc(f.ph)}"` : ''} ${f.dir ? `dir="${f.dir}"` : ''}`;
     let inner;
     if (f.t === 'select') {
@@ -250,6 +250,10 @@
     else if (f.t === 'perms') {
       const cur = Array.isArray(val) ? val : [];
       inner = `<div class="permgrid">${(f.opts || []).map(([pv, pl]) => `<label class="check"><input type="checkbox" data-perm="${f.k}" value="${pv}" ${cur.includes(pv) ? 'checked' : ''}> ${esc(pl)}</label>`).join('')}</div>`;
+    } else if (f.t === 'checks') {
+      const cur = (Array.isArray(val) ? val : []).map(String);
+      const opts = typeof f.opts === 'function' ? f.opts() : f.opts || [];
+      inner = `<div class="permgrid">${opts.map(([ov, ol]) => `<label class="check"><input type="checkbox" data-check="${f.k}" value="${esc(ov)}" ${cur.includes(String(ov)) ? 'checked' : ''}> ${esc(ol)}</label>`).join('')}</div>`;
     } else if (f.t === 'file') inner = `<input class="inp" type="file" name="${f.k}" ${f.accept ? `accept="${f.accept}"` : ''} style="padding-top:6px">`;
     else {
       const type = { money: 'number', number: 'number', date: 'date', month: 'month', time: 'time', email: 'email', tel: 'tel', password: 'password' }[f.t] || 'text';
@@ -267,6 +271,7 @@
       const wrap = root.querySelector(`[data-f="${f.k}"]`);
       if (wrap && wrap.style.display === 'none') continue;
       if (f.t === 'perms') { out[f.k] = [...root.querySelectorAll(`[data-perm="${f.k}"]:checked`)].map((c) => c.value); continue; }
+      if (f.t === 'checks') { out[f.k] = [...root.querySelectorAll(`[data-check="${f.k}"]:checked`)].map((c) => c.value); continue; }
       const el = root.querySelector(`[name="${f.k}"]`); if (!el) continue;
       if (f.t === 'check') { out[f.k] = el.checked; continue; }
       if (f.t === 'file') { if (el.files[0]) { fd = fd || true; out[f.k] = el.files[0]; } continue; }

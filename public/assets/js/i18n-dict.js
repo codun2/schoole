@@ -1608,4 +1608,20 @@ window.SCH_DICT = {
   'تعذّر تحميل اللوحة': 'Could not load the dashboard',
   'لا توجد نسخة محفوظة من هذا الصنف على الجهاز': 'No saved copy of this item on the device',
   'أصناف المخزن': 'Inventory Items',
+
+  // ---- student/bus photo
+  'صورة الطالب (اختياري)': 'Student Photo (optional)',
+  'صورة الحافلة (اختياري)': 'Bus Photo (optional)',
+  'إرفاق صورة': 'Attach Photo',
+  'استبدال الصورة': 'Replace Photo',
+  'حذف الصورة الحالية عند الحفظ': 'Remove current photo on save',
+  'صورة شخصية واضحة للطالب — اختيارية (JPG أو PNG، حتى 5 ميجابايت). ترفع عند توفّر الاتصال.': 'A clear photo of the student — optional (JPG or PNG, up to 5MB). Uploads when online.',
+  'صورة للحافلة — اختيارية (JPG أو PNG، حتى 5 ميجابايت). ترفع عند توفّر الاتصال.': 'A photo of the bus — optional (JPG or PNG, up to 5MB). Uploads when online.',
+
+  // ---- subjects multi-grade / report card
+  'الصفوف المطبّقة عليها': 'Applicable Grades',
+  'اختر صفاً أو أكثر. اترك الجميع بلا تحديد لتطبّق المادة على كل الصفوف.': 'Pick one or more grades. Leave all unchecked to apply the subject to every grade.',
+  'الكشف': 'Report',
+  'كشف الدرجات (طباعة / حفظ PDF)': 'Report card (print / save PDF)',
+  'كشف درجات الطالب كاملاً للطباعة أو حفظه PDF': 'Full student report card to print or save as PDF',
 };

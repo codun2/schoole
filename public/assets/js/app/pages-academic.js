@@ -10,24 +10,31 @@
   const subjectFields = (lk) => [
     { t: 'sec', l: 'بيانات المادة' },
     { k: 'name_ar', l: 'اسم المادة بالعربية', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'code', l: 'رمز المادة', dir: 'ltr', ph: 'ARA, MATH...' },
-    { k: 'grade_id', l: 'الصف المطبّق عليه', t: 'select', blank: 'جميع الصفوف', opts: gradeOpts(lk), help: 'اتركه «جميع الصفوف» إن كانت المادة عامة لكل الصفوف' },
+    { k: 'grade_ids', l: 'الصفوف المطبّقة عليها', t: 'checks', opts: gradeOpts(lk), help: 'اختر صفاً أو أكثر. اترك الجميع بلا تحديد لتطبّق المادة على كل الصفوف.' },
     { t: 'sec', l: 'الدرجات والترتيب' },
     { k: 'max_mark', l: 'الدرجة العظمى', t: 'number', min: 1, def: 100 }, { k: 'pass_mark', l: 'درجة النجاح', t: 'number', min: 0, def: 50 }, { k: 'sort', l: 'ترتيب العرض', t: 'number', min: 0 },
   ];
+  // show which grades a subject applies to (empty grade_ids = all grades)
+  const subjectGrades = (r, ctx) => {
+    const ids = (r.grade_ids || []).map(Number);
+    if (!ids.length) return '<span class="bdg l-info">جميع الصفوف</span>';
+    const names = new Map((((ctx && ctx.lk) || {}).grades || []).map((g) => [g.id, g.name_ar]));
+    return ids.map((id) => `<span class="bdg l-mut">${esc(names.get(id) || '#' + id)}</span>`).join(' ');
+  };
   S.page('subjects', S.crud({
     title: 'المواد الدراسية', singular: 'مادة', api: '/app/subjects', perm: 'school', year: true, icon: 'book', lookups: ['grades'], invalidate: ['subjects'], editPage: 'subject-form',
     search: 'بحث باسم المادة أو الرمز...',
     filters: [{ k: 'grade_id', l: 'الصف', opts: gradeOpts }],
     columns: [
       { l: 'المادة', s: true, v: (r) => `<b>${esc(r.name_ar)}</b>${r.name_en ? ` <span class="muted en">${esc(r.name_en)}</span>` : ''}` },
-      { l: 'الرمز', v: (r) => cell.num(r.code || '—') }, { l: 'الصف', v: (r) => esc(r.grade?.name_ar || 'جميع الصفوف') },
+      { l: 'الرمز', v: (r) => cell.num(r.code || '—') }, { l: 'الصفوف', v: (r, ctx) => subjectGrades(r, ctx) },
       { l: 'الدرجة العظمى', v: (r) => cell.num(S.fmtN(r.max_mark, 0)) }, { l: 'درجة النجاح', v: (r) => cell.num(S.fmtN(r.pass_mark, 0)) },
     ],
   }));
   S.page('subject-form', S.formPage({
     api: '/app/subjects', title: 'المواد الدراسية', singular: 'مادة', perm: 'school', year: true, backTo: 'subjects', lookups: ['grades'], invalidate: ['subjects'],
     fields: subjectFields, newDefaults: () => ({ max_mark: 100, pass_mark: 50 }),
-    context: () => `<div class="card pad"><p class="muted sm">${ic('book')} عرّف المادة ودرجتها العظمى ودرجة النجاح. تُستخدم هذه المادة في رصد الدرجات وبطاقات النتائج. يمكنك تخصيصها لصفّ معيّن أو جعلها عامة لكل الصفوف.</p></div>`,
+    context: () => `<div class="card pad"><p class="muted sm">${ic('book')} عرّف المادة ودرجتها العظمى ودرجة النجاح. تُستخدم هذه المادة في رصد الدرجات وبطاقات النتائج. يمكنك تخصيصها لصفّ واحد أو عدّة صفوف، أو تركها بلا تحديد لتكون عامة لكل الصفوف.</p></div>`,
   }));
 
   // ---------------------------------------------------------------- exam terms
@@ -48,7 +55,7 @@
     const termTotal = d.terms.reduce((a, t) => a + +t.weight, 0) || 100;
     m.$('h3').innerHTML = `كشف درجات — ${esc(s.name)}`;
     const body = `
-      <div class="profile-h"><span class="avatar">${esc(S.initials(s.name))}</span><div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc((s.grade?.name_ar || '') + ' / ' + (s.section?.name || ''))} · <span class="num">${esc(s.student_no || '')}</span></div></div>
+      <div class="profile-h">${S.avatarHtml(s.photo, s.name)}<div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc((s.grade?.name_ar || '') + ' / ' + (s.section?.name || ''))} · <span class="num">${esc(s.student_no || '')}</span></div></div>
         <div style="text-align:center"><div class="v" style="font-family:var(--head);font-size:26px;font-weight:700;color:${ov.grade.color}">${ov.percent != null ? S.fmtN(ov.percent, 1) + '%' : '—'}</div>${gBadge(ov.grade)}${d.rank && d.rank.position ? `<div class="muted sm mt8">الترتيب ${d.rank.position} من ${d.rank.of}</div>` : ''}</div></div>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">المادة</th>${d.terms.map((t) => `<th>${esc(t.name)}<div class="muted xs">وزن ${S.fmtN(t.weight, 0)}%</div></th>`).join('')}<th>النتيجة %</th><th>التقدير</th></tr></thead><tbody>
         ${d.rows.map((r) => `<tr><td class="s b">${esc(r.subject.name_ar)}<div class="muted xs">من ${S.fmtN(r.subject.max_mark, 0)}</div></td>${d.terms.map((t) => { const mk = r.term_marks[t.id]; return `<td class="num ${mk != null && mk < +r.subject.max_mark * 0.5 ? 'bad-t' : ''}">${mk != null ? S.fmtN(mk, 1) : '—'}</td>`; }).join('')}<td class="num b">${r.percent != null ? S.fmtN(r.percent, 1) : '—'}</td><td>${gBadge(r.grade)}</td></tr>`).join('')}
@@ -75,7 +82,7 @@
       function subjectsForSection(secId) {
         const sec = lk.sections.find((s) => String(s.id) === String(secId));
         const gid = sec && sec.grade_id;
-        return lk.subjects.filter((su) => !su.grade_id || su.grade_id === gid);
+        return lk.subjects.filter((su) => !(su.grade_ids || []).length || su.grade_ids.map(Number).includes(Number(gid)));
       }
 
       // ---- entry
@@ -99,11 +106,12 @@
           const draw = () => {
             const done = st.filter((x) => x.mark != null).length;
             sh.innerHTML = `<div class="toolbar"><span class="bdg ${d.saved ? 'l-ok' : 'l-warn'}">${d.saved ? 'مرصود — يمكن التعديل' : 'لم يُرصد بعد'}</span><span class="bdg l-info">${esc(d.subject.name_ar)} · من ${S.fmtN(max, 0)} · نجاح ${S.fmtN(pass, 0)}</span><span class="total-l">${done}/${st.length} مرصود</span><div class="sp"></div>${locked ? '<span class="bdg mut">الفصل مقفل</span>' : `<button class="btn success" id="save">${ic('check')} حفظ الدرجات</button>`}</div>
-              <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم</th><th style="width:140px">الدرجة (من ${S.fmtN(max, 0)})</th><th>التقدير</th><th>ملاحظة</th></tr></thead><tbody>
-              ${st.map((x, i) => { const pct = x.mark != null ? (x.mark / max) * 100 : null; return `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(x.name)}</td><td class="num muted">${esc(x.student_no || '')}</td><td><input class="inp num" type="number" min="0" max="${max}" step="0.5" data-i="${i}" value="${x.mark != null ? x.mark : ''}" dir="ltr" ${locked ? 'disabled' : ''} style="height:34px;text-align:center"></td><td data-g="${i}">${pct != null ? gBadge(gradeOf(pct)) : '—'}</td><td><input class="inp" data-n="${i}" value="${esc(x.note || '')}" placeholder="—" ${locked ? 'disabled' : ''} style="height:34px"></td></tr>`; }).join('')}
+              <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم</th><th style="width:140px">الدرجة (من ${S.fmtN(max, 0)})</th><th>التقدير</th><th>ملاحظة</th><th title="كشف درجات الطالب كاملاً للطباعة أو حفظه PDF">الكشف</th></tr></thead><tbody>
+              ${st.map((x, i) => { const pct = x.mark != null ? (x.mark / max) * 100 : null; return `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(x.name)}</td><td class="num muted">${esc(x.student_no || '')}</td><td><input class="inp num" type="number" min="0" max="${max}" step="0.5" data-i="${i}" value="${x.mark != null ? x.mark : ''}" dir="ltr" ${locked ? 'disabled' : ''} style="height:34px;text-align:center"></td><td data-g="${i}">${pct != null ? gBadge(gradeOf(pct)) : '—'}</td><td><input class="inp" data-n="${i}" value="${esc(x.note || '')}" placeholder="—" ${locked ? 'disabled' : ''} style="height:34px"></td><td><button class="ibtn v" data-rc="${x.id}" title="كشف الدرجات (طباعة / حفظ PDF)">${ic('fileText')}</button></td></tr>`; }).join('')}
               </tbody></table></div>`;
             sh.querySelectorAll('input[data-i]').forEach((inp) => (inp.oninput = () => { const i = +inp.dataset.i; let v = inp.value === '' ? null : Math.min(max, Math.max(0, +inp.value)); st[i].mark = v; sh.querySelector(`[data-g="${i}"]`).innerHTML = v != null ? gBadge(gradeOf((v / max) * 100)) : '—'; }));
             sh.querySelectorAll('input[data-n]').forEach((inp) => (inp.oninput = () => (st[+inp.dataset.n].note = inp.value)));
+            sh.querySelectorAll('[data-rc]').forEach((b) => (b.onclick = () => S.reportCard(+b.dataset.rc)));
             const sv = sh.querySelector('#save'); if (sv) sv.onclick = async (e) => { const _btn = e.currentTarget; S.btnBusy(_btn, true); try { await S.post('/app/grades/sheet', { section_id: body.querySelector('#sec').value, subject_id: subjId, exam_term_id: body.querySelector('#term').value, marks: st.map((x) => ({ student_id: x.id, mark: x.mark, note: x.note })) }); S.toast('تم حفظ الدرجات', 'ok'); d.saved = true; draw(); } catch (er) { S.toast(er.message, 'bad'); S.btnBusy(_btn, false); } };
           };
           draw();

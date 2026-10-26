@@ -26,12 +26,17 @@
     }
     // Offline-first writes: when the network is gone, safe writes go to the local outbox (S.outbox,
     // offline-db.js) and are replayed automatically later. Replays themselves (opts.replay) never re-queue.
-    const queueable = method !== 'GET' && !opts.replay && S.outbox && !(rawBody instanceof FormData) && S.outbox.canQueue(method, path);
-    if (queueable && navigator.onLine === false) return S.outbox.enqueue({ method, path, query: opts.query, body: rawBody });
+    const rawIsFD = rawBody instanceof FormData;
+    const canQ = method !== 'GET' && !opts.replay && S.outbox && S.outbox.canQueue(method, path);
+    const queueable = canQ && !rawIsFD;
+    // a form with a file becomes FormData; offline we still queue its text fields and defer only the attachment
+    const queueFD = () => { const { obj, dropped } = S.fdToObj(rawBody); return S.outbox.enqueue({ method, path, query: opts.query, body: obj, fileDeferred: dropped.length > 0 }); };
+    if (navigator.onLine === false) { if (queueable) return S.outbox.enqueue({ method, path, query: opts.query, body: rawBody }); if (canQ && rawIsFD) return queueFD(); }
     let res;
     try { res = await fetch(url, { method, headers, body }); }
     catch {
       if (queueable) return S.outbox.enqueue({ method, path, query: opts.query, body: rawBody });
+      if (canQ && rawIsFD) return queueFD();
       const off = typeof navigator !== 'undefined' && navigator.onLine === false; const e = new Error(off ? 'أنت غير متصل بالإنترنت — هذه العملية تحتاج اتصالاً، أعد المحاولة عند عودة الشبكة.' : 'تعذّر الاتصال بالخادم، تحقق من الإنترنت.'); e.status = 0; throw e;
     }
     if (res.status === 401 && !opts.noRedirect) { S.clearSession(); location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.hash); throw new Error('unauth'); }
@@ -75,6 +80,8 @@
   S.longDate = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.toLocaleDateString('ar-OM-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
   S.ago = (s) => { if (!s) return ''; const diff = (Date.now() - new Date(s).getTime()) / 1000; if (diff < 60) return 'الآن'; if (diff < 3600) return 'قبل ' + Math.floor(diff / 60) + ' دقيقة'; if (diff < 86400) return 'قبل ' + Math.floor(diff / 3600) + ' ساعة'; if (diff < 86400 * 7) return 'قبل ' + Math.floor(diff / 86400) + ' يوم'; return S.d(s); };
   S.initials = (n) => (n || '؟').trim().charAt(0);
+  // FormData → plain object for the offline outbox; File/Blob values are dropped (attachments need a connection)
+  S.fdToObj = (fd) => { const obj = {}, dropped = []; for (const [k, v] of fd.entries()) { if (v instanceof Blob) { dropped.push(k); continue; } if (k.endsWith('[]')) { const kk = k.slice(0, -2); (obj[kk] = obj[kk] || []).push(v); } else obj[k] = v; } return { obj, dropped }; };
   // avatar/photo: a real image when a photo path exists, otherwise the initials circle (same .avatar box)
   S.avatarHtml = (photo, name, extra) => photo
     ? `<img class="avatar${extra ? ' ' + extra : ''}" src="${esc(photo)}" alt="${esc(name || '')}" style="object-fit:cover" onerror="this.outerHTML='<span class=\\'avatar${extra ? ' ' + extra : ''}\\'>'+${JSON.stringify(esc(S.initials(name)))}+'</span>'">`

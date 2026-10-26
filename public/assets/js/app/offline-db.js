@@ -187,7 +187,7 @@
       if (!slug || !QUEUE_CRUD.includes(slug)) return false;
       return method === 'POST' ? !rid : !!rid;
     },
-    async enqueue({ method, path, query, body }) {
+    async enqueue({ method, path, query, body, fileDeferred }) {
       const now = new Date().toISOString();
       const op = { id: uuid(), ts: Date.now(), method, path, query: query || null, body: body || null, idem: uuid(), status: 'pending', tries: 0, error: null };
       const { slug, rid } = parse(path);
@@ -265,7 +265,7 @@
         result = { message: 'تم الحذف وسيُرفع عند الاتصال', _queued: true };
       }
       await DB.putOp(op); await emitOutbox();
-      S.toast(result.message, 'warn');
+      S.toast(result.message || (fileDeferred ? 'حُفظ على الجهاز بدون المرفق — سيُرفع عند عودة الاتصال، وتقدر تضيف الملف لاحقاً بالتعديل' : 'حُفظ على الجهاز وسيُرفع تلقائياً عند عودة الاتصال'), 'warn');
       return result;
     },
     async flush() {

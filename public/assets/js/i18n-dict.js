@@ -1631,4 +1631,7 @@ window.SCH_DICT = {
   'بحث بالاسم...': 'Search by name...',
   '— كل الطلاب النشطين لديهم عقود —': '— All active students already have contracts —',
   '— لا يوجد طلاب نشطون —': '— No active students —',
+
+  // ---- offline attachment defer
+  'حُفظ على الجهاز بدون المرفق — سيُرفع عند عودة الاتصال، وتقدر تضيف الملف لاحقاً بالتعديل': 'Saved on device without the attachment — it will upload when back online; you can add the file later by editing.',
 };

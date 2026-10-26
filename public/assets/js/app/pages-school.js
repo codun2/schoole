@@ -238,7 +238,25 @@
     { k: 'notes', l: 'ملاحظات إضافية', t: 'textarea', full: true },
   ];
   const appViewRows = (r) => [['اسم الطالب', esc(r.student_name)], ['الجنس', S.LBL.gender[r.gender]], ['تاريخ الميلاد', `<span class="num">${S.d(r.birth_date)}</span>`], ['الجنسية', esc(r.nationality || '—')], ['رقم الهوية', `<span class="num">${esc(r.national_id || '—')}</span>`], ['الصف المطلوب', esc(r.grade?.name_ar || '—')], ['المدرسة السابقة', esc(r.previous_school || '—')], ['ولي الأمر', esc(r.guardian_name)], ['الجوال', `<span class="num">${esc(r.guardian_phone)}</span>`], ['هوية ولي الأمر', `<span class="num">${esc(r.guardian_national_id || '—')}</span>`], ['البريد', `<span class="num">${esc(r.guardian_email || '—')}</span>`], ['الحالة', S.badge(S.ST.app, r.status)], ['المصدر', r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>'], ['تاريخ الطلب', `<span class="num">${S.d(r.created_at)}</span>`], ['ملاحظات', esc(r.notes || '—')]];
-  const acceptApp = (r, lk, onDone) => S.formModal({ title: 'قبول طلب ' + r.student_name, fields: [{ k: 'section_id', l: 'التسكين في الشعبة', t: 'select', opts: sectionOpts(lk).filter(([id]) => !r.grade_id || (lk.sections.find((s) => s.id === id) || {}).grade_id === r.grade_id) }], extra: '<p class="muted sm mt8">سيتم إنشاء ملف الطالب وربطه بولي الأمر (أو إنشاء ولي أمر جديد إن لم يكن مسجلاً).</p>', saveText: 'قبول', onSave: async (v) => { const res = await S.post(`/app/applications/${r.id}/accept`, v); S.toast(res.message, 'ok'); S.L.clear('guardians'); S.refreshBadges(); onDone && onDone(); } });
+  const acceptApp = (r, lk, onDone) => {
+    const gradeName = (lk.grades.find((g) => String(g.id) === String(r.grade_id)) || {}).name_ar;
+    const matching = sectionOpts(lk).filter(([id]) => (lk.sections.find((s) => s.id === id) || {}).grade_id === r.grade_id);
+    const noMatchForGrade = r.grade_id && !matching.length;
+    // show the requested grade's sections; if it has none, fall back to all sections (labelled with their grade)
+    const opts = (r.grade_id && matching.length ? matching : sectionOpts(lk));
+    const help = !lk.sections.length
+      ? 'لا توجد شعب بعد — أنشئ شعبة من شاشة «الشعب»، أو اقبل بدون تسكين وعيّنها لاحقاً.'
+      : noMatchForGrade
+        ? `لا توجد شعبة للصف المطلوب${gradeName ? ' «' + gradeName + '»' : ''}. اقبل «بدون تسكين» وعيّن الشعبة لاحقاً، أو أنشئ شعبة لهذا الصف، أو اختر شعبة من صف آخر (سيُحدَّث صف الطالب تبعاً لها).`
+        : 'اتركها «بدون تسكين» إن أردت تعيين الشعبة لاحقاً.';
+    S.formModal({
+      title: 'قبول طلب ' + r.student_name,
+      fields: [{ k: 'section_id', l: 'التسكين في الشعبة', t: 'select', blank: 'بدون تسكين (عيّنها لاحقاً)', opts, help }],
+      extra: '<p class="muted sm mt8">سيتم إنشاء ملف الطالب وربطه بولي الأمر (أو إنشاء ولي أمر جديد إن لم يكن مسجلاً).</p>',
+      saveText: 'قبول',
+      onSave: async (v) => { const res = await S.post(`/app/applications/${r.id}/accept`, v); S.toast(res.message, 'ok'); S.L.clear('guardians'); S.refreshBadges(); onDone && onDone(); },
+    });
+  };
   const rejectApp = (r, onDone) => S.formModal({ title: 'رفض طلب ' + r.student_name, fields: [{ k: 'reason', l: 'سبب الرفض', t: 'textarea' }], saveText: 'رفض الطلب', onSave: async (v) => { await S.post(`/app/applications/${r.id}/reject`, v); S.toast('تم رفض الطلب', 'ok'); S.refreshBadges(); onDone && onDone(); } });
 
   S.page('application-view', {

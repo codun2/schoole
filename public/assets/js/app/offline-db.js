@@ -106,7 +106,7 @@
       await DB.setMeta('tables', [...known]);
       sync.state.phase = 'done';
       document.dispatchEvent(new Event('syncdone'));
-    } catch (e) { sync.state.error = (e && e.message) || 'تعذّرت المزامنة'; sync.state.phase = 'error'; }
+    } catch (e) { sync.state.error = isOfflineError(e) ? 'تعذّر الوصول للخادم — النسخة المحفوظة متاحة للاطّلاع، وسنعيد المحاولة تلقائياً' : ((e && e.message) || 'تعذّرت المزامنة'); sync.state.phase = 'error'; }
     sync.state.running = false; emit();
   };
 

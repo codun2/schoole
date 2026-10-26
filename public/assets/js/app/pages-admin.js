@@ -64,7 +64,18 @@
         const first = new Date(y, mo, 1), start = new Date(first); start.setDate(1 - ((first.getDay() + 1) % 7)); // week starts Saturday
         const days = []; for (let i = 0; i < 42; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
         const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const tasks = await S.get('/app/tasks-calendar', { from: iso(days[0]), to: iso(days[41]) });
+        const from = iso(days[0]), to = iso(days[41]);
+        let tasks;
+        try {
+          if (navigator.onLine === false) throw { status: 0 };
+          tasks = await S.get('/app/tasks-calendar', { from, to });
+          if (tasks && tasks._fromCache && S.db) throw { status: 0 };
+        } catch (e) {
+          if (!(S.local && S.local.isOfflineError(e) && S.db)) { el.querySelector('#cal').innerHTML = S.emptyHtml('تعذّر تحميل التقويم', e.message, 'alert'); return; }
+          const nd = (d) => (d ? String(d).slice(0, 10) : null); // build the month from the local mirror (tasks are synced)
+          tasks = (await S.db.all('tasks')).map((t) => ({ ...t, start_date: nd(t.start_date), end_date: nd(t.end_date) }))
+            .filter((t) => (t.start_date && t.start_date >= from && t.start_date <= to) || (t.end_date && t.end_date >= from && t.end_date <= to) || (t.start_date && t.end_date && t.start_date < from && t.end_date > to));
+        }
         el.querySelector('#cal').innerHTML = `<div class="cal">${['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'].map((d) => `<div class="dh">${d}</div>`).join('')}${days.map((d) => { const ds = iso(d); const evs = tasks.filter((t) => t.end_date === ds || (t.start_date === ds && t.start_date !== t.end_date)); return `<div class="d ${d.getMonth() !== mo ? 'out' : ''} ${ds === S.today() ? 'today' : ''}"><span class="n">${d.getDate()}</span>${evs.slice(0, 3).map((t) => { const due = t.end_date === ds; return `<a class="ev ${due ? '' : 'start'}" href="#/tasks/${t.id}" style="background:${t.status === 'done' ? '#14a06b' : COL[t.priority]}" title="${due ? 'موعد التسليم' : 'بداية'}: ${esc(t.title)}">${due ? '⏰ ' : '▶ '}${esc(t.title)}</a>`; }).join('')}${evs.length > 3 ? `<span class="muted xs">+${evs.length - 3} أخرى</span>` : ''}</div>`; }).join('')}</div>
           <div class="legend mt16"><span><i style="background:#e0384c"></i>عاجل</span><span><i style="background:#d98a0b"></i>مهم</span><span><i style="background:#2f7ae5"></i>عادي</span><span><i style="background:#14a06b"></i>منتهية</span><span>⏰ موعد التسليم</span><span>▶ بداية المهمة</span></div>`;
       };

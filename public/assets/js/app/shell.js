@@ -260,9 +260,11 @@
       if (token !== S._routeToken) return;
       console.error(e);
       if (e && (e.offline || (S.local && S.local.isOfflineError(e) && !navigator.onLine))) {
-        // offline and this screen has no saved copy yet — say so plainly instead of "server error"
-        view.innerHTML = S.emptyHtml('غير متصل بالإنترنت', 'هذه الشاشة لم تُحفظ على هذا الجهاز بعد — افتحها مرة وأنت متصل لتصبح متاحة بدون إنترنت.', 'alert',
-          `<div class="row wrap gap8 mt16" style="justify-content:center"><a class="btn ghost" href="#/">${ic('home')} الرئيسية</a><a class="btn soft" href="#/local-data">${ic('shield')} النسخة المحلية</a></div>`);
+        // server unreachable and this screen has no saved copy yet — say so plainly instead of "server error"
+        const srvOnly = navigator.onLine !== false; // online but the server didn't respond
+        view.innerHTML = S.emptyHtml(srvOnly ? 'تعذّر الوصول للخادم' : 'غير متصل بالإنترنت', srvOnly ? 'الخادم غير متاح الآن وهذه الشاشة لم تُحفظ على الجهاز بعد — أعد المحاولة، أو افتح النسخة المحلية.' : 'هذه الشاشة لم تُحفظ على هذا الجهاز بعد — افتحها مرة وأنت متصل لتصبح متاحة بدون إنترنت.', 'alert',
+          `<div class="row wrap gap8 mt16" style="justify-content:center"><button class="btn" id="rtry">${ic('refresh')} إعادة المحاولة</button><a class="btn ghost" href="#/">${ic('home')} الرئيسية</a><a class="btn soft" href="#/local-data">${ic('shield')} النسخة المحلية</a></div>`);
+        const rb = view.querySelector('#rtry'); if (rb) rb.onclick = () => route();
         return;
       }
       view.innerHTML = S.emptyHtml('تعذّر تحميل الصفحة', e.message, 'alert');

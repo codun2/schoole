@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Hr;
 
 use App\Http\Controllers\Api\ResourceController;
+use App\Http\Controllers\Concerns\UniqueContactEmail;
 use App\Models\Employee;
 use App\Models\EmployeeAdvance;
 use App\Models\EmployeeAttendance;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends ResourceController
 {
+    use UniqueContactEmail;
+
     protected string $model = Employee::class;
 
     protected array $search = ['name', 'number', 'national_id', 'phone', 'email'];
@@ -39,7 +42,7 @@ class EmployeeController extends ResourceController
             'gender'              => ['nullable', 'in:male,female'],
             'birth_date'          => ['nullable', 'date'],
             'phone'               => ['nullable', 'string', 'max:40'],
-            'email'               => ['nullable', 'email'],
+            'email'               => ['nullable', 'email', 'max:255', $this->uniqueEmailRule($record, 'employee')],
             'branch_id'           => ['nullable', 'integer', $this->owned('branches')],
             'department_id'       => ['nullable', 'integer', $this->owned('departments')],
             'job_title_id'        => ['nullable', 'integer', $this->owned('job_titles')],

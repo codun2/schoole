@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\School;
 
 use App\Http\Controllers\Api\ResourceController;
+use App\Http\Controllers\Concerns\UniqueContactEmail;
 use App\Models\Guardian;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 
 class GuardianController extends ResourceController
 {
+    use UniqueContactEmail;
+
     protected string $model = Guardian::class;
 
     protected array $search = ['name', 'national_id', 'phone', 'phone2', 'email'];
@@ -38,7 +41,7 @@ class GuardianController extends ResourceController
             'nationality' => ['nullable', 'string', 'max:80'],
             'phone'       => ['nullable', 'string', 'max:40'],
             'phone2'      => ['nullable', 'string', 'max:40'],
-            'email'       => ['nullable', 'email', 'max:255'],
+            'email'       => ['nullable', 'email', 'max:255', $this->uniqueEmailRule($record, 'guardian')],
             'relation'    => ['nullable', 'string', 'max:40'],
             'job'         => ['nullable', 'string', 'max:120'],
             'workplace'   => ['nullable', 'string', 'max:120'],

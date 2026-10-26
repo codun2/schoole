@@ -75,6 +75,10 @@
   S.longDate = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.toLocaleDateString('ar-OM-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
   S.ago = (s) => { if (!s) return ''; const diff = (Date.now() - new Date(s).getTime()) / 1000; if (diff < 60) return 'الآن'; if (diff < 3600) return 'قبل ' + Math.floor(diff / 60) + ' دقيقة'; if (diff < 86400) return 'قبل ' + Math.floor(diff / 3600) + ' ساعة'; if (diff < 86400 * 7) return 'قبل ' + Math.floor(diff / 86400) + ' يوم'; return S.d(s); };
   S.initials = (n) => (n || '؟').trim().charAt(0);
+  // avatar/photo: a real image when a photo path exists, otherwise the initials circle (same .avatar box)
+  S.avatarHtml = (photo, name, extra) => photo
+    ? `<img class="avatar${extra ? ' ' + extra : ''}" src="${esc(photo)}" alt="${esc(name || '')}" style="object-fit:cover" onerror="this.outerHTML='<span class=\\'avatar${extra ? ' ' + extra : ''}\\'>'+${JSON.stringify(esc(S.initials(name)))}+'</span>'">`
+    : `<span class="avatar${extra ? ' ' + extra : ''}">${esc(S.initials(name))}</span>`;
   S.debounce = (fn, ms = 300) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
   S.qs = (o) => Object.entries(o).filter(([, v]) => v !== '' && v != null).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
 

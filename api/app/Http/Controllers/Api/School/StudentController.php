@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\School;
 
 use App\Http\Controllers\Api\ResourceController;
+use App\Http\Controllers\Concerns\HandlesUploads;
 use App\Models\Contract;
 use App\Models\Grade;
 use App\Models\Guardian;
@@ -15,6 +16,8 @@ use Illuminate\Http\Request;
 
 class StudentController extends ResourceController
 {
+    use HandlesUploads;
+
     protected string $model = Student::class;
 
     protected array $search = ['name', 'name_en', 'national_id', 'student_no', 'guardian.name', 'guardian.phone'];
@@ -65,6 +68,8 @@ class StudentController extends ResourceController
             'address'       => ['nullable', 'string', 'max:255'],
             'custom'        => ['nullable', 'array'],
             'notes'         => ['nullable', 'string'],
+            'photo'         => ['nullable', 'image', 'max:5120'], // optional student photo (≤5MB)
+            'remove_photo'  => ['nullable', 'boolean'],
         ];
     }
 
@@ -82,6 +87,27 @@ class StudentController extends ResourceController
         }
         if (! empty($data['grade_id'])) {
             $data['academic_year_id'] = Grade::find($data['grade_id'])->academic_year_id;
+        }
+        $data = $this->applyPhoto($data, $request, $record, 'students');
+
+        return $data;
+    }
+
+    /** Store a newly uploaded photo, honour an explicit removal, otherwise leave the column untouched. */
+    private function applyPhoto(array $data, Request $request, ?Model $record, string $folder): array
+    {
+        unset($data['remove_photo']);
+        if ($request->hasFile('photo')) {
+            if ($record) {
+                $this->deleteImage($record->photo);
+            }
+            $data['photo'] = $this->storeImage($request->file('photo'), $folder);
+        } else {
+            unset($data['photo']);
+            if ($record && $request->boolean('remove_photo')) {
+                $this->deleteImage($record->photo);
+                $data['photo'] = null;
+            }
         }
 
         return $data;
@@ -114,6 +140,7 @@ class StudentController extends ResourceController
     protected function beforeDelete(Model $record): void
     {
         StudentAttendance::where('student_id', $record->id)->delete();
+        $this->deleteImage($record->photo);
     }
 
     /** Move many students to a section (or change status) at once. */

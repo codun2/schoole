@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api\School;
 
 use App\Http\Controllers\Api\ResourceController;
+use App\Http\Controllers\Concerns\HandlesUploads;
 use App\Models\Bus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class BusController extends ResourceController
 {
+    use HandlesUploads;
+
     protected string $model = Bus::class;
 
     protected array $search = ['number', 'type', 'driver_name', 'driver_phone', 'route'];
@@ -30,7 +33,33 @@ class BusController extends ResourceController
             'capacity'        => ['nullable', 'integer', 'min:0'],
             'price'           => ['nullable', 'numeric', 'min:0'],
             'route'           => ['nullable', 'string', 'max:255'],
+            'photo'           => ['nullable', 'image', 'max:5120'], // optional bus photo (≤5MB)
+            'remove_photo'    => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function prepare(array $data, Request $request, ?Model $record): array
+    {
+        unset($data['remove_photo']);
+        if ($request->hasFile('photo')) {
+            if ($record) {
+                $this->deleteImage($record->photo);
+            }
+            $data['photo'] = $this->storeImage($request->file('photo'), 'buses');
+        } else {
+            unset($data['photo']);
+            if ($record && $request->boolean('remove_photo')) {
+                $this->deleteImage($record->photo);
+                $data['photo'] = null;
+            }
+        }
+
+        return $data;
+    }
+
+    protected function beforeDelete(Model $record): void
+    {
+        $this->deleteImage($record->photo);
     }
 
     /** Passenger manifest (for printing). */

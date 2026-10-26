@@ -58,13 +58,16 @@
       <div class="kv"><div><span>نوع الحافلة</span><b>${esc(r.type || '—')}</b></div><div><span>السائق</span><b>${esc(r.driver_name || '—')} — ${esc(r.driver_phone || '')}</b></div><div><span>المشرف</span><b>${esc(r.supervisor_name || '—')}</b></div><div><span>خط السير</span><b>${esc(r.route || '—')}</b></div><div><span>عدد الركاب</span><b>${d.students.length} / ${r.capacity}</b></div></div>
       <table><thead><tr><th>#</th><th>اسم الطالب</th><th>الصف / الشعبة</th><th>ولي الأمر</th><th>الجوال</th><th>توقيع</th></tr></thead><tbody>${d.students.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(s.name)}</td><td>${esc((s.grade?.name_ar || '') + ' / ' + (s.section?.name || ''))}</td><td>${esc(s.guardian?.name || '')}</td><td>${esc(s.guardian?.phone || '')}</td><td style="width:90px"></td></tr>`).join('')}</tbody></table>`);
   };
-  const busFields = () => [
+  const busFields = (lk, row) => [
     { t: 'sec', l: 'بيانات الحافلة' },
     { k: 'number', l: 'رقم الحافلة / رقم اللوحة', req: true, dir: 'ltr' }, { k: 'type', l: 'نوع الحافلة', ph: 'باص 26 راكب' }, { k: 'capacity', l: 'عدد الركاب (السعة)', t: 'number', min: 0 }, { k: 'route', l: 'خط السير / المسار', full: true },
     { t: 'sec', l: 'السائق والمشرف' },
     { k: 'driver_name', l: 'اسم السائق' }, { k: 'driver_phone', l: 'هاتف السائق', t: 'tel' }, { k: 'supervisor_name', l: 'المشرف/ة' },
     { t: 'sec', l: 'الرسوم' },
     { k: 'price', l: 'السعر السنوي المتفق عليه', t: 'money' },
+    { t: 'sec', l: 'صورة الحافلة (اختياري)' },
+    { k: 'photo', l: row && row.photo ? 'استبدال الصورة' : 'إرفاق صورة', t: 'file', accept: 'image/*', full: true, help: 'صورة للحافلة — اختيارية (JPG أو PNG، حتى 5 ميجابايت). ترفع عند توفّر الاتصال.' },
+    ...(row && row.photo ? [{ k: 'remove_photo', l: 'حذف الصورة الحالية عند الحفظ', t: 'check' }] : []),
   ];
   S.page('buses', S.crud({
     title: 'الحافلات', singular: 'حافلة', api: '/app/buses', perm: 'school', year: true, icon: 'bus', invalidate: ['buses'], editPage: 'bus-form',
@@ -79,6 +82,7 @@
   S.page('bus-form', S.formPage({
     api: '/app/buses', title: 'الحافلات', singular: 'حافلة', perm: 'school', year: true, backTo: 'buses', invalidate: ['buses'], fields: busFields,
     context: (row) => row ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('bus')} ملخص الحافلة</div>
+      ${row.photo ? `<img src="${esc(row.photo)}" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-bottom:12px">` : ''}
       ${S.kv([['السعة', `<span class="num">${esc(row.capacity || '—')}</span> راكب`], ['عدد الركاب الحاليين', `<span class="num">${esc(row.students_count ?? '—')}</span>`], ['السعر السنوي', S.moneyT(row.price || 0)]])}
       <a class="btn ghost sm mt8" href="#/students?bus_id=${row.id}&year=all">${ic('users')} عرض قائمة الركاب</a></div>
       <div class="card pad" style="margin-top:14px"><div class="sec-t" style="margin-top:0">${ic('printer')} الطباعة</div><p class="muted sm">بعد الحفظ يمكنك طباعة كشف ركاب الحافلة من قائمة الحافلات.</p></div>` : `<div class="card pad"><p class="muted sm">${ic('bus')} أدخل بيانات الحافلة والسائق وخط السير. بعد الحفظ يمكنك إسناد الطلاب إليها من شاشة الطلاب.</p></div>`,
@@ -95,7 +99,14 @@
     { k: 'password', l: row && row.has_login ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور', t: 'password', help: 'يدخل ولي الأمر برقم جواله أو بريده وكلمة المرور هذه.' },
   ];
   function customFieldSpecs(lk, entity) { return (lk.custom_fields || []).filter((f) => f.entity === entity).map((f) => ({ k: 'cf_' + f.key, l: f.label, req: f.required, t: f.type === 'select' ? 'select' : f.type, opts: (f.options || []).map((o) => [o, o]), virtualCustom: f.key })); }
-  const packCustom = (vals, lk, entity) => { const custom = {}; (lk.custom_fields || []).filter((f) => f.entity === entity).forEach((f) => { custom[f.key] = vals['cf_' + f.key]; delete vals['cf_' + f.key]; }); vals.custom = custom; return vals; };
+  const packCustom = (vals, lk, entity) => {
+    const specs = (lk.custom_fields || []).filter((f) => f.entity === entity);
+    if (vals instanceof FormData) { // a photo was attached → repackage cf_* into custom[key] form fields
+      specs.forEach((f) => { const v = vals.get('cf_' + f.key); vals.delete('cf_' + f.key); if (v !== null && v !== undefined && v !== '') vals.append('custom[' + f.key + ']', v); });
+      return vals;
+    }
+    const custom = {}; specs.forEach((f) => { custom[f.key] = vals['cf_' + f.key]; delete vals['cf_' + f.key]; }); vals.custom = custom; return vals;
+  };
   const unpackCustom = (row) => { const v = { ...row }; Object.entries(row.custom || {}).forEach(([k, x]) => (v['cf_' + k] = x)); return v; };
   S.customFieldSpecs = customFieldSpecs;
 
@@ -138,7 +149,7 @@
   }));
 
   // ---------------------------------------------------------------- students
-  const studentFields = (lk) => [
+  const studentFields = (lk, row) => [
     { t: 'sec', l: 'البيانات الأساسية' },
     { k: 'name', l: 'اسم الطالب الكامل', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'national_id', l: 'رقم الهوية المدنية', dir: 'ltr' },
     { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'blood_type', l: 'فصيلة الدم', t: 'select', opts: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((b) => [b, b]) },
@@ -147,6 +158,9 @@
     { k: 'section_id', l: 'الصف / الشعبة', t: 'select', opts: sectionOpts(lk) }, { k: 'bus_id', l: 'الحافلة', t: 'select', blank: 'بدون حافلة', opts: (lk.buses || []).map((b) => [b.id, b.number + (b.type ? ' — ' + b.type : '')]) },
     { k: 'status', l: 'الحالة', t: 'select', req: true, opts: S.opts(S.ST.student), def: 'active' }, { k: 'registered_at', l: 'تاريخ التسجيل', t: 'date', def: S.today() }, { k: 'student_no', l: 'الرقم المدرسي', dir: 'ltr', ph: 'يُولّد تلقائياً' },
     ...(customFieldSpecs(lk, 'student').length ? [{ t: 'sec', l: 'حقول مخصّصة' }, ...customFieldSpecs(lk, 'student')] : []),
+    { t: 'sec', l: 'صورة الطالب (اختياري)' },
+    { k: 'photo', l: row && row.photo ? 'استبدال الصورة' : 'إرفاق صورة', t: 'file', accept: 'image/*', full: true, help: 'صورة شخصية واضحة للطالب — اختيارية (JPG أو PNG، حتى 5 ميجابايت). ترفع عند توفّر الاتصال.' },
+    ...(row && row.photo ? [{ k: 'remove_photo', l: 'حذف الصورة الحالية عند الحفظ', t: 'check' }] : []),
     { t: 'sec', l: 'معلومات إضافية' },
     { k: 'address', l: 'العنوان', full: true }, { k: 'medical_notes', l: 'ملاحظات صحية', t: 'textarea' }, { k: 'notes', l: 'ملاحظات', t: 'textarea' },
   ];
@@ -158,7 +172,7 @@
     m.$('#rc').onclick = () => { m.close(); S.reportCard(s.id); };
     const a = s.attendance_summary, tot = a.present + a.absent + a.late + a.excused;
     const cfs = (ctx.lk.custom_fields || []).filter((f) => f.entity === 'student');
-    m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(s.name))}</span><div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.name_en || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div>
+    m.body.innerHTML = `<div class="profile-h">${S.avatarHtml(s.photo, s.name)}<div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.name_en || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div>
       <div class="grid g4 mb16">
         ${S.ui.stat('c-green', 'check', tot ? Math.round(((a.present + a.late) * 100) / tot) + '%' : '—', 'نسبة الحضور')}
         ${S.ui.stat('c-red', 'x', S.num(a.absent), 'أيام الغياب')}
@@ -195,7 +209,8 @@
       if (!s) return `<div class="card pad"><p class="muted sm">${ic('userPlus')} عبّئ بيانات الطالب وسجّله في الشعبة المناسبة. بعد الحفظ يمكنك إنشاء عقد له من ملفّه أو من قائمة الطلاب.</p></div>`;
       const a = s.attendance_summary || { present: 0, absent: 0, late: 0, excused: 0 }, tot = a.present + a.absent + a.late + a.excused;
       const rem = (s.contracts || []).reduce((x, c) => x + (c.status === 'cancelled' ? 0 : +c.remaining), 0);
-      return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px"><span class="avatar">${esc(S.initials(s.name))}</span><div class="grow"><b>${esc(s.name)}</b><div class="muted sm num">${esc(s.student_no || '')}</div></div>${S.badge(S.ST.student, s.status)}</div>
+      return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px">${S.avatarHtml(s.photo, s.name)}<div class="grow"><b>${esc(s.name)}</b><div class="muted sm num">${esc(s.student_no || '')}</div></div>${S.badge(S.ST.student, s.status)}</div>
+        ${s.photo ? `<img src="${esc(s.photo)}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-bottom:12px">` : ''}
         <div class="grid g2 mb8">${S.ui.stat('c-green', 'check', tot ? Math.round(((a.present + a.late) * 100) / tot) + '%' : '—', 'الحضور')}${S.ui.stat('c-red', 'x', S.num(a.absent), 'الغياب')}</div>
         ${S.kv([['ولي الأمر', s.guardian ? `<a class="lk" href="#/guardians/${s.guardian.id}">${esc(s.guardian.name)}</a>` : '—'], ['المتبقي من الرسوم', S.moneyT(rem)]])}
         <div class="row wrap mt8"><button class="btn ghost sm" onclick="S.reportCard(${s.id})">${ic('fileText')} كشف الدرجات</button><button class="btn ghost sm" onclick="S.contractBuilder(null,{student_id:${s.id}})">${ic('contract')} عقد جديد</button></div></div>`;

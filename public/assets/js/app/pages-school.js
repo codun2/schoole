@@ -237,6 +237,30 @@
     { t: 'sec', l: 'ملاحظات' },
     { k: 'notes', l: 'ملاحظات إضافية', t: 'textarea', full: true },
   ];
+  const appViewRows = (r) => [['اسم الطالب', esc(r.student_name)], ['الجنس', S.LBL.gender[r.gender]], ['تاريخ الميلاد', `<span class="num">${S.d(r.birth_date)}</span>`], ['الجنسية', esc(r.nationality || '—')], ['رقم الهوية', `<span class="num">${esc(r.national_id || '—')}</span>`], ['الصف المطلوب', esc(r.grade?.name_ar || '—')], ['المدرسة السابقة', esc(r.previous_school || '—')], ['ولي الأمر', esc(r.guardian_name)], ['الجوال', `<span class="num">${esc(r.guardian_phone)}</span>`], ['هوية ولي الأمر', `<span class="num">${esc(r.guardian_national_id || '—')}</span>`], ['البريد', `<span class="num">${esc(r.guardian_email || '—')}</span>`], ['الحالة', S.badge(S.ST.app, r.status)], ['المصدر', r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>'], ['تاريخ الطلب', `<span class="num">${S.d(r.created_at)}</span>`], ['ملاحظات', esc(r.notes || '—')]];
+  const acceptApp = (r, lk, onDone) => S.formModal({ title: 'قبول طلب ' + r.student_name, fields: [{ k: 'section_id', l: 'التسكين في الشعبة', t: 'select', opts: sectionOpts(lk).filter(([id]) => !r.grade_id || (lk.sections.find((s) => s.id === id) || {}).grade_id === r.grade_id) }], extra: '<p class="muted sm mt8">سيتم إنشاء ملف الطالب وربطه بولي الأمر (أو إنشاء ولي أمر جديد إن لم يكن مسجلاً).</p>', saveText: 'قبول', onSave: async (v) => { const res = await S.post(`/app/applications/${r.id}/accept`, v); S.toast(res.message, 'ok'); S.L.clear('guardians'); S.refreshBadges(); onDone && onDone(); } });
+  const rejectApp = (r, onDone) => S.formModal({ title: 'رفض طلب ' + r.student_name, fields: [{ k: 'reason', l: 'سبب الرفض', t: 'textarea' }], saveText: 'رفض الطلب', onSave: async (v) => { await S.post(`/app/applications/${r.id}/reject`, v); S.toast('تم رفض الطلب', 'ok'); S.refreshBadges(); onDone && onDone(); } });
+
+  S.page('application-view', {
+    perm: 'students', title: 'استمارة التسجيل',
+    async render(el, params) {
+      const lk = await S.L(['grades', 'sections']);
+      el.innerHTML = S.spinner;
+      let r;
+      try { r = await S.get('/app/applications/' + params.id); }
+      catch (e) { if (!(S.local && S.local.isOfflineError(e))) { el.innerHTML = S.emptyHtml('تعذّر تحميل الطلب', e.message, 'alert'); return; } }
+      if (!r && S.db) r = await S.db.get('applications', params.id);
+      if (!r) { el.innerHTML = S.emptyHtml('تعذّر تحميل الطلب', 'لا توجد نسخة محفوظة من هذا الطلب على الجهاز', 'alert'); return; }
+      el.innerHTML = `<div class="crumbs"><a class="acc-t" href="#/applications">استمارة التسجيل</a> ${ic('chevL')} <b>تفاصيل الطلب</b></div>
+        <div class="page-h"><div><h2>${esc(r.student_name)} ${S.badge(S.ST.app, r.status)}</h2><p>${r.source === 'online' ? 'طلب إلكتروني' : 'طلب من المكتب'} · <span class="num">${S.d(r.created_at)}</span></p></div>
+          <div class="row wrap">${r.status === 'new' ? `<button class="btn success" id="acc">${ic('check')} قبول وتسجيل</button><button class="btn danger" id="rej">${ic('x')} رفض</button><a class="btn ghost" href="#/application-form/${r.id}">${ic('edit')} تعديل</a>` : ''}<a class="btn ghost" href="#/applications">${ic('chevR')} رجوع للقائمة</a></div></div>
+        <div class="card pad">${S.kv(appViewRows(r))}</div>`;
+      const back = () => (location.hash = '#/applications');
+      el.querySelector('#acc') && (el.querySelector('#acc').onclick = () => acceptApp(r, lk, back));
+      el.querySelector('#rej') && (el.querySelector('#rej').onclick = () => rejectApp(r, back));
+    },
+  });
+
   S.page('applications', S.crud({
     title: 'استمارة التسجيل', singular: 'طلب تسجيل', api: '/app/applications', perm: 'students', year: true, icon: 'userPlus', lookups: ['grades', 'sections'], editPage: 'application-form',
     intro: `<div class="card pad mb16 row wrap" style="background:var(--accent-soft);border-color:transparent"><span class="acc-t">${S.ic('link')}</span><div class="grow"><b>رابط التسجيل الإلكتروني لأولياء الأمور</b><div class="sm t2">يصل كل طلب جديد إلى هذه الشاشة لمراجعته وقبوله.</div></div><button class="btn sm" id="cplink">${S.ic('copy')} نسخ الرابط</button><a class="btn ghost sm" target="_blank" id="oplink">فتح الاستمارة</a></div>`,
@@ -251,10 +275,10 @@
     ],
     canEdit: (r) => r.status === 'new',
     rowActions: [
-      { ic: 'check', cls: 'g', t: 'قبول وتسجيل الطالب', show: (r) => r.status === 'new', run: (r, ctx) => S.formModal({ title: 'قبول طلب ' + r.student_name, fields: [{ k: 'section_id', l: 'التسكين في الشعبة', t: 'select', opts: sectionOpts(ctx.lk).filter(([id]) => !r.grade_id || (ctx.lk.sections.find((s) => s.id === id) || {}).grade_id === r.grade_id) }], extra: '<p class="muted sm mt8">سيتم إنشاء ملف الطالب وربطه بولي الأمر (أو إنشاء ولي أمر جديد إن لم يكن مسجلاً).</p>', saveText: 'قبول', onSave: async (v) => { const res = await S.post(`/app/applications/${r.id}/accept`, v); S.toast(res.message, 'ok'); S.L.clear('guardians'); ctx.reload(); S.refreshBadges(); } }) },
-      { ic: 'x', cls: 'd', t: 'رفض', show: (r) => r.status === 'new', run: (r, ctx) => S.formModal({ title: 'رفض طلب ' + r.student_name, fields: [{ k: 'reason', l: 'سبب الرفض', t: 'textarea' }], saveText: 'رفض الطلب', onSave: async (v) => { await S.post(`/app/applications/${r.id}/reject`, v); S.toast('تم رفض الطلب', 'ok'); ctx.reload(); S.refreshBadges(); } }) },
+      { ic: 'check', cls: 'g', t: 'قبول وتسجيل الطالب', show: (r) => r.status === 'new', run: (r, ctx) => acceptApp(r, ctx.lk, ctx.reload) },
+      { ic: 'x', cls: 'd', t: 'رفض', show: (r) => r.status === 'new', run: (r, ctx) => rejectApp(r, ctx.reload) },
     ],
-    viewFields: (r) => [['اسم الطالب', esc(r.student_name)], ['الجنس', S.LBL.gender[r.gender]], ['تاريخ الميلاد', S.d(r.birth_date)], ['الجنسية', esc(r.nationality || '—')], ['رقم الهوية', esc(r.national_id || '—')], ['الصف المطلوب', esc(r.grade?.name_ar || '—')], ['المدرسة السابقة', esc(r.previous_school || '—')], ['ولي الأمر', esc(r.guardian_name)], ['الجوال', esc(r.guardian_phone)], ['هوية ولي الأمر', esc(r.guardian_national_id || '—')], ['البريد', esc(r.guardian_email || '—')], ['الحالة', S.badge(S.ST.app, r.status)], ['ملاحظات', esc(r.notes || '—')]],
+    view: (r) => (location.hash = '#/application-view/' + r.id),
   }));
 
   S.page('application-form', S.formPage({

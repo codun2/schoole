@@ -431,3 +431,29 @@ table.tt td,table.tt th{min-width:118px}
 .nav .sub .sh::after{content:'';display:block;height:1px;background:var(--line);margin-top:4px}
 .nav .sub .sh:first-child{padding-top:6px}
 .nav .sub a{padding:6px 14px}
+
+/* ---- searchable combobox (S.combo) ---- */
+.combo{position:relative;width:auto}
+.combo.full{width:100%}
+.combo-trigger{display:flex;align-items:center;gap:8px;width:100%;height:38px;border:1px solid var(--line-2);border-radius:9px;background:var(--card);padding:0 11px;cursor:pointer;color:var(--text);font:inherit;text-align:start;transition:border-color .12s,box-shadow .12s}
+.combo-trigger:hover{border-color:var(--accent)}
+.combo.open .combo-trigger{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.combo-trigger svg{width:16px;height:16px;color:var(--muted);margin-inline-start:auto;flex:none;transition:transform .15s}
+.combo.open .combo-trigger svg{transform:rotate(-90deg)}
+.combo-trigger .combo-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-ph{color:var(--muted)}
+.combo-sub{color:var(--muted);font-size:12px}
+.combo.is-disabled{opacity:.6;pointer-events:none}
+.combo-panel{position:absolute;z-index:120;top:calc(100% + 5px);inset-inline:0;background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:0 12px 32px rgba(15,20,32,.16);overflow:hidden;animation:comboIn .12s ease}
+@keyframes comboIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.combo-search{position:relative;padding:9px;border-bottom:1px solid var(--line)}
+.combo-search svg{position:absolute;inset-inline-start:19px;top:19px;width:16px;height:16px;color:var(--muted)}
+.combo-search input{width:100%;height:36px;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:0 34px;outline:none;color:var(--text);font:inherit}
+.combo-search input:focus{border-color:var(--accent);background:var(--card)}
+.combo-list{max-height:260px;overflow:auto;padding:5px}
+.combo-opt{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text);line-height:1.3}
+.combo-opt svg{width:16px;height:16px;color:var(--accent);flex:none}
+.combo-opt .combo-dot{width:16px;flex:none}
+.combo-opt.hi{background:var(--soft-2)}
+.combo-opt.sel{color:var(--accent);font-weight:600}
+.combo-empty{padding:16px;text-align:center;color:var(--muted);font-size:13px}

@@ -103,7 +103,7 @@
     const draw = S.safeDraw(root, () => {
       const s = student(), k = calc(), fees = feeFor(s);
       root.innerHTML = `<div class="grid g-2-1"><div>
-        <div class="fgrid mb16"><label class="fld full"><span>الطالب <i>*</i></span><select class="inp" id="st"><option value="">${students.length ? '— اختر الطالب —' : (studentsRes.data.length ? '— كل الطلاب النشطين لديهم عقود لهذه السنة —' : '— لا يوجد طلاب نشطون في هذه السنة —')}</option>${students.map((x) => `<option value="${x.id}" ${String(x.id) === String(state.student_id) ? 'selected' : ''}>${esc(x.name)} — ${esc(x.grade?.name_ar || '')} ${esc(x.section?.name || '')}</option>`).join('')}</select>${students.length ? '' : `<div class="muted xs mt8">${studentsRes.data.length ? `يظهر هنا فقط الطلاب الذين ليس لهم عقد (غير ملغي) في السنة الدراسية الحالية — ${S.num(studentsRes.data.length)} طالب لديهم عقود بالفعل. لتعديل عقد قائم افتحه من <a class="acc-t" href="#/contracts">قائمة العقود</a>.` : `أضف الطلاب أولاً من <a class="acc-t" href="#/students">شاشة الطلاب</a>.`}</div>`}</label>
+        <div class="fgrid mb16"><label class="fld full"><span>الطالب <i>*</i></span><div id="st"></div>${students.length ? '' : `<div class="muted xs mt8">${studentsRes.data.length ? `يظهر هنا فقط الطلاب الذين ليس لهم عقد (غير ملغي) في السنة الدراسية الحالية — ${S.num(studentsRes.data.length)} طالب لديهم عقود بالفعل. لتعديل عقد قائم افتحه من <a class="acc-t" href="#/contracts">قائمة العقود</a>.` : `أضف الطلاب أولاً من <a class="acc-t" href="#/students">شاشة الطلاب</a>.`}</div>`}</label>
           <label class="fld"><span>تاريخ العقد</span><input class="inp" type="date" id="dt" value="${state.date}" dir="ltr"></label>
           <label class="fld"><span>الحافلة</span><select class="inp" id="bus"><option value="">بدون حافلة</option>${lk.buses.map((b) => `<option value="${b.id}" ${String(b.id) === String(state.bus_id) ? 'selected' : ''}>${esc(b.number)} — ${S.moneyT(b.price)}</option>`).join('')}</select></label></div>
         ${s ? `<div class="sec-t">${ic('coins')} بنود الرسوم ${s.grade ? '— ' + esc(s.grade.name_ar) : ''}</div>
@@ -125,7 +125,13 @@
           ${state.schedule ? `<button class="btn ghost xs mt8" id="sreset">${ic('refresh')} إعادة التوزيع بالتساوي</button>` : '<p class="muted xs mt8">يمكنك تعديل تاريخ أو مبلغ أي قسط؛ الأخير يُضبط تلقائياً.</p>'}</div>
       </div></div>`;
       const $ = (s) => root.querySelector(s);
-      $('#st').onchange = (e) => { state.student_id = e.target.value; pickDefaults(); draw(); };
+      $('#st').replaceWith(S.combo({
+        full: true, value: state.student_id, disabled: !students.length,
+        placeholder: students.length ? '— اختر الطالب —' : (studentsRes.data.length ? '— كل الطلاب النشطين لديهم عقود —' : '— لا يوجد طلاب نشطون —'),
+        searchPlaceholder: 'ابحث باسم الطالب أو الصف...',
+        items: students.map((x) => [x.id, x.name, [x.grade?.name_ar, x.section?.name].filter(Boolean).join(' ')]),
+        onChange: (v) => { state.student_id = v; pickDefaults(); draw(); },
+      }));
       $('#dt').onchange = (e) => (state.date = e.target.value);
       $('#bus').onchange = (e) => { state.bus_id = e.target.value; draw(); };
       $('#dtp').onchange = (e) => { state.discount_type = e.target.value; draw(); };

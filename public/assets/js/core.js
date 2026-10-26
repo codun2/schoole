@@ -197,6 +197,51 @@
   S.spinner = '<div class="spin"></div>';
   S.emptyHtml = (title, sub, icon, action) => `<div class="empty">${S.ic(icon || 'inbox')}<b>${esc(title || 'لا توجد بيانات')}</b>${sub ? `<div>${esc(sub)}</div>` : ''}${action || ''}</div>`;
   S.badge = (map, key) => { const v = map[key]; return v ? `<span class="bdg ${v[1]}">${v[0]}</span>` : `<span class="bdg l-mut">${esc(key || '—')}</span>`; };
+  /**
+   * Searchable single-select combobox — a modern replacement for a long <select>.
+   * opts: { items:[[value,label,sub?]|{v,l,sub}], value, placeholder, searchPlaceholder, emptyText, full, disabled, onChange(value) }
+   * Returns a DOM element exposing getValue()/setValue(v)/setItems(list).
+   */
+  S.combo = function (opts) {
+    const norm = (list) => (list || []).map((it) => (Array.isArray(it) ? { v: String(it[0]), l: String(it[1] ?? ''), sub: it[2] } : { v: String(it.v), l: String(it.l ?? ''), sub: it.sub }));
+    let items = norm(opts.items);
+    let value = opts.value != null && opts.value !== '' ? String(opts.value) : '';
+    let hi = -1, filtered = items;
+    const box = document.createElement('div');
+    box.className = 'combo' + (opts.full ? ' full' : '') + (opts.disabled ? ' is-disabled' : '');
+    const sel = () => items.find((x) => x.v === value);
+    const lbl = () => { const s = sel(); return s ? `<span class="combo-lbl">${esc(s.l)}${s.sub ? ` <span class="combo-sub">${esc(s.sub)}</span>` : ''}</span>` : `<span class="combo-ph">${esc(opts.placeholder || '— اختر —')}</span>`; };
+    box.innerHTML = `<button type="button" class="combo-trigger" ${opts.disabled ? 'disabled' : ''}>${lbl()}${S.ic('chevL')}</button>
+      <div class="combo-panel" hidden><div class="combo-search">${S.ic('search')}<input type="text" placeholder="${esc(opts.searchPlaceholder || 'بحث بالاسم...')}" autocomplete="off" dir="auto"></div><div class="combo-list" role="listbox"></div></div>`;
+    const trigger = box.querySelector('.combo-trigger'), panel = box.querySelector('.combo-panel'), search = box.querySelector('input'), list = box.querySelector('.combo-list');
+    const renderList = (q) => {
+      q = (q || '').trim().toLowerCase();
+      filtered = q ? items.filter((x) => (x.l + ' ' + (x.sub || '')).toLowerCase().includes(q)) : items;
+      if (hi >= filtered.length) hi = filtered.length - 1;
+      list.innerHTML = filtered.length
+        ? filtered.map((x, i) => `<div class="combo-opt${x.v === value ? ' sel' : ''}${i === hi ? ' hi' : ''}" data-v="${esc(x.v)}" role="option">${x.v === value ? S.ic('check') : '<i class="combo-dot"></i>'}<span>${esc(x.l)}${x.sub ? ` <span class="combo-sub">${esc(x.sub)}</span>` : ''}</span></div>`).join('')
+        : `<div class="combo-empty">${esc(opts.emptyText || 'لا نتائج مطابقة')}</div>`;
+      list.querySelectorAll('[data-v]').forEach((el) => (el.onmousedown = (e) => { e.preventDefault(); choose(el.dataset.v); }));
+      const cur = list.querySelector('.combo-opt.hi'); if (cur) cur.scrollIntoView({ block: 'nearest' });
+    };
+    const outside = (e) => { if (!box.contains(e.target)) close(); };
+    const open = () => { if (!panel.hidden || opts.disabled) return; panel.hidden = false; box.classList.add('open'); hi = Math.max(0, filtered.findIndex((x) => x.v === value)); search.value = ''; renderList(''); setTimeout(() => search.focus(), 10); document.addEventListener('mousedown', outside, true); };
+    const close = () => { if (panel.hidden) return; panel.hidden = true; box.classList.remove('open'); document.removeEventListener('mousedown', outside, true); };
+    const choose = (v) => { value = String(v); trigger.innerHTML = lbl() + S.ic('chevL'); close(); opts.onChange && opts.onChange(value); };
+    trigger.onclick = () => (panel.hidden ? open() : close());
+    search.oninput = () => { hi = 0; renderList(search.value); };
+    search.onkeydown = (e) => {
+      if (e.key === 'ArrowDown') { hi = Math.min(filtered.length - 1, hi + 1); renderList(search.value); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { hi = Math.max(0, hi - 1); renderList(search.value); e.preventDefault(); }
+      else if (e.key === 'Enter') { if (filtered[hi]) choose(filtered[hi].v); e.preventDefault(); }
+      else if (e.key === 'Escape') { close(); trigger.focus(); }
+    };
+    box.getValue = () => value;
+    box.setValue = (v) => { value = v != null && v !== '' ? String(v) : ''; trigger.innerHTML = lbl() + S.ic('chevL'); };
+    box.setItems = (list2) => { items = norm(list2); renderList(''); };
+    renderList('');
+    return box;
+  };
   S.prog = (p) => { p = Math.max(0, Math.min(100, +p || 0)); const c = p >= 100 ? 'var(--ok)' : p >= 60 ? 'var(--info)' : p >= 30 ? '#f2b33d' : p > 0 ? 'var(--orange)' : 'transparent'; return `<div class="prog"><i style="width:${Math.max(p, p ? 18 : 0)}%;background:${c}">${p ? p + '%' : ''}</i></div>`; };
   S.btnBusy = (b, on) => { if (!b) return; if (on) { b.dataset.html = b.innerHTML; b.disabled = true; b.innerHTML = '<span class="spin sm" style="border-top-color:#fff"></span>'; } else { b.disabled = false; if (b.dataset.html) b.innerHTML = b.dataset.html; } };
 

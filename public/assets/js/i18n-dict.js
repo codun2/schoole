@@ -1624,4 +1624,11 @@ window.SCH_DICT = {
   'الكشف': 'Report',
   'كشف الدرجات (طباعة / حفظ PDF)': 'Report card (print / save PDF)',
   'كشف درجات الطالب كاملاً للطباعة أو حفظه PDF': 'Full student report card to print or save as PDF',
+
+  // ---- searchable combo
+  'لا نتائج مطابقة': 'No matches',
+  'ابحث باسم الطالب أو الصف...': 'Search by student name or grade...',
+  'بحث بالاسم...': 'Search by name...',
+  '— كل الطلاب النشطين لديهم عقود —': '— All active students already have contracts —',
+  '— لا يوجد طلاب نشطون —': '— No active students —',
 };

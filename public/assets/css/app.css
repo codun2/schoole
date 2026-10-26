@@ -457,3 +457,7 @@ table.tt td,table.tt th{min-width:118px}
 .combo-opt.hi{background:var(--soft-2)}
 .combo-opt.sel{color:var(--accent);font-weight:600}
 .combo-empty{padding:16px;text-align:center;color:var(--muted);font-size:13px}
+
+/* one-line ellipsis for long cell text (full text shown via title tooltip) */
+.clip{display:inline-block;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+@media(max-width:900px){.clip{max-width:140px}}

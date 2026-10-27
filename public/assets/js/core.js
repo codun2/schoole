@@ -258,6 +258,37 @@
     renderList('');
     return box;
   };
+  /**
+   * Progressive enhancement: overlay the modern searchable combobox on top of each native
+   * <select> inside `root`, keeping the native element as the source of truth. All existing
+   * `.value` reads and `change` handlers keep working unchanged; if anything fails the native
+   * select stays fully functional. Re-syncs automatically when options are refilled.
+   */
+  S.enhanceSelects = function (root) {
+    if (!root || typeof document === 'undefined') return;
+    root.querySelectorAll('select.inp:not([data-combo])').forEach((sel) => {
+      try {
+        if (sel.multiple) return;
+        sel.setAttribute('data-combo', '1');
+        const build = () => Array.from(sel.options).map((o) => [o.value, o.textContent, '', o.disabled]);
+        const box = S.combo({
+          items: build().map(([v, l]) => [v, l]),
+          value: sel.value,
+          full: true,
+          placeholder: '— اختر —',
+          onChange: (v) => { if (String(sel.value) !== String(v)) { sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true })); } },
+        });
+        box.classList.add('combo-enh');
+        sel.style.display = 'none';
+        sel.after(box);
+        sel._combo = box;
+        // keep the combo in sync when options are refilled or the value is set programmatically
+        const resync = () => { box.setItems(build().map(([v, l]) => [v, l])); box.setValue(sel.value); };
+        new MutationObserver(resync).observe(sel, { childList: true });
+      } catch (e) { /* leave the native select functional */ }
+    });
+  };
+
   S.prog = (p) => { p = Math.max(0, Math.min(100, +p || 0)); const c = p >= 100 ? 'var(--ok)' : p >= 60 ? 'var(--info)' : p >= 30 ? '#f2b33d' : p > 0 ? 'var(--orange)' : 'transparent'; return `<div class="prog"><i style="width:${Math.max(p, p ? 18 : 0)}%;background:${c}">${p ? p + '%' : ''}</i></div>`; };
   S.btnBusy = (b, on) => { if (!b) return; if (on) { b.dataset.html = b.innerHTML; b.disabled = true; b.innerHTML = '<span class="spin sm" style="border-top-color:#fff"></span>'; } else { b.disabled = false; if (b.dataset.html) b.innerHTML = b.dataset.html; } };
 

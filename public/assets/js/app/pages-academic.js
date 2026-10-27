@@ -120,6 +120,7 @@
         body.querySelector('#subj').onchange = load;
         body.querySelector('#term').onchange = load;
         body.querySelector('#ld').onclick = load;
+        S.enhanceSelects(body);
         load();
       }
       const SCALE = [[90, 'A', 'ممتاز', '#14a06b'], [80, 'B', 'جيد جداً', '#2f7ae5'], [65, 'C', 'جيد', '#0f9d9a'], [50, 'D', 'مقبول', '#d98a0b'], [0, 'F', 'راسب', '#e0384c']];
@@ -139,7 +140,7 @@
             </tbody></table></div>`;
           r.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => S.reportCard(+b.dataset.c)));
         };
-        body.querySelector('#ld').onclick = load; body.querySelector('#sec').onchange = load;
+        body.querySelector('#ld').onclick = load; body.querySelector('#sec').onchange = load; S.enhanceSelects(body);
         body.querySelector('#ex').onclick = () => last && S.exportXlsx('نتائج-الفصل', [{ l: 'الترتيب', v: (r) => r.rank }, { l: 'الطالب', v: (r) => r.name }, { l: 'الرقم', v: (r) => r.student_no }, { l: 'المواد المرصودة', v: (r) => r.subjects_counted }, { l: 'مواد الرسوب', v: (r) => r.failed }, { l: 'المعدل', v: (r) => r.percent }, { l: 'التقدير', v: (r) => r.grade.letter }], last.rows);
         load();
       }
@@ -152,7 +153,7 @@
           body.querySelector('#list').innerHTML = d.data.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الصف / الشعبة</th><th>الرقم</th><th>كشف الدرجات</th></tr></thead><tbody>${d.data.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(S.enName(s))}</td><td>${esc(S.gs(s, ''))}</td><td class="num muted">${esc(s.student_no || '')}</td><td><button class="btn soft xs" data-c="${s.id}">${ic('fileText')} عرض الكشف</button></td></tr>`).join('')}</tbody></table></div>` : S.emptyHtml('لا يوجد طلاب');
           body.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => S.reportCard(+b.dataset.c)));
         };
-        body.querySelector('#g').onchange = load; body.querySelector('#sec').onchange = load;
+        body.querySelector('#g').onchange = load; body.querySelector('#sec').onchange = load; S.enhanceSelects(body);
         body.querySelector('#q').oninput = S.debounce(load, 350);
         load();
       }

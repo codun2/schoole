@@ -270,6 +270,7 @@
       $('#g').onchange = (e) => { st.grade_id = e.target.value; st.page = 1; load(); };
       $('#f').onchange = (e) => { st.from = e.target.value; load(); };
       $('#t').onchange = (e) => { st.to = e.target.value; load(); };
+      S.enhanceSelects(el);
       $('#exp').onclick = async () => { const rows = await load(true); S.exportXlsx('الأقساط', [{ l: 'الطالب', v: (i) => i.student?.name }, { l: 'رقم العقد', v: (i) => i.contract?.number }, { l: 'ولي الأمر', v: (i) => i.contract?.guardian?.name }, { l: 'الجوال', v: (i) => i.contract?.guardian?.phone }, { l: 'القسط', v: (i) => i.seq }, { l: 'تاريخ الاستحقاق', v: (i) => S.d(i.due_date) }, { l: 'المبلغ', v: (i) => +i.amount }, { l: 'المدفوع', v: (i) => +i.paid }, { l: 'المتبقي', v: (i) => +i.remaining }, { l: 'الحالة', v: (i) => (i.is_overdue ? 'متأخر' : S.ST.inst[i.status][0]) }], rows); };
       await load();
     },

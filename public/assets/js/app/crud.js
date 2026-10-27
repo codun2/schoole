@@ -166,6 +166,7 @@
         $('#go') && ($('#go').onclick = apply);
         $('#q') && ($('#q').oninput = S.debounce(apply, 350));
         el.querySelectorAll('[data-filter]').forEach((s) => (s.onchange = apply));
+        S.enhanceSelects(el);
         el.querySelectorAll('[data-chip]').forEach((b) => (b.onclick = () => { el.querySelectorAll('[data-chip]').forEach((x) => x.classList.remove('on')); b.classList.add('on'); state.f[cfg.chips.k] = b.dataset.chip; state.page = 1; load(); }));
         $('#add') && ($('#add').onclick = () => openForm(null));
         el.querySelectorAll('[data-tb]').forEach((b) => (b.onclick = () => cfg.toolbar[+b.dataset.tb].run(ctx)));

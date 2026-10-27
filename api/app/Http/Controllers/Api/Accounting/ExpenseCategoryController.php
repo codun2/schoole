@@ -23,6 +23,7 @@ class ExpenseCategoryController extends ResourceController
     {
         return [
             'name'  => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en' => ['nullable', 'string', 'max:120'],
             'color' => ['nullable', 'string', 'max:10'],
         ];
     }

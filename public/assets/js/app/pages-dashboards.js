@@ -131,11 +131,11 @@
           ${stat('c-violet', 'receipt', S.money(+d.unpaid_expenses + 0, true), 'مصروفات غير مسددة', '#/expenses?status=unpaid')}
         </div>
         <div class="grid g3 mt16">
-          <div class="card"><div class="hd"><h3>${ic('bank')} أرصدة الصناديق والبنوك</h3></div><div class="bd">${d.balances.map((a) => `<div class="li"><span class="ic">${ic(a.type === 'bank' ? 'bank' : 'wallet')}</span><span class="t"><b>${esc(a.name)}</b><small>وارد ${S.fmtN(a.total_in)} · صادر ${S.fmtN(a.total_out)}</small></span><b class="${a.balance < 0 ? 'bad-t' : ''}">${money(a.balance)}</b></div>`).join('')}</div></div>
+          <div class="card"><div class="hd"><h3>${ic('bank')} أرصدة الصناديق والبنوك</h3></div><div class="bd">${d.balances.map((a) => `<div class="li"><span class="ic">${ic(a.type === 'bank' ? 'bank' : 'wallet')}</span><span class="t"><b>${esc(a.name)}</b><small>${S.isEn() ? 'In' : 'وارد'} ${S.fmtN(a.total_in)} · ${S.isEn() ? 'Out' : 'صادر'} ${S.fmtN(a.total_out)}</small></span><b class="${a.balance < 0 ? 'bad-t' : ''}">${money(a.balance)}</b></div>`).join('')}</div></div>
           <div class="card"><div class="hd"><h3>${ic('pie')} المصروفات حسب الفئة (هذا العام)</h3></div><div class="bd" id="cats"></div></div>
           <div class="card"><div class="hd"><h3>${ic('activity')} آخر الحركات</h3></div><div class="bd">${d.recent_vouchers.map((v) => `<div class="li"><span class="ic" style="background:${v.type === 'receipt' ? 'var(--ok-bg)' : 'var(--bad-bg)'};color:${v.type === 'receipt' ? 'var(--ok)' : 'var(--bad)'}">${ic(v.type === 'receipt' ? 'download' : 'upload')}</span><span class="t"><b>${esc(v.description || v.party_name || v.number)}</b><small class="num">${esc(v.number)} · ${S.d(v.date)}</small></span><b class="num ${v.type === 'receipt' ? 'ok-t' : 'bad-t'}">${v.type === 'receipt' ? '+' : '−'}${S.fmtN(v.amount)}</b></div>`).join('') || S.emptyHtml()}</div></div>
         </div>`;
-      S.chart.donut(el.querySelector('#cats'), { items: d.by_category.map((c) => ({ label: c.name, value: +c.total, color: c.color, fmt: S.fmtN(c.total) })), center: S.fmtN(d.by_category.reduce((a, c) => a + +c.total, 0), 0) });
+      S.chart.donut(el.querySelector('#cats'), { items: d.by_category.map((c) => ({ label: S.tr(c.name), value: +c.total, color: c.color, fmt: S.fmtN(c.total) })), center: S.fmtN(d.by_category.reduce((a, c) => a + +c.total, 0), 0) });
     },
   });
 

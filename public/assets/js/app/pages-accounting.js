@@ -9,7 +9,7 @@
     title: 'العملاء', singular: 'عميل', api: '/app/customers', perm: 'accounting', icon: 'user', invalidate: ['customers'],
     search: 'بحث بالاسم أو الجوال أو الرقم الضريبي...',
     columns: [{ l: 'العميل', s: true, v: (r) => cell.name(r.name, esc(r.email || '')) }, { l: 'الجوال', v: (r) => cell.phone(r.phone) }, { l: 'الرقم الضريبي', v: (r) => cell.num(r.tax_number || '—') }, { l: 'الفواتير', v: (r) => cell.cnt(r.invoices_count) }, { l: 'الرصيد المستحق', v: (r) => `<span class="num ${+r.balance_due ? 'bad-t b' : ''}">${S.fmtN(r.balance_due)}</span>` }],
-    fields: () => [{ k: 'name', l: 'اسم العميل / الجهة', req: true, full: true }, { k: 'phone', l: 'الجوال', t: 'tel' }, { k: 'email', l: 'البريد', t: 'email' }, { k: 'tax_number', l: 'الرقم الضريبي', dir: 'ltr' }, { k: 'address', l: 'العنوان' }, { k: 'notes', l: 'ملاحظات', t: 'textarea' }],
+    fields: () => [{ k: 'name', l: 'اسم العميل / الجهة', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr', full: true }, { k: 'phone', l: 'الجوال', t: 'tel' }, { k: 'email', l: 'البريد', t: 'email' }, { k: 'tax_number', l: 'الرقم الضريبي', dir: 'ltr' }, { k: 'address', l: 'العنوان' }, { k: 'notes', l: 'ملاحظات', t: 'textarea' }],
     rowActions: [{ ic: 'file', cls: 'v', t: 'الفواتير', run: (r) => (location.hash = '#/service-invoices?customer_id=' + r.id) }],
     exportCols: [{ l: 'العميل', v: (r) => r.name }, { l: 'الجوال', v: (r) => r.phone }, { l: 'البريد', v: (r) => r.email }, { l: 'الرقم الضريبي', v: (r) => r.tax_number }, { l: 'الرصيد المستحق', v: (r) => +r.balance_due }],
   }));
@@ -19,7 +19,7 @@
     title: 'الموردون', singular: 'مورد', api: '/app/suppliers', perm: 'accounting', icon: 'truck', invalidate: ['suppliers'],
     search: 'بحث بالاسم أو الجوال...',
     columns: [{ l: 'المورد', s: true, v: (r) => cell.name(r.name, esc(r.contact_person || '')) }, { l: 'الجوال', v: (r) => cell.phone(r.phone) }, { l: 'البريد', v: (r) => esc(r.email || '—') }, { l: 'الرقم الضريبي', v: (r) => cell.num(r.tax_number || '—') }, { l: 'الفواتير', v: (r) => cell.cnt(r.expenses_count) }, { l: 'المستحق له', v: (r) => `<span class="num ${+r.balance_due ? 'bad-t b' : ''}">${S.fmtN(r.balance_due)}</span>` }],
-    fields: () => [{ k: 'name', l: 'اسم المورد', req: true, full: true }, { k: 'contact_person', l: 'الشخص المسؤول' }, { k: 'phone', l: 'الجوال', t: 'tel' }, { k: 'email', l: 'البريد', t: 'email' }, { k: 'tax_number', l: 'الرقم الضريبي', dir: 'ltr' }, { k: 'address', l: 'العنوان', full: true }, { k: 'notes', l: 'ملاحظات', t: 'textarea' }],
+    fields: () => [{ k: 'name', l: 'اسم المورد', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr', full: true }, { k: 'contact_person', l: 'الشخص المسؤول' }, { k: 'phone', l: 'الجوال', t: 'tel' }, { k: 'email', l: 'البريد', t: 'email' }, { k: 'tax_number', l: 'الرقم الضريبي', dir: 'ltr' }, { k: 'address', l: 'العنوان', full: true }, { k: 'notes', l: 'ملاحظات', t: 'textarea' }],
     rowActions: [{ ic: 'receipt', cls: 'v', t: 'فواتير المصروفات', run: (r) => (location.hash = '#/expenses?supplier_id=' + r.id) }],
   }));
 
@@ -27,7 +27,7 @@
   S.page('expense-categories', S.crud({
     title: 'فئات المصاريف', singular: 'فئة', api: '/app/expense-categories', perm: 'accounting', icon: 'tag', invalidate: ['expense_categories'],
     columns: [{ l: 'الفئة', s: true, v: (r) => `<span class="row"><i style="width:12px;height:12px;border-radius:4px;background:${esc(r.color)}"></i><b>${esc(r.name)}</b></span>` }, { l: 'عدد المصروفات', v: (r) => cell.cnt(r.expenses_count) }, { l: 'الإجمالي', v: (r) => S.money(r.expenses_total) }],
-    fields: () => [{ k: 'name', l: 'اسم الفئة', req: true }, { k: 'color', l: 'اللون', t: 'select', opts: [['#4f46e5', 'نيلي'], ['#14a06b', 'أخضر'], ['#ea7a1e', 'برتقالي'], ['#e0384c', 'أحمر'], ['#0ea5e9', 'سماوي'], ['#7c5ce6', 'بنفسجي'], ['#d98a0b', 'ذهبي'], ['#db2777', 'وردي'], ['#64748b', 'رمادي']], def: '#4f46e5' }],
+    fields: () => [{ k: 'name', l: 'اسم الفئة', req: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'color', l: 'اللون', t: 'select', opts: [['#4f46e5', 'نيلي'], ['#14a06b', 'أخضر'], ['#ea7a1e', 'برتقالي'], ['#e0384c', 'أحمر'], ['#0ea5e9', 'سماوي'], ['#7c5ce6', 'بنفسجي'], ['#d98a0b', 'ذهبي'], ['#db2777', 'وردي'], ['#64748b', 'رمادي']], def: '#4f46e5' }],
     search: 'بحث...',
   }));
 

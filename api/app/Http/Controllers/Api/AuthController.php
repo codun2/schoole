@@ -211,6 +211,18 @@ class AuthController extends Controller
         foreach (\App\Models\User::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('title_en')->where('title_en', '!=', '')->get(['title', 'title_en']) as $x) {
             if (trim((string) $x->title) !== '') $map[trim($x->title)] = $x->title_en;
         }
+        foreach (\App\Models\ExpenseCategory::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\Customer::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\Supplier::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\CashAccount::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
         foreach ((array) ($company->settings['translations'] ?? []) as $ar => $en) {
             if (is_string($ar) && is_string($en) && trim($ar) !== '' && trim($en) !== '') {
                 $map[trim($ar)] = trim($en);

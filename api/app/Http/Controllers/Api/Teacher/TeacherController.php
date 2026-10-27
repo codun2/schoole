@@ -84,21 +84,64 @@ class TeacherController extends Controller
         $studentIds = Student::whereIn('section_id', $this->homeroomIds($e))->where('status', 'active')->pluck('id');
         $todayTaken = StudentAttendance::whereIn('section_id', $this->homeroomIds($e))->whereDate('date', now()->toDateString())->distinct()->count('section_id');
 
+        $today = $this->myLessons($e, (int) now()->dayOfWeek); // 0=Sun..6=Sat
+
         return response()->json([
             'teacher'  => $e->only(['id', 'name', 'number']),
             'school'   => $request->user()->company->only(['name', 'logo', 'phone', 'email', 'currency']),
             'homeroom' => $homeroom,
             'teaching' => $teaching,
             'subjects' => $subjects,
+            'today'    => $today,
             'stats'    => [
                 'homeroom_sections' => $homeroom->count(),
                 'teaching_sections' => $this->teachingSectionIds($e)->count(),
                 'students'          => $studentIds->count(),
                 'attendance_today'  => $todayTaken,
+                'lessons_today'     => $today->count(),
             ],
             'announcements' => Announcement::where('is_active', true)->whereIn('audience', ['staff', 'all'])
                 ->where(fn ($q) => $q->whereNull('company_id')->orWhere('company_id', $request->user()->company_id))
                 ->orderByDesc('id')->limit(8)->get(),
+        ]);
+    }
+
+    /** This teacher's timetable entries for one weekday (0=Sun..6=Sat), ordered by period. */
+    private function myLessons(Employee $e, int $day)
+    {
+        return TimetableEntry::with(['subject:id,name_ar', 'section:id,name,grade_id', 'section.grade:id,name_ar'])
+            ->where('teacher_id', $e->id)->where('day', $day)->orderBy('period')->get()
+            ->map(fn ($x) => [
+                'period'  => $x->period,
+                'subject' => $x->subject?->name_ar,
+                'section' => $x->section?->name,
+                'grade'   => $x->section?->grade?->name_ar,
+                'room'    => $x->room,
+            ])->values();
+    }
+
+    /** The teacher's full weekly timetable + the school's days/periods config. */
+    public function timetable(Request $request)
+    {
+        $e = $this->emp($request);
+        $s = $request->user()->company->settings ?? [];
+        $entries = TimetableEntry::with(['subject:id,name_ar', 'section:id,name,grade_id', 'section.grade:id,name_ar'])
+            ->where('teacher_id', $e->id)->orderBy('day')->orderBy('period')->get()
+            ->map(fn ($x) => [
+                'day'     => $x->day,
+                'period'  => $x->period,
+                'section' => $x->section?->name,
+                'grade'   => $x->section?->grade?->name_ar,
+                'subject' => $x->subject?->name_ar,
+                'room'    => $x->room,
+            ])->values();
+
+        return response()->json([
+            'days'      => $s['school_days'] ?? [0, 1, 2, 3, 4],
+            'periods'   => (int) ($s['periods'] ?? 7),
+            'day_names' => \App\Http\Controllers\Api\School\TimetableController::DAYS,
+            'entries'   => $entries,
+            'today'     => (int) now()->dayOfWeek,
         ]);
     }
 

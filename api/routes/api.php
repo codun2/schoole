@@ -228,6 +228,7 @@ Route::middleware(['auth:sanctum', 'guardian', 'company'])->prefix('portal')->gr
 */
 Route::middleware(['auth:sanctum', 'teacher', 'company'])->prefix('teacher')->group(function () {
     Route::get('home', [TeacherController::class, 'home']);
+    Route::get('timetable', [TeacherController::class, 'timetable']);
     Route::get('sections', [TeacherController::class, 'sections']);
     Route::get('grade-options', [TeacherController::class, 'gradeOptions']);
     Route::get('students', [TeacherController::class, 'students']);

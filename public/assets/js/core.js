@@ -87,7 +87,7 @@
   S.monthName = (i) => (S.isEn && S.isEn() ? MONTHS_EN : MONTHS)[i];
   S.monthLabel = (ym, short) => { if (!ym) return '—'; const [y, m] = ym.split('-'); return S.monthName(+m - 1) + ' ' + (short ? y.slice(2) : y); };
   S.longDate = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.toLocaleDateString(S.isEn && S.isEn() ? 'en-GB' : 'ar-OM-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
-  S.ago = (s) => { if (!s) return ''; const diff = (Date.now() - new Date(s).getTime()) / 1000; if (diff < 60) return 'الآن'; if (diff < 3600) return 'قبل ' + Math.floor(diff / 60) + ' دقيقة'; if (diff < 86400) return 'قبل ' + Math.floor(diff / 3600) + ' ساعة'; if (diff < 86400 * 7) return 'قبل ' + Math.floor(diff / 86400) + ' يوم'; return S.d(s); };
+  S.ago = (s) => { if (!s) return ''; const diff = (Date.now() - new Date(s).getTime()) / 1000; const en = S.isEn && S.isEn(); if (diff < 60) return en ? 'now' : 'الآن'; if (diff < 3600) { const m = Math.floor(diff / 60); return en ? m + 'm ago' : 'قبل ' + m + ' دقيقة'; } if (diff < 86400) { const h = Math.floor(diff / 3600); return en ? h + 'h ago' : 'قبل ' + h + ' ساعة'; } if (diff < 86400 * 7) { const dd = Math.floor(diff / 86400); return en ? dd + 'd ago' : 'قبل ' + dd + ' يوم'; } return S.d(s); };
   S.initials = (n) => (n || '؟').trim().charAt(0);
   // FormData → plain object for the offline outbox; File/Blob values are dropped (attachments need a connection)
   S.fdToObj = (fd) => { const obj = {}, dropped = []; for (const [k, v] of fd.entries()) { if (v instanceof Blob) { dropped.push(k); continue; } if (k.endsWith('[]')) { const kk = k.slice(0, -2); (obj[kk] = obj[kk] || []).push(v); } else obj[k] = v; } return { obj, dropped }; };

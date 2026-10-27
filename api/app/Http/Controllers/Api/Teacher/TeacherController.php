@@ -123,7 +123,7 @@ class TeacherController extends Controller
             ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])->get();
         $teaching = Section::with('grade:id,name_ar,name_en')->whereIn('id', $this->teachingSectionIds($e))->get(['id', 'name', 'grade_id']);
         $subjectIds = TimetableEntry::where('teacher_id', $e->id)->distinct()->pluck('subject_id');
-        $subjects = Subject::whereIn('id', $subjectIds)->orderBy('sort')->get(['id', 'name_ar']);
+        $subjects = Subject::whereIn('id', $subjectIds)->orderBy('sort')->get(['id', 'name_ar', 'name_en']);
 
         $studentIds = Student::whereIn('section_id', $this->homeroomIds($e))->where('status', 'active')->pluck('id');
         $todayTaken = StudentAttendance::whereIn('section_id', $this->homeroomIds($e))->whereDate('date', now()->toDateString())->distinct()->count('section_id');
@@ -139,7 +139,7 @@ class TeacherController extends Controller
             ->selectRaw('assignment_id, COUNT(*) c')->groupBy('assignment_id')->pluck('c', 'assignment_id');
         $todayStr = now()->toDateString();
         $brief = fn ($a) => ['id' => $a->id, 'title' => $a->title, 'type' => $a->type, 'due_date' => $a->due_date?->format('Y-m-d'), 'due_time' => $a->due_time,
-            'section' => trim(($a->section?->grade?->name_ar ?? '').' — '.($a->section?->name ?? ''), ' —'), 'subject' => $a->subject?->name_ar,
+            'section' => trim(($a->section?->grade?->name_ar ?? '').' — '.($a->section?->name ?? ''), ' —'), 'section_en' => trim(((($a->section?->grade?->name_en ?: $a->section?->grade?->name_ar)) ?? '').' — '.((($a->section?->name_en ?: $a->section?->name)) ?? ''), ' —'), 'subject' => $a->subject?->name_ar, 'subject_en' => $a->subject?->name_en,
             'pending' => max(0, (int) ($totals[$a->section_id] ?? 0) - (int) ($graded[$a->id] ?? 0))];
         $toGrade = $open->filter(fn ($a) => $a->due_date && $a->due_date->format('Y-m-d') <= $todayStr && ((int) ($totals[$a->section_id] ?? 0) - (int) ($graded[$a->id] ?? 0)) > 0)
             ->sortBy('due_date')->values()->map($brief);
@@ -180,6 +180,9 @@ class TeacherController extends Controller
                 'subject' => $x->subject?->name_ar,
                 'section' => $x->section?->name,
                 'grade'   => $x->section?->grade?->name_ar,
+                'grade_en' => $x->section?->grade?->name_en,
+                'section_en' => $x->section?->name_en,
+                'subject_en' => $x->subject?->name_en,
                 'room'    => $x->room,
             ])->values();
     }
@@ -196,6 +199,9 @@ class TeacherController extends Controller
                 'period'  => $x->period,
                 'section' => $x->section?->name,
                 'grade'   => $x->section?->grade?->name_ar,
+                'grade_en' => $x->section?->grade?->name_en,
+                'section_en' => $x->section?->name_en,
+                'subject_en' => $x->subject?->name_en,
                 'subject' => $x->subject?->name_ar,
                 'room'    => $x->room,
             ])->values();
@@ -218,7 +224,9 @@ class TeacherController extends Controller
             ->map(fn ($s) => [
                 'id'       => $s->id,
                 'name'     => $s->name,
+                'name_en'  => $s->name_en,
                 'grade'    => $s->grade?->name_ar,
+                'grade_en' => $s->grade?->name_en,
                 'homeroom' => $home->contains($s->id),
             ]);
 
@@ -236,10 +244,10 @@ class TeacherController extends Controller
         if ($this->homeroomIds($e)->contains($sid)) {
             $subjects = Subject::where('academic_year_id', $section->academic_year_id)
                 ->where(fn ($q) => $q->whereNull('grade_id')->orWhere('grade_id', $section->grade_id))
-                ->orderBy('sort')->get(['id', 'name_ar', 'max_mark']);
+                ->orderBy('sort')->get(['id', 'name_ar', 'name_en', 'max_mark']);
         } else {
             $subjectIds = TimetableEntry::where('teacher_id', $e->id)->where('section_id', $sid)->distinct()->pluck('subject_id');
-            $subjects = Subject::whereIn('id', $subjectIds)->orderBy('sort')->get(['id', 'name_ar', 'max_mark']);
+            $subjects = Subject::whereIn('id', $subjectIds)->orderBy('sort')->get(['id', 'name_ar', 'name_en', 'max_mark']);
         }
         $terms = ExamTerm::where('academic_year_id', $section->academic_year_id)->orderBy('sort')->get();
 

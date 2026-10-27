@@ -1762,4 +1762,8 @@ window.SCH_DICT = {
   'البريد أو الجوال أو الرقم المدرسي للطالب': 'Email, mobile, or student school number',
   'الطلاب، العقود والأقساط، الحضور، المحاسبة، الموارد البشرية والشؤون الإدارية — مع بوابات خاصة لولي الأمر والمعلّم والطالب.': 'Students, contracts & installments, attendance, accounting, HR and administration — with dedicated portals for guardians, teachers and students.',
   'معلّم': 'Teacher',
+
+  // ---- custom fields
+  'الحساسية الغذائية': 'Food allergy',
+  'المقاس (الزي)': 'Uniform size',
 };

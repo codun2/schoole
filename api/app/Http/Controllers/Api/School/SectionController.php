@@ -34,6 +34,7 @@ class SectionController extends ResourceController
         return [
             'grade_id'   => [$req, 'integer', $this->owned('grades')],
             'name'       => [$req, 'string', 'max:80'],
+            'name_en'    => ['nullable', 'string', 'max:80'],
             'capacity'   => ['nullable', 'integer', 'min:0'],
             'room'       => ['nullable', 'string', 'max:80'],
             'teacher_id' => ['nullable', 'integer', $this->owned('employees')],

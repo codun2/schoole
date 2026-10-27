@@ -46,7 +46,7 @@
       { l: 'الطلاب / السعة', v: (r) => `<span class="num">${r.students_count} / ${r.capacity}</span>` },
       { l: 'الإشغال', v: (r) => S.prog(r.capacity ? Math.round((r.students_count * 100) / r.capacity) : 0) },
     ],
-    fields: (lk) => [{ k: 'grade_id', l: 'الصف', t: 'select', req: true, opts: gradeOpts(lk) }, { k: 'name', l: 'اسم الشعبة', req: true, ph: 'شعبة أ' }, { k: 'capacity', l: 'السعة', t: 'number', min: 0, def: 30 }, { k: 'room', l: 'القاعة' }, { k: 'teacher_id', l: 'رائد الفصل', t: 'select', opts: (lk.teachers || []).map((t) => [t.id, t.name]) }],
+    fields: (lk) => [{ k: 'grade_id', l: 'الصف', t: 'select', req: true, opts: gradeOpts(lk) }, { k: 'name', l: 'اسم الشعبة', req: true, ph: 'شعبة أ' }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'capacity', l: 'السعة', t: 'number', min: 0, def: 30 }, { k: 'room', l: 'القاعة' }, { k: 'teacher_id', l: 'رائد الفصل', t: 'select', opts: (lk.teachers || []).map((t) => [t.id, t.name]) }],
     rowActions: [{ ic: 'calCheck', cls: 'g', t: 'تسجيل الحضور', run: (r) => (location.hash = '#/attendance?section_id=' + r.id) }, { ic: 'users', cls: 'v', t: 'الطلاب', run: (r) => (location.hash = '#/students?section_id=' + r.id) }],
     newDefaults: (st) => ({ grade_id: st.f.grade_id, capacity: 30 }),
   }));
@@ -316,7 +316,7 @@
     intro: '<p class="t2 mb16">أضف حقولاً إضافية تظهر في نموذج الطالب أو ولي الأمر (مثل: الحساسية الغذائية، مقاس الزي، رقم الملف الصحي).</p>',
     chips: { k: 'entity', items: [['student', 'حقول الطالب'], ['guardian', 'حقول ولي الأمر']] },
     columns: [{ l: 'اسم الحقل', v: (r) => `<b>${esc(r.label)}</b>` }, { l: 'يظهر في', v: (r) => (r.entity === 'student' ? 'ملف الطالب' : 'ملف ولي الأمر') }, { l: 'النوع', v: (r) => ({ text: 'نص', number: 'رقم', date: 'تاريخ', select: 'قائمة اختيار' })[r.type] }, { l: 'الخيارات', v: (r) => esc((r.options || []).join('، ') || '—') }, { l: 'إلزامي', v: (r) => cell.yes(r.required) }, { l: 'الترتيب', v: (r) => cell.num(r.sort) }],
-    fields: () => [{ k: 'label', l: 'اسم الحقل', req: true }, { k: 'entity', l: 'يظهر في', t: 'select', req: true, opts: [['student', 'ملف الطالب'], ['guardian', 'ملف ولي الأمر']], def: 'student' }, { k: 'type', l: 'نوع الحقل', t: 'select', req: true, opts: [['text', 'نص'], ['number', 'رقم'], ['date', 'تاريخ'], ['select', 'قائمة اختيار']], def: 'text' }, { k: 'sort', l: 'الترتيب', t: 'number' }, { k: 'options_txt', l: 'خيارات القائمة (افصل بينها بفاصلة)', full: true, show: (v) => v.type === 'select' }, { k: 'required', l: 'حقل إلزامي', t: 'check' }],
+    fields: () => [{ k: 'label', l: 'اسم الحقل', req: true }, { k: 'label_en', l: 'الاسم بالإنجليزية', dir: 'ltr', help: 'يظهر في الوضع الإنجليزي (اختياري)' }, { k: 'entity', l: 'يظهر في', t: 'select', req: true, opts: [['student', 'ملف الطالب'], ['guardian', 'ملف ولي الأمر']], def: 'student' }, { k: 'type', l: 'نوع الحقل', t: 'select', req: true, opts: [['text', 'نص'], ['number', 'رقم'], ['date', 'تاريخ'], ['select', 'قائمة اختيار']], def: 'text' }, { k: 'sort', l: 'الترتيب', t: 'number' }, { k: 'options_txt', l: 'خيارات القائمة (افصل بينها بفاصلة)', full: true, show: (v) => v.type === 'select' }, { k: 'required', l: 'حقل إلزامي', t: 'check' }],
     toForm: (r) => ({ ...r, options_txt: (r.options || []).join('، ') }),
     toPayload: (v) => { const o = { ...v, options: (v.options_txt || '').split(/[,،]/).map((x) => x.trim()).filter(Boolean) }; delete o.options_txt; return o; },
     search: false,
@@ -327,7 +327,7 @@
     title: 'بنود الرسوم الدراسية', singular: 'بند رسوم', api: '/app/fee-items', perm: 'school', year: true, icon: 'coins', lookups: ['grades'], invalidate: ['fee_items'],
     filters: [{ k: 'grade_id', l: 'الصف', opts: gradeOpts }, { k: 'type', l: 'النوع', opts: S.opts(S.LBL.feeType) }],
     columns: [{ l: 'البند', s: true, v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'النوع', v: (r) => `<span class="bdg l-info">${S.LBL.feeType[r.type] || r.type}</span>` }, { l: 'الصف', v: (r) => esc(r.grade?.name_ar || 'جميع الصفوف') }, { l: 'المبلغ', v: (r) => S.money(r.amount) }, { l: 'إلزامي', v: (r) => cell.yes(r.is_mandatory) }, { l: 'خاضع للضريبة', v: (r) => cell.yes(r.taxable) }],
-    fields: (lk) => [{ k: 'name', l: 'اسم البند', req: true, full: true }, { k: 'type', l: 'النوع', t: 'select', req: true, opts: S.opts(S.LBL.feeType), def: 'tuition' }, { k: 'grade_id', l: 'الصف', t: 'select', blank: 'جميع الصفوف', opts: gradeOpts(lk) }, { k: 'amount', l: 'المبلغ', t: 'money', req: true }, { k: 'is_mandatory', l: 'بند إلزامي (يُضاف تلقائياً للعقد)', t: 'check', def: true }, { k: 'taxable', l: 'خاضع للضريبة', t: 'check' }],
+    fields: (lk) => [{ k: 'name', l: 'اسم البند', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr', full: true }, { k: 'type', l: 'النوع', t: 'select', req: true, opts: S.opts(S.LBL.feeType), def: 'tuition' }, { k: 'grade_id', l: 'الصف', t: 'select', blank: 'جميع الصفوف', opts: gradeOpts(lk) }, { k: 'amount', l: 'المبلغ', t: 'money', req: true }, { k: 'is_mandatory', l: 'بند إلزامي (يُضاف تلقائياً للعقد)', t: 'check', def: true }, { k: 'taxable', l: 'خاضع للضريبة', t: 'check' }],
     newDefaults: () => ({ is_mandatory: true }),
     search: 'بحث باسم البند...',
   }));

@@ -31,6 +31,7 @@ class CustomFieldController extends ResourceController
         return [
             'entity'   => [$req, 'in:student,guardian'],
             'label'    => [$req, 'string', 'max:120'],
+            'label_en' => ['nullable', 'string', 'max:120'],
             'type'     => ['nullable', 'in:text,number,date,select'],
             'options'  => ['nullable', 'array'],
             'required' => ['boolean'],

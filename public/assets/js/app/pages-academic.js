@@ -42,7 +42,7 @@
     title: 'الفصول والاختبارات', singular: 'فصل دراسي', api: '/app/exam-terms', perm: 'school', year: true, icon: 'clipboard', invalidate: ['exam_terms'], search: false,
     intro: '<p class="t2 mb16">الفصول/الفترات التي تُرصد فيها الدرجات. «الوزن» هو نسبة مساهمة الفصل في النتيجة النهائية (مجموع الأوزان يُفضّل أن يساوي 100%).</p>',
     columns: [{ l: 'الفصل', s: true, v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'الوزن في النتيجة', v: (r) => `<span class="num">${S.fmtN(r.weight, 0)}%</span>` }, { l: 'الترتيب', v: (r) => cell.num(r.sort) }, { l: 'الحالة', v: (r) => (r.is_locked ? '<span class="bdg l-mut">مقفل</span>' : '<span class="bdg l-ok">مفتوح للرصد</span>') }],
-    fields: () => [{ k: 'name', l: 'اسم الفصل/الفترة', req: true, ph: 'الفصل الدراسي الأول' }, { k: 'weight', l: 'الوزن في النتيجة النهائية %', t: 'number', min: 0, max: 100, def: 40 }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 }, { k: 'is_locked', l: 'إقفال الرصد (منع التعديل)', t: 'check' }],
+    fields: () => [{ k: 'name', l: 'اسم الفصل/الفترة', req: true, ph: 'الفصل الدراسي الأول' }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'weight', l: 'الوزن في النتيجة النهائية %', t: 'number', min: 0, max: 100, def: 40 }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 }, { k: 'is_locked', l: 'إقفال الرصد (منع التعديل)', t: 'check' }],
     foot: (rows) => `<tr><td class="s">مجموع الأوزان</td><td class="num ${Math.round(rows.reduce((a, r) => a + +r.weight, 0)) === 100 ? 'ok-t' : 'warn-t'} b">${S.fmtN(rows.reduce((a, r) => a + +r.weight, 0), 0)}%</td><td colspan="2"></td></tr>`,
   }));
 

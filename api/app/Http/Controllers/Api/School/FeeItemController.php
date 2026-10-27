@@ -30,6 +30,7 @@ class FeeItemController extends ResourceController
 
         return [
             'name'         => [$req, 'string', 'max:255'],
+            'name_en'      => ['nullable', 'string', 'max:255'],
             'type'         => ['nullable', 'in:'.implode(',', self::TYPES)],
             'amount'       => [$req, 'numeric', 'min:0'],
             'grade_id'     => ['nullable', 'integer', $this->owned('grades')],

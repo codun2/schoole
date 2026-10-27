@@ -28,6 +28,7 @@ class ExamTermController extends ResourceController
     {
         return [
             'name'      => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en'   => ['nullable', 'string', 'max:120'],
             'weight'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'sort'      => ['nullable', 'integer', 'min:0'],
             'is_locked' => ['boolean'],

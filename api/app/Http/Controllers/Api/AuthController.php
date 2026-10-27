@@ -154,6 +154,18 @@ class AuthController extends Controller
         foreach (\App\Models\Grade::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $g) {
             $map[$g->name_ar] = $g->name_en;
         }
+        foreach (\App\Models\CustomField::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('label_en')->where('label_en', '!=', '')->get(['label', 'label_en']) as $f) {
+            $map[$f->label] = $f->label_en;
+        }
+        foreach (\App\Models\Section::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\ExamTerm::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\FeeItem::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
         foreach ((array) ($company->settings['translations'] ?? []) as $ar => $en) {
             if (is_string($ar) && is_string($en) && trim($ar) !== '' && trim($en) !== '') {
                 $map[trim($ar)] = trim($en);

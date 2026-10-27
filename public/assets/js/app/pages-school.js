@@ -154,7 +154,7 @@
     { k: 'name', l: 'اسم الطالب الكامل', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'national_id', l: 'رقم الهوية المدنية', dir: 'ltr' },
     { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'blood_type', l: 'فصيلة الدم', t: 'select', opts: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((b) => [b, b]) },
     { t: 'sec', l: 'التسجيل' },
-    { k: 'guardian_id', l: 'ولي الأمر', t: 'select', opts: (lk.guardians || []).map((g) => [g.id, g.name + (g.phone ? ' — ' + g.phone : '')]), help: 'غير موجود؟ أضفه من شاشة أولياء الأمور أولاً' },
+    { k: 'guardian_id', l: 'ولي الأمر', t: 'select', opts: (lk.guardians || []).map((g) => [g.id, S.enName(g) + (g.phone ? ' — ' + g.phone : '')]), help: 'غير موجود؟ أضفه من شاشة أولياء الأمور أولاً' },
     { k: 'section_id', l: 'الصف / الشعبة', t: 'select', opts: sectionOpts(lk) }, { k: 'bus_id', l: 'الحافلة', t: 'select', blank: 'بدون حافلة', opts: (lk.buses || []).map((b) => [b.id, b.number + (b.type ? ' — ' + b.type : '')]) },
     { k: 'status', l: 'الحالة', t: 'select', req: true, opts: S.opts(S.ST.student), def: 'active' }, { k: 'registered_at', l: 'تاريخ التسجيل', t: 'date', def: S.today() }, { k: 'student_no', l: 'الرقم المدرسي', dir: 'ltr', ph: 'يُولّد تلقائياً' },
     ...(customFieldSpecs(lk, 'student').length ? [{ t: 'sec', l: 'حقول مخصّصة' }, ...customFieldSpecs(lk, 'student')] : []),

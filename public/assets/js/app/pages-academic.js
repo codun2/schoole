@@ -4,7 +4,7 @@
   const { esc, ic, cell } = S;
   const gradeOpts = (lk) => (lk.grades || []).map((g) => [g.id, g.name_ar]);
   const sectionOpts = (lk) => (lk.sections || []).map((s) => [s.id, (s.grade ? S.enName(s.grade) + ' / ' : '') + S.enName(s)]);
-  const gBadge = (g) => `<span class="bdg" style="background:${g.color}22;color:${g.color}">${g.letter} — ${esc(g.remark)}</span>`;
+  const gBadge = (g) => `<span class="bdg" style="background:${g.color}22;color:${g.color}">${g.letter} — ${esc(S.tr(g.remark))}</span>`;
 
   // ---------------------------------------------------------------- subjects
   const subjectFields = (lk) => [
@@ -105,8 +105,8 @@
           const locked = d.term.is_locked;
           const draw = () => {
             const done = st.filter((x) => x.mark != null).length;
-            sh.innerHTML = `<div class="toolbar"><span class="bdg ${d.saved ? 'l-ok' : 'l-warn'}">${d.saved ? 'مرصود — يمكن التعديل' : 'لم يُرصد بعد'}</span><span class="bdg l-info">${esc(d.subject.name_ar)} · من ${S.fmtN(max, 0)} · نجاح ${S.fmtN(pass, 0)}</span><span class="total-l">${done}/${st.length} مرصود</span><div class="sp"></div>${locked ? '<span class="bdg mut">الفصل مقفل</span>' : `<button class="btn success" id="save">${ic('check')} حفظ الدرجات</button>`}</div>
-              <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم</th><th style="width:140px">الدرجة (من ${S.fmtN(max, 0)})</th><th>التقدير</th><th>ملاحظة</th><th title="كشف درجات الطالب كاملاً للطباعة أو حفظه PDF">الكشف</th></tr></thead><tbody>
+            sh.innerHTML = `<div class="toolbar"><span class="bdg ${d.saved ? 'l-ok' : 'l-warn'}">${d.saved ? 'مرصود — يمكن التعديل' : 'لم يُرصد بعد'}</span><span class="bdg l-info">${esc(S.enName(d.subject))} · ${S.isEn() ? 'out of' : 'من'} ${S.fmtN(max, 0)} · ${S.isEn() ? 'pass' : 'نجاح'} ${S.fmtN(pass, 0)}</span><span class="total-l">${S.isEn() ? 'Graded ' + done + '/' + st.length : done + '/' + st.length + ' مرصود'}</span><div class="sp"></div>${locked ? '<span class="bdg mut">الفصل مقفل</span>' : `<button class="btn success" id="save">${ic('check')} حفظ الدرجات</button>`}</div>
+              <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم</th><th style="width:140px">${S.isEn() ? 'Mark (out of ' + S.fmtN(max, 0) + ')' : 'الدرجة (من ' + S.fmtN(max, 0) + ')'}</th><th>التقدير</th><th>ملاحظة</th><th title="كشف درجات الطالب كاملاً للطباعة أو حفظه PDF">الكشف</th></tr></thead><tbody>
               ${st.map((x, i) => { const pct = x.mark != null ? (x.mark / max) * 100 : null; return `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(S.enName(x))}</td><td class="num muted">${esc(x.student_no || '')}</td><td><input class="inp num" type="number" min="0" max="${max}" step="0.5" data-i="${i}" value="${x.mark != null ? x.mark : ''}" dir="ltr" ${locked ? 'disabled' : ''} style="height:34px;text-align:center"></td><td data-g="${i}">${pct != null ? gBadge(gradeOf(pct)) : '—'}</td><td><input class="inp" data-n="${i}" value="${esc(x.note || '')}" placeholder="—" ${locked ? 'disabled' : ''} style="height:34px"></td><td><button class="ibtn v" data-rc="${x.id}" title="كشف الدرجات (طباعة / حفظ PDF)">${ic('fileText')}</button></td></tr>`; }).join('')}
               </tbody></table></div>`;
             sh.querySelectorAll('input[data-i]').forEach((inp) => (inp.oninput = () => { const i = +inp.dataset.i; let v = inp.value === '' ? null : Math.min(max, Math.max(0, +inp.value)); st[i].mark = v; sh.querySelector(`[data-g="${i}"]`).innerHTML = v != null ? gBadge(gradeOf((v / max) * 100)) : '—'; }));

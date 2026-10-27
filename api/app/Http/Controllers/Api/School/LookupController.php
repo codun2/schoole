@@ -22,7 +22,7 @@ class LookupController extends Controller
             'grades'         => fn () => Models\Grade::where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name_ar', 'name_en']),
             'sections'       => fn () => Models\Section::where('academic_year_id', $yearId)->with('grade:id,name_ar,name_en')->orderBy('grade_id')->orderBy('name')->get(['id', 'name', 'name_en', 'grade_id']),
             'buses'          => fn () => Models\Bus::where('academic_year_id', $yearId)->orderBy('number')->get(['id', 'number', 'price', 'type']),
-            'guardians'      => fn () => Models\Guardian::orderBy('name')->get(['id', 'name', 'phone', 'national_id']),
+            'guardians'      => fn () => Models\Guardian::orderBy('name')->get(['id', 'name', 'name_en', 'phone', 'national_id']),
             'fee_items'      => fn () => Models\FeeItem::where('academic_year_id', $yearId)->orderBy('id')->get(['id', 'name', 'amount', 'type', 'grade_id', 'is_mandatory']),
             'branches'       => fn () => Models\Branch::orderBy('id')->get(['id', 'name']),
             'departments'    => fn () => Models\Department::orderBy('name')->get(['id', 'name']),

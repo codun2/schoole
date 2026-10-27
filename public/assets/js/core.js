@@ -395,6 +395,7 @@
     const form = m.$('form');
     const refresh = () => { const cur = S.readForm(form, fields.filter((f) => f.t !== 'file')); fields.forEach((f) => { if (f.show) { const w = form.querySelector(`[data-f="${f.k}"]`); if (w) w.style.display = f.show(cur) ? '' : 'none'; } }); };
     form.addEventListener('change', refresh);
+    S.enhanceSelects && S.enhanceSelects(form);
     afterRender && afterRender(m, form);
     const save = async () => {
       if (!S.validate(form, fields)) return;

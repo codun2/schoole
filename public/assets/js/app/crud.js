@@ -226,6 +226,7 @@
         // live conditional visibility (same behaviour as S.formModal)
         const refresh = () => { const cur = S.readForm(form, fields.filter((f) => f.t !== 'file')); fields.forEach((f) => { if (f.show) { const w = form.querySelector(`[data-f="${f.k}"]`); if (w) w.style.display = f.show(cur) ? '' : 'none'; } }); };
         form.addEventListener('change', refresh); refresh();
+        S.enhanceSelects && S.enhanceSelects(form);
         if (cfg.afterRender) cfg.afterRender(el, { form, lk, row, params });
 
         el.querySelector('#sv').onclick = async (ev) => {

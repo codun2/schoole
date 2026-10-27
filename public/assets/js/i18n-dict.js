@@ -242,6 +242,7 @@ window.SCH_DICT = {
   'لا يوجد أبناء': 'No children',
   'لا توجد عقود': 'No contracts',
   'current': 'current',
+  'بحث باسم الصنف أو الرقم التسلسلي…': 'Search by item name or serial number…',
   'أحدث العقود': 'Recent Contracts',
   'الطلاب حسب الصف': 'Students by Grade',
   'توزيع الطلاب': 'Students Distribution',

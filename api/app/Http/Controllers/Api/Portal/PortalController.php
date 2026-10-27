@@ -36,7 +36,7 @@ class PortalController extends Controller
     {
         $g = $this->guardian($request);
         $view = $this->view($request);
-        $children = Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'bus:id,number,driver_name,driver_phone'])
+        $children = Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'bus:id,number,driver_name,driver_name_en,driver_phone'])
             ->where('guardian_id', $g->id)->whereIn('status', ['active', 'pending', 'suspended'])->orderBy('name')->get();
         $children->each(fn ($s) => $s->monitor = StudentView::badges($s)); // attendance %, absences, pending homework, upcoming exams
 
@@ -67,7 +67,7 @@ class PortalController extends Controller
     {
         $g = $this->guardian($request);
         $view = $this->view($request);
-        $s = Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'bus:id,number,driver_name,driver_phone,route'])->where('guardian_id', $g->id)->findOrFail($id);
+        $s = Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'bus:id,number,driver_name,driver_name_en,driver_phone,route,route_en'])->where('guardian_id', $g->id)->findOrFail($id);
 
         $report = null;
         if ($view['grades']) {
@@ -101,6 +101,6 @@ class PortalController extends Controller
         $contracts = Contract::with('student:id,name,name_en')->whereIn('id', $ids)->get()->keyBy('id');
 
         return response()->json(['data' => Voucher::where('source_type', 'contract')->whereIn('source_id', $ids)->orderByDesc('date')->get()
-            ->map(fn ($v) => $v->setAttribute('student_name', $contracts[$v->source_id]->student->name ?? null)->setAttribute('contract_number', $contracts[$v->source_id]->number ?? null))]);
+            ->map(fn ($v) => $v->setAttribute('student_name', $contracts[$v->source_id]->student->name ?? null)->setAttribute('student_name_en', $contracts[$v->source_id]->student->name_en ?? null)->setAttribute('contract_number', $contracts[$v->source_id]->number ?? null))]);
     }
 }

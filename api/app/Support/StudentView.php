@@ -19,8 +19,8 @@ class StudentView
     public static function timetable(Student $s, array $settings): array
     {
         $entries = $s->section_id
-            ? TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name'])->where('section_id', $s->section_id)->orderBy('day')->orderBy('period')->get()
-                ->map(fn ($e) => ['day' => $e->day, 'period' => $e->period, 'subject' => $e->subject?->name_ar, 'teacher' => $e->teacher?->name, 'room' => $e->room])->values()
+            ? TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name,name_en'])->where('section_id', $s->section_id)->orderBy('day')->orderBy('period')->get()
+                ->map(fn ($e) => ['day' => $e->day, 'period' => $e->period, 'subject' => $e->subject?->name_ar, 'teacher' => $e->teacher?->name, 'teacher_en' => $e->teacher?->name_en, 'room' => $e->room])->values()
             : collect();
 
         return [
@@ -38,7 +38,7 @@ class StudentView
         if (! $s->section_id) {
             return collect();
         }
-        $list = Assignment::with(['subject:id,name_ar', 'teacher:id,name'])->where('section_id', $s->section_id)
+        $list = Assignment::with(['subject:id,name_ar', 'teacher:id,name,name_en'])->where('section_id', $s->section_id)
             ->where('status', '!=', 'archived')->orderByDesc('due_date')->orderByDesc('id')->get();
         $subs = AssignmentSubmission::where('student_id', $s->id)->whereIn('assignment_id', $list->pluck('id'))->get()->keyBy('assignment_id');
         $today = now()->toDateString();
@@ -49,7 +49,7 @@ class StudentView
 
             return [
                 'id' => $a->id, 'type' => $a->type, 'title' => $a->title, 'description' => $a->description,
-                'subject' => $a->subject?->name_ar, 'teacher' => $a->teacher?->name,
+                'subject' => $a->subject?->name_ar, 'teacher' => $a->teacher?->name, 'teacher_en' => $a->teacher?->name_en,
                 'due_date' => $due, 'due_time' => $a->due_time, 'duration_minutes' => $a->duration_minutes,
                 'max_mark' => (float) $a->max_mark, 'attachment' => $a->attachment, 'status' => $a->status,
                 'submitted' => (bool) ($sub->submitted ?? false),
@@ -92,8 +92,8 @@ class StudentView
 
     public static function notes(Student $s)
     {
-        return \App\Models\StudentNote::with('teacher:id,name')->where('student_id', $s->id)->orderByDesc('date')->orderByDesc('id')->limit(80)->get()
-            ->map(fn ($n) => ['type' => $n->type, 'note' => $n->note, 'date' => $n->date?->format('Y-m-d'), 'teacher' => $n->teacher?->name])->values();
+        return \App\Models\StudentNote::with('teacher:id,name,name_en')->where('student_id', $s->id)->orderByDesc('date')->orderByDesc('id')->limit(80)->get()
+            ->map(fn ($n) => ['type' => $n->type, 'note' => $n->note, 'date' => $n->date?->format('Y-m-d'), 'teacher' => $n->teacher?->name, 'teacher_en' => $n->teacher?->name_en])->values();
     }
 
     public static function todayLessons(Student $s)
@@ -102,9 +102,9 @@ class StudentView
             return collect();
         }
 
-        return TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name'])->where('section_id', $s->section_id)
+        return TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name,name_en'])->where('section_id', $s->section_id)
             ->where('day', (int) now()->dayOfWeek)->orderBy('period')->get()
-            ->map(fn ($e) => ['period' => $e->period, 'subject' => $e->subject?->name_ar, 'teacher' => $e->teacher?->name, 'room' => $e->room])->values();
+            ->map(fn ($e) => ['period' => $e->period, 'subject' => $e->subject?->name_ar, 'teacher' => $e->teacher?->name, 'teacher_en' => $e->teacher?->name_en, 'room' => $e->room])->values();
     }
 
     public static function home(Student $s, $company): array

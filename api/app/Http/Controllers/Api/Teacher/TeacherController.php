@@ -310,6 +310,15 @@ class TeacherController extends Controller
         return app(AttendanceController::class)->sheet($request);
     }
 
+    /** Attendance totals per student for a date range — homeroom sections only. */
+    public function attendanceReport(Request $request)
+    {
+        $e = $this->emp($request);
+        $this->assertHomeroom($e, (int) $request->query('section_id'));
+
+        return app(AttendanceController::class)->report($request);
+    }
+
     public function attendanceSave(Request $request)
     {
         $e = $this->emp($request);

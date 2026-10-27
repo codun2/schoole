@@ -239,6 +239,7 @@ Route::middleware(['auth:sanctum', 'teacher', 'company'])->prefix('teacher')->gr
     Route::get('report-card/{student}', [TeacherController::class, 'reportCard'])->whereNumber('student');
     Route::get('class-results', [TeacherController::class, 'classResults']);
     Route::get('attendance/sheet', [TeacherController::class, 'attendanceSheet']);
+    Route::get('attendance/report', [TeacherController::class, 'attendanceReport']);
     Route::post('attendance', [TeacherController::class, 'attendanceSave']);
 });
 

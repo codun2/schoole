@@ -38,7 +38,7 @@
   const ATT = { present: ['حاضر', 'l-ok'], absent: ['غائب', 'l-bad'], late: ['متأخر', 'l-warn'], excused: ['بعذر', 'l-info'] };
 
   document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة المعلم — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="lng" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button><button class="tbtn" id="mode" title="الوضع الليلي">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div>
-    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/students" data-r="students">طلابي</a><a href="#/marks" data-r="marks">رصد الدرجات</a><a href="#/attendance" data-r="attendance">الحضور</a></div><div id="v"><div class="spin"></div></div></div>`;
+    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/students" data-r="students">طلابي</a><a href="#/marks" data-r="marks">رصد الدرجات</a><a href="#/attendance" data-r="attendance">الحضور</a><a href="#/reports" data-r="reports">التقارير</a></div><div id="v"><div class="spin"></div></div></div>`;
   document.getElementById('mode').onclick = S.toggleMode;
   const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
   S.i18nStart && S.i18nStart();
@@ -197,6 +197,65 @@
     }
   }
 
+  // --------------------------------------------------------------- reports (monthly attendance / class results)
+  async function reports(q) {
+    await loadSections();
+    const kind = q.get('r') === 'results' ? 'results' : 'attendance';
+    v.innerHTML = `<div class="ptabs mb16"><a href="#/reports?r=attendance" class="${kind === 'attendance' ? 'on' : ''}">الحضور الشهري</a><a href="#/reports?r=results" class="${kind === 'results' ? 'on' : ''}">نتائج الشعبة</a></div><div id="rp"></div>`;
+    const rp = v.querySelector('#rp');
+    if (kind === 'results') return classResultsView(rp);
+    return attendanceMonthly(rp);
+  }
+
+  async function attendanceMonthly(rp) {
+    const homes = homeroomSections();
+    if (!homes.length) { rp.innerHTML = S.emptyHtml('تقرير الحضور متاح لمربّي الفصل فقط', 'لم تُسنَد إليك فصول كمربّي.', 'calCheck'); return; }
+    rp.innerHTML = `<div class="selrow"><label>الفصل<select id="sec" class="inp">${homes.map((s) => `<option value="${s.id}">${secLabel(s)}</option>`).join('')}</select></label><label>الشهر<input type="month" id="m" class="inp" value="${S.today().slice(0, 7)}" dir="ltr"></label><button class="btn" id="go">${ic('calCheck')} عرض التقرير</button></div><div id="out"></div>`;
+    const out = rp.querySelector('#out');
+    const load = async () => {
+      const section_id = rp.querySelector('#sec').value, m = rp.querySelector('#m').value;
+      if (!m) return S.toast('اختر الشهر', 'bad');
+      const [y, mo] = m.split('-').map(Number); const from = `${m}-01`, to = `${m}-${String(new Date(y, mo, 0).getDate()).padStart(2, '0')}`;
+      out.innerHTML = '<div class="spin"></div>';
+      let d; try { d = await S.get('/teacher/attendance/report', { section_id, from, to }); } catch (er) { out.innerHTML = S.emptyHtml('تعذّر تحميل التقرير', er.message, 'alert'); return; }
+      const rows = d.students || [], flag = (r) => r.absent >= 3, sec = homes.find((s) => String(s.id) === String(section_id)) || {};
+      if (!rows.length) { out.innerHTML = S.emptyHtml('لا توجد سجلات حضور لهذا الشهر', 'سجّل الحضور من تبويب «الحضور» أولاً.', 'calCheck'); return; }
+      out.innerHTML = `<div class="toolbar"><span class="bdg l-info">${secLabel(sec)}</span><span class="bdg l-mut num">${esc(m)}</span><span class="bdg l-bad">${rows.filter(flag).length} يحتاجون متابعة</span><div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة / PDF</button><button class="btn outline-ok" id="xl">${ic('download')} تصدير إكسل</button></div>
+        <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>بعذر</th><th>نسبة الحضور</th><th>الحالة</th></tr></thead><tbody>${rows.map((r, i) => `<tr${flag(r) ? ' style="background:var(--bad-bg)"' : ''}><td class="muted">${i + 1}</td><td class="s b">${esc(r.name)}</td><td class="num ok-t">${r.present}</td><td class="num ${r.absent ? 'bad-t b' : ''}">${r.absent}</td><td class="num">${r.late}</td><td class="num">${r.excused}</td><td class="num b">${S.fmtN(r.rate, 1)}%</td><td>${flag(r) ? '<span class="bdg l-bad">يحتاج متابعة</span>' : '<span class="bdg l-ok">منتظم</span>'}</td></tr>`).join('')}</tbody></table></div></div>
+        <p class="muted sm mt8">«يحتاج متابعة»: 3 أيام غياب أو أكثر خلال الشهر.</p>`;
+      out.querySelector('#pr').onclick = () => S.print(`تقرير الحضور الشهري — ${secLabel(sec)} — ${m}`, `<h2>تقرير الحضور الشهري</h2><div class="kv"><div><span>الفصل</span><b>${secLabel(sec)}</b></div><div><span>الشهر</span><b>${esc(m)}</b></div><div><span>عدد الطلاب</span><b>${rows.length}</b></div><div><span>يحتاجون متابعة</span><b>${rows.filter(flag).length}</b></div></div>
+        <table><thead><tr><th>#</th><th style="text-align:right">الطالب</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>بعذر</th><th>نسبة الحضور</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${i + 1}</td><td style="text-align:right">${esc(r.name)}</td><td>${r.present}</td><td${r.absent >= 3 ? ' style="color:#c00;font-weight:700"' : ''}>${r.absent}</td><td>${r.late}</td><td>${r.excused}</td><td>${S.fmtN(r.rate, 1)}%</td></tr>`).join('')}</tbody></table>
+        <div class="sig"><div>مربّي الفصل<br>${esc(me.user.name)}</div><div>مدير المدرسة</div><div>الختم</div></div>`);
+      out.querySelector('#xl').onclick = () => S.exportXlsx(`تقرير-الحضور-${m}`, [{ l: 'الطالب', v: (r) => r.name }, { l: 'حاضر', v: (r) => r.present }, { l: 'غائب', v: (r) => r.absent }, { l: 'متأخر', v: (r) => r.late }, { l: 'بعذر', v: (r) => r.excused }, { l: 'نسبة الحضور %', v: (r) => r.rate }, { l: 'الحالة', v: (r) => (flag(r) ? 'يحتاج متابعة' : 'منتظم') }], rows);
+    };
+    rp.querySelector('#go').onclick = load;
+    load();
+  }
+
+  async function classResultsView(rp) {
+    if (!SECTIONS.length) { rp.innerHTML = S.emptyHtml('لا توجد شعب مسندة إليك', '', 'book'); return; }
+    rp.innerHTML = `<div class="selrow"><label>الشعبة<select id="sec" class="inp">${SECTIONS.map((s) => `<option value="${s.id}">${secLabel(s)}</option>`).join('')}</select></label><button class="btn" id="go">${ic('book')} عرض النتائج</button></div><div id="out"></div>`;
+    const out = rp.querySelector('#out');
+    const load = async () => {
+      const section_id = rp.querySelector('#sec').value; out.innerHTML = '<div class="spin"></div>';
+      let d; try { d = await S.get('/teacher/class-results', { section_id }); } catch (er) { out.innerHTML = S.emptyHtml('تعذّر تحميل النتائج', er.message, 'alert'); return; }
+      const rows = d.rows || [], graded = rows.filter((r) => r.percent != null);
+      const low = (r) => r.percent != null && (r.percent < 50 || r.failed > 0), top = new Set(graded.slice(0, 3).map((r) => r.student_id));
+      const sec = SECTIONS.find((s) => String(s.id) === String(section_id)) || {};
+      if (!graded.length) { out.innerHTML = S.emptyHtml('لا توجد درجات مرصودة لهذه الشعبة بعد', 'ارصد الدرجات من تبويب «رصد الدرجات».', 'book'); return; }
+      const status = (r) => (r.percent == null ? '<span class="bdg l-mut">غير مرصود</span>' : low(r) ? '<span class="bdg l-bad">يحتاج دعماً</span>' : top.has(r.student_id) ? '<span class="bdg l-ok">متفوّق</span>' : '<span class="bdg l-info">جيد</span>');
+      out.innerHTML = `<div class="toolbar"><span class="bdg l-info">${secLabel(sec)}</span><span class="bdg l-ok">${top.size} متفوّقون</span><span class="bdg l-bad">${rows.filter(low).length} يحتاجون دعماً</span><span class="bdg l-mut">${graded.length}/${rows.length} مرصود</span><div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة / PDF</button><button class="btn outline-ok" id="xl">${ic('download')} تصدير إكسل</button></div>
+        <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>الترتيب</th><th class="s">الطالب</th><th>الرقم</th><th>المواد المرصودة</th><th>مواد الرسوب</th><th>المعدل</th><th>التقدير</th><th>الحالة</th></tr></thead><tbody>${rows.map((r) => `<tr${low(r) ? ' style="background:var(--bad-bg)"' : ''}><td class="num b">${r.rank ?? '—'}</td><td class="s b">${esc(r.name)}</td><td class="num muted">${esc(r.student_no || '')}</td><td class="num">${r.subjects_counted}</td><td class="num ${r.failed ? 'bad-t b' : ''}">${r.failed || '—'}</td><td class="num b">${r.percent != null ? S.fmtN(r.percent, 1) + '%' : '—'}</td><td>${r.grade ? `<span class="bdg" style="background:${r.grade.color}22;color:${r.grade.color}">${esc(r.grade.letter)}</span>` : '—'}</td><td>${status(r)}</td></tr>`).join('')}</tbody></table></div></div>
+        <p class="muted sm mt8">«يحتاج دعماً»: معدل أقل من 50% أو رسوب في مادة واحدة على الأقل. «متفوّق»: أعلى ثلاثة معدلات.</p>`;
+      out.querySelector('#pr').onclick = () => S.print(`نتائج الشعبة — ${secLabel(sec)}`, `<h2>نتائج الشعبة</h2><div class="kv"><div><span>الشعبة</span><b>${secLabel(sec)}</b></div><div><span>المرصود</span><b>${graded.length} من ${rows.length}</b></div><div><span>يحتاجون دعماً</span><b>${rows.filter(low).length}</b></div></div>
+        <table><thead><tr><th>الترتيب</th><th style="text-align:right">الطالب</th><th>المواد</th><th>الرسوب</th><th>المعدل</th><th>التقدير</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.rank ?? '—'}</td><td style="text-align:right">${esc(r.name)}</td><td>${r.subjects_counted}</td><td${r.failed ? ' style="color:#c00;font-weight:700"' : ''}>${r.failed || '—'}</td><td${low(r) ? ' style="color:#c00;font-weight:700"' : ''}>${r.percent != null ? S.fmtN(r.percent, 1) + '%' : '—'}</td><td>${r.grade ? esc(r.grade.letter) : '—'}</td></tr>`).join('')}</tbody></table>
+        <div class="sig"><div>المعلّم<br>${esc(me.user.name)}</div><div>مدير المدرسة</div><div>الختم</div></div>`);
+      out.querySelector('#xl').onclick = () => S.exportXlsx(`نتائج-الشعبة`, [{ l: 'الترتيب', v: (r) => r.rank }, { l: 'الطالب', v: (r) => r.name }, { l: 'الرقم', v: (r) => r.student_no }, { l: 'المواد المرصودة', v: (r) => r.subjects_counted }, { l: 'مواد الرسوب', v: (r) => r.failed }, { l: 'المعدل %', v: (r) => r.percent }, { l: 'التقدير', v: (r) => r.grade && r.grade.letter }, { l: 'الحالة', v: (r) => (r.percent == null ? 'غير مرصود' : low(r) ? 'يحتاج دعماً' : top.has(r.student_id) ? 'متفوّق' : 'جيد') }], rows);
+    };
+    rp.querySelector('#go').onclick = load;
+    load();
+  }
+
   // --------------------------------------------------------------- report card (modal)
   async function reportCard(id) {
     const m = S.modal({ title: 'بطاقة الدرجات', size: 'wide', body: S.spinner, foot: '<button class="btn ghost" data-close>إغلاق</button><button class="btn" id="pr">' + ic('printer') + ' طباعة الكشف</button>' });
@@ -211,7 +270,7 @@
   }
 
   // --------------------------------------------------------------- router
-  const routes = { '': home, timetable, students, marks, attendance };
+  const routes = { '': home, timetable, students, marks, attendance, reports };
   async function route() {
     const raw = location.hash.replace(/^#\//, '');
     const [path, qs] = raw.split('?');

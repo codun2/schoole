@@ -94,7 +94,7 @@
             </tbody></table></div></div>
           <div class="card"><div class="hd"><h3>${ic('clock')} الطلاب المعلّقون</h3><span class="grow"></span><a class="btn ghost xs" href="#/students?status=pending">عرض الكل</a></div><div class="bd">
             ${d.pending_students.map((s) => `<a class="li" href="#/students/${s.id}"><span class="avatar">${esc(S.initials(S.enName(s)))}</span><span class="t"><b>${esc(S.enName(s))}</b><small>${esc(S.enName(s.grade))} · ${esc(S.enName(s.guardian))}</small></span></a>`).join('') || '<div class="empty" style="padding:24px">لا يوجد طلاب</div>'}
-            ${d.applications_new ? `<a class="btn soft sm mt8" style="width:100%" href="#/applications?status=new">${ic('userPlus')} ${S.num(d.applications_new)} طلب تسجيل جديد بانتظار المراجعة</a>` : ''}
+            ${d.applications_new ? `<a class="btn soft sm mt8" style="width:100%" href="#/applications?status=new">${ic('userPlus')} ${S.num(d.applications_new)} ${S.isEn() ? 'new admission requests awaiting review' : 'طلب تسجيل جديد بانتظار المراجعة'}</a>` : ''}
           </div></div>
         </div>
         <div class="grid g3 mt16">

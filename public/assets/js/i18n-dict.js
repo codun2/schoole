@@ -1735,4 +1735,22 @@ window.SCH_DICT = {
   'شعبة د': 'Section D',
   'شعبة هـ': 'Section E',
   'شعبة و': 'Section F',
+
+  // ---- notes modal
+  'اكتب الملاحظة السلوكية...': 'Write the behaviour note...',
+  'حذف هذه الملاحظة؟': 'Delete this note?',
+  'تمت إضافة الملاحظة': 'Note added',
+  'اكتب الملاحظة': 'Write the note',
+  'تم حذف الملاحظة.': 'Note deleted.',
+
+  // ---- portal forms (student/guardian login, add-student, assignment)
+  'دخول الطالب للبوابة (اختياري)': 'Student portal login (optional)',
+  '🔑 دخول الطالب للبوابة (اختياري)': '🔑 Student portal login (optional)',
+  'يدخل الطالب بوابته برقمه المدرسي وكلمة المرور هذه.': 'The student signs into their portal with their school number and this password.',
+  'يدخل الطالب بوابته من صفحة الدخول برقمه المدرسي وكلمة المرور هذه.': 'The student signs in from the login page with their school number and this password.',
+  'دخول البوطة': 'Portal login',
+  'الموعد (التسليم / يوم الاختبار)': 'Due (hand-in / exam day)',
+  'مرفق (ورقة عمل، صورة، PDF)': 'Attachment (worksheet, image, PDF)',
+  'استبدال المرفق': 'Replace attachment',
+  'حذف المرفق الحالي': 'Remove current attachment',
 };

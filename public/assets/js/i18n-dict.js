@@ -1757,4 +1757,9 @@ window.SCH_DICT = {
   // ---- homework form
   'عنوان الواجب/الاختبار': 'Title',
   'مثال: حل تمارين الوحدة الثانية': 'e.g. Solve Unit 2 exercises',
+
+  // ---- login page
+  'البريد أو الجوال أو الرقم المدرسي للطالب': 'Email, mobile, or student school number',
+  'الطلاب، العقود والأقساط، الحضور، المحاسبة، الموارد البشرية والشؤون الإدارية — مع بوابات خاصة لولي الأمر والمعلّم والطالب.': 'Students, contracts & installments, attendance, accounting, HR and administration — with dedicated portals for guardians, teachers and students.',
+  'معلّم': 'Teacher',
 };

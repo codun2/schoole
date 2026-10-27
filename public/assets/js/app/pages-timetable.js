@@ -40,8 +40,8 @@
           const subjOpts = lk.subjects.filter((su) => !(su.grade_ids || []).length || su.grade_ids.map(Number).includes(Number(d.section.grade_id)));
           const draw = () => {
             wrap.innerHTML = `<div class="toolbar"><div class="total-l">${esc([S.enName(d.section.grade), S.enName(d.section)].filter(Boolean).join(' / '))}</div><div class="sp"></div><button class="btn ghost" id="print">${ic('printer')} طباعة</button><button class="btn success" id="save">${ic('check')} حفظ الجدول</button></div>
-              <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>الحصة ${i + 1}</th>`).join('')}</tr></thead><tbody>
-              ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const key = day + '-' + (pi + 1); const c = grid[key] || {}; return `<td class="ttcell" data-k="${key}" style="${c.subject_id ? `background:${subjColor(c.subject_id)}14` : ''}">${c.subject_id || c.teacher_id ? `<div class="b sm" style="color:${subjColor(c.subject_id)}">${esc(c.subject || '—')}</div><div class="muted xs">${esc(c.teacher || '')}</div>` : `<span class="muted xs">+</span>`}</td>`; }).join('')}</tr>`).join('')}
+              <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>${S.isEn() ? 'Period' : 'الحصة'} ${i + 1}</th>`).join('')}</tr></thead><tbody>
+              ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const key = day + '-' + (pi + 1); const c = grid[key] || {}; return `<td class="ttcell" data-k="${key}" style="${c.subject_id ? `background:${subjColor(c.subject_id)}14` : ''}">${c.subject_id || c.teacher_id ? `<div class="b sm" style="color:${subjColor(c.subject_id)}">${esc(c.subject || '—')}</div><div class="muted xs">${esc(S.enT(c.teacher, c.teacher_en) || '')}</div>` : `<span class="muted xs">+</span>`}</td>`; }).join('')}</tr>`).join('')}
               </tbody></table></div></div><p class="muted sm mt8">اضغط أي خلية لإسناد مادة ومعلم. يتحقق النظام من تعارض المعلمين عند الحفظ.</p>`;
             wrap.querySelectorAll('.ttcell').forEach((td) => (td.onclick = () => editCell(td.dataset.k)));
             wrap.querySelector('#save').onclick = save;
@@ -53,12 +53,12 @@
             S.formModal({ title: `${DAYS[day]} — الحصة ${period}`, size: 'narrow',
               fields: [
                 { k: 'subject_id', l: 'المادة', t: 'select', opts: subjOpts.map((s) => [s.id, s.name_ar]) },
-                { k: 'teacher_id', l: 'المعلم', t: 'select', opts: lk.teachers.map((t) => [t.id, t.name]) },
+                { k: 'teacher_id', l: 'المعلم', t: 'select', opts: lk.teachers.map((t) => [t.id, S.enName(t)]) },
                 { k: 'room', l: 'القاعة' },
               ], values: c, saveText: 'تعيين',
               foot: `<button class="btn ghost" data-close>إلغاء</button>${c.subject_id || c.teacher_id ? '<button class="btn danger" id="clr">تفريغ الخلية</button>' : ''}<button class="btn" data-save>تعيين</button>`,
               afterRender: (m) => { const clr = m.$('#clr'); if (clr) clr.onclick = () => { delete grid[key]; m.close(); draw(); }; },
-              onSave: async (v) => { if (!v.subject_id && !v.teacher_id) { delete grid[key]; } else { grid[key] = { subject_id: v.subject_id, subject: (subjOpts.find((s) => String(s.id) === String(v.subject_id)) || {}).name_ar, teacher_id: v.teacher_id, teacher: (lk.teachers.find((t) => String(t.id) === String(v.teacher_id)) || {}).name, room: v.room }; } draw(); },
+              onSave: async (v) => { if (!v.subject_id && !v.teacher_id) { delete grid[key]; } else { grid[key] = { subject_id: v.subject_id, subject: (subjOpts.find((s) => String(s.id) === String(v.subject_id)) || {}).name_ar, teacher_id: v.teacher_id, teacher: lk.teachers.find((t) => String(t.id) === String(v.teacher_id))?.name, teacher_en: lk.teachers.find((t) => String(t.id) === String(v.teacher_id))?.name_en, room: v.room }; } draw(); },
             });
           };
           const save = async (e) => {
@@ -77,7 +77,7 @@
       // ---- teacher schedule
       function teacherTab() {
         if (!lk.teachers.length) { body.innerHTML = S.emptyHtml('لا يوجد معلمون', 'أضف موظفين كأعضاء هيئة تدريسية', 'cap'); return; }
-        body.innerHTML = `<div class="filters"><label class="fld"><span>المعلم</span><select class="inp" id="t">${lk.teachers.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label></div><div id="g"></div>`;
+        body.innerHTML = `<div class="filters"><label class="fld"><span>المعلم</span><select class="inp" id="t">${lk.teachers.map((t) => `<option value="${t.id}">${esc(S.enName(t))}</option>`).join('')}</select></label></div><div id="g"></div>`;
         const load = async () => {
           const wrap = body.querySelector('#g'); wrap.innerHTML = S.spinner;
           const tid = body.querySelector('#t').value;
@@ -90,7 +90,7 @@
             d = await S.local.timetableTeacher(tid, cfg);
           }
           wrap.innerHTML = `<div class="toolbar"><span class="bdg l-info">نصاب أسبوعي: ${d.load} حصة</span><div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة</button></div>
-            <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>الحصة ${i + 1}</th>`).join('')}</tr></thead><tbody>
+            <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>${S.isEn() ? 'Period' : 'الحصة'} ${i + 1}</th>`).join('')}</tr></thead><tbody>
             ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const c = d.entries[day + '-' + (pi + 1)]; return `<td>${c ? `<div class="b sm acc-t">${esc(c.subject || '')}</div><div class="muted xs">${esc(c.section || '')}${c.room ? ' · ' + esc(c.room) : ''}</div>` : '<span class="muted xs">—</span>'}</td>`; }).join('')}</tr>`).join('')}
             </tbody></table></div></div>`;
           wrap.querySelector('#pr').onclick = () => printTeacher(d);

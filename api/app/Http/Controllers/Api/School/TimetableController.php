@@ -54,10 +54,10 @@ class TimetableController extends Controller
     {
         $data = $request->validate(['section_id' => ['required', 'integer', $this->owned('sections')]]);
         $section = Section::with('grade:id,name_ar,name_en')->findOrFail($data['section_id']);
-        $entries = TimetableEntry::with(['subject:id,name_ar,name_en', 'teacher:id,name'])->where('section_id', $section->id)->get()
+        $entries = TimetableEntry::with(['subject:id,name_ar,name_en', 'teacher:id,name,name_en'])->where('section_id', $section->id)->get()
             ->mapWithKeys(fn ($e) => [$e->day.'-'.$e->period => [
                 'subject_id' => $e->subject_id, 'subject' => $e->subject?->name_ar,
-                'teacher_id' => $e->teacher_id, 'teacher' => $e->teacher?->name, 'room' => $e->room,
+                'teacher_id' => $e->teacher_id, 'teacher' => $e->teacher?->name, 'teacher_en' => $e->teacher?->name_en, 'room' => $e->room,
             ]]);
 
         return response()->json(['section' => $section, 'entries' => $entries] + $this->cfg($request));

@@ -100,7 +100,7 @@
     api: '/app/inventory-items', title: 'الأصناف', singular: 'صنف', perm: 'inventory', backTo: 'inventory-items', lookups: ['inv_categories', 'inv_locations'], invalidate: [], fields: itemFields,
     context: (row) => row
       ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('box')} ملخص الصنف</div>${S.kv([['الكمية الحالية', `<span class="num">${S.fmtN(row.quantity, 2)}</span> ${esc(row.unit || '')}`], ['القيمة', S.moneyT(+row.quantity * +row.unit_cost)], ['الحالة', S.badge(COND, row.condition)]])}<p class="muted sm mt8">الكمية تتغيّر عبر «حركة مخزن» من قائمة الأصناف حتى يبقى السجل دقيقاً.</p></div>`
-      : `<div class="card pad"><p class="muted sm">${ic('box')} أدخل بيانات الصنف وكميته الافتتاحية. الأثاث والأجهزة = <b>أصل</b>، والقرطاسية ومواد التنظيف = <b>مستهلك</b> مع حدّ إعادة طلب لتنبيهك عند النقص.</p></div>`,
+      : `<div class="card pad"><p class="muted sm">${ic('box')} ${S.isEn() ? 'Enter the item details and its opening quantity. Furniture & devices = <b>Asset</b>, stationery & cleaning supplies = <b>Consumable</b> with a reorder level to alert you when stock runs low.' : 'أدخل بيانات الصنف وكميته الافتتاحية. الأثاث والأجهزة = <b>أصل</b>، والقرطاسية ومواد التنظيف = <b>مستهلك</b> مع حدّ إعادة طلب لتنبيهك عند النقص.'}</p></div>`,
   }));
 
   // ------------------------------------------------------- categories / locations

@@ -28,7 +28,7 @@ class LookupController extends Controller
             'departments'    => fn () => Models\Department::orderBy('name')->get(['id', 'name']),
             'job_titles'     => fn () => Models\JobTitle::orderBy('name')->get(['id', 'name', 'department_id']),
             'employees'      => fn () => Models\Employee::where('status', '!=', 'terminated')->orderBy('name')->get(['id', 'name', 'number', 'is_teacher']),
-            'teachers'       => fn () => Models\Employee::where('status', '!=', 'terminated')->where('is_teacher', true)->orderBy('name')->get(['id', 'name']),
+            'teachers'       => fn () => Models\Employee::where('status', '!=', 'terminated')->where('is_teacher', true)->orderBy('name')->get(['id', 'name', 'name_en']),
             'leave_types'    => fn () => Models\LeaveType::orderBy('id')->get(['id', 'name', 'days_per_year']),
             'cash_accounts'  => fn () => Models\CashAccount::where('is_active', true)->orderBy('id')->get(['id', 'name', 'type']),
             'customers'      => fn () => Models\Customer::orderBy('name')->get(['id', 'name', 'phone']),

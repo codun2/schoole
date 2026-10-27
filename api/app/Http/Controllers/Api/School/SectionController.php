@@ -15,7 +15,7 @@ class SectionController extends ResourceController
 
     protected array $filters = ['grade_id'];
 
-    protected array $with = ['grade:id,name_ar,sort', 'teacher:id,name'];
+    protected array $with = ['grade:id,name_ar,name_en,sort', 'teacher:id,name'];
 
     protected array $withCount = ['students'];
 

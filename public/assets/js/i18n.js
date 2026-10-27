@@ -27,6 +27,15 @@
     if (S.isEn() && o.name_en && String(o.name_en).trim()) return o.name_en;
     return o.name || o.name_ar || '';
   };
+  // EN-aware pick for a free-text Arabic value paired with an optional English one (e.g. application student_name / student_name_en).
+  S.enT = (ar, en) => (S.isEn() && en && String(en).trim() ? en : (ar || ''));
+  // EN-aware "Grade / Section" label built from the two objects directly (so it never relies on an exact dictionary match for the composite).
+  S.gs = (r, dash) => {
+    const g = r && r.grade ? S.enName(r.grade) : '';
+    const s = r && r.section ? S.enName(r.section) : '';
+    const d = dash || '—';
+    return (g || d) + ' / ' + (s || d);
+  };
 
   function translateString(raw) {
     const d = DICT();

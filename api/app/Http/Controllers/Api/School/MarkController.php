@@ -28,7 +28,7 @@ class MarkController extends Controller
             'subject_id'   => ['required', 'integer', $this->owned('subjects')],
             'exam_term_id' => ['required', 'integer', $this->owned('exam_terms')],
         ]);
-        $section = Section::with('grade:id,name_ar')->findOrFail($data['section_id']);
+        $section = Section::with('grade:id,name_ar,name_en')->findOrFail($data['section_id']);
         $subject = Subject::findOrFail($data['subject_id']);
         $term = ExamTerm::findOrFail($data['exam_term_id']);
         $marks = GradeMark::where('section_id', $section->id)->where('subject_id', $subject->id)->where('exam_term_id', $term->id)->get()->keyBy('student_id');
@@ -89,7 +89,7 @@ class MarkController extends Controller
     /** Full report card for one student: subjects × terms, weighted final, grade, rank. */
     public function reportCard(Request $request, $studentId)
     {
-        $student = Student::with(['grade:id,name_ar', 'section:id,name', 'guardian:id,name'])->findOrFail($studentId);
+        $student = Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'guardian:id,name,name_en'])->findOrFail($studentId);
         $yearId = $student->academic_year_id;
         $terms = ExamTerm::where('academic_year_id', $yearId)->orderBy('sort')->get();
         $subjects = Subject::where('academic_year_id', $yearId)
@@ -153,7 +153,7 @@ class MarkController extends Controller
     public function classResults(Request $request)
     {
         $data = $request->validate(['section_id' => ['required', 'integer', $this->owned('sections')]]);
-        $section = Section::with('grade:id,name_ar')->findOrFail($data['section_id']);
+        $section = Section::with('grade:id,name_ar,name_en')->findOrFail($data['section_id']);
         $terms = ExamTerm::where('academic_year_id', $section->academic_year_id)->get();
         $weightSum = max(0.0001, (float) $terms->sum('weight'));
         $subjects = Subject::where('academic_year_id', $section->academic_year_id)

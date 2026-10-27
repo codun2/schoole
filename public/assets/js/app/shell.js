@@ -279,7 +279,7 @@
     const crumbs = `<div class="crumbs"><b>${esc(g ? g[1] : 'الرئيسية')}</b>${ic('chevL')}<span>${esc(opts.title || routeLabel[key] || '')}</span></div>`;
     if (!opts.year) return crumbs;
     const years = S.L.peek('years');
-    return crumbs + `<div class="yearbar">${ic('calendar')}<span>السنة الدراسية:</span><select id="yearsel">${years.map((y) => `<option value="${y.id}" ${String(y.id) === String(S.yearId()) ? 'selected' : ''}>${esc(y.name)}${y.is_current ? ' (الحالية)' : ''}</option>`).join('')}</select></div>`;
+    return crumbs + `<div class="yearbar">${ic('calendar')}<span>السنة الدراسية:</span><select id="yearsel">${years.map((y) => `<option value="${y.id}" ${String(y.id) === String(S.yearId()) ? 'selected' : ''}>${esc(y.name)}${y.is_current ? (S.isEn() ? ' (current)' : ' (الحالية)') : ''}</option>`).join('')}</select></div>`;
   };
   S.bindYear = (el) => { const s = el.querySelector('#yearsel'); if (s) s.onchange = () => { S.setYear(s.value); route(); }; };
 

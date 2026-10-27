@@ -28,8 +28,10 @@ class CashAccountController extends ResourceController
     {
         return [
             'name'            => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en'         => ['nullable', 'string', 'max:120'],
             'type'            => ['nullable', 'in:cash,bank'],
             'bank_name'       => ['nullable', 'string', 'max:120'],
+            'bank_name_en'    => ['nullable', 'string', 'max:120'],
             'account_no'      => ['nullable', 'string', 'max:60'],
             'iban'            => ['nullable', 'string', 'max:60'],
             'opening_balance' => ['nullable', 'numeric'],

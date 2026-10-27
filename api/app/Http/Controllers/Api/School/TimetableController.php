@@ -53,8 +53,8 @@ class TimetableController extends Controller
     public function section(Request $request)
     {
         $data = $request->validate(['section_id' => ['required', 'integer', $this->owned('sections')]]);
-        $section = Section::with('grade:id,name_ar')->findOrFail($data['section_id']);
-        $entries = TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name'])->where('section_id', $section->id)->get()
+        $section = Section::with('grade:id,name_ar,name_en')->findOrFail($data['section_id']);
+        $entries = TimetableEntry::with(['subject:id,name_ar,name_en', 'teacher:id,name'])->where('section_id', $section->id)->get()
             ->mapWithKeys(fn ($e) => [$e->day.'-'.$e->period => [
                 'subject_id' => $e->subject_id, 'subject' => $e->subject?->name_ar,
                 'teacher_id' => $e->teacher_id, 'teacher' => $e->teacher?->name, 'room' => $e->room,
@@ -82,7 +82,7 @@ class TimetableController extends Controller
             if (empty($e['teacher_id'])) {
                 continue;
             }
-            $other = TimetableEntry::with('section:id,name')->where('teacher_id', $e['teacher_id'])
+            $other = TimetableEntry::with('section:id,name,name_en')->where('teacher_id', $e['teacher_id'])
                 ->where('day', $e['day'])->where('period', $e['period'])->where('section_id', '!=', $section->id)->first();
             if ($other) {
                 $t = Employee::find($e['teacher_id']);
@@ -119,7 +119,7 @@ class TimetableController extends Controller
     public function teacher(Request $request, $teacherId)
     {
         $teacher = Employee::findOrFail($teacherId);
-        $entries = TimetableEntry::with(['subject:id,name_ar', 'section:id,name,grade_id', 'section.grade:id,name_ar'])
+        $entries = TimetableEntry::with(['subject:id,name_ar,name_en', 'section:id,name,name_en,grade_id', 'section.grade:id,name_ar,name_en'])
             ->where('teacher_id', $teacher->id)->get()
             ->mapWithKeys(fn ($e) => [$e->day.'-'.$e->period => [
                 'subject' => $e->subject?->name_ar,

@@ -90,10 +90,10 @@
         <div class="grid g-2-1 mt16">
           <div class="card"><div class="hd"><h3>${ic('contract')} أحدث العقود</h3><span class="sp grow"></span><a class="btn ghost xs" href="#/contracts">عرض الكل</a></div>
             <div class="tbl-scroll"><table class="tbl"><thead><tr><th>رقم العقد</th><th>الطالب</th><th>الشعبة</th><th>الإجمالي</th><th>الباقي</th><th>الحالة</th></tr></thead><tbody>
-            ${d.recent_contracts.map((c) => `<tr><td><a class="lk num" href="#/contracts/${c.id}">${esc(c.number)}</a></td><td>${esc(c.student?.name)}</td><td>${esc((c.grade?.name_ar || '') + ' / ' + (c.section?.name || ''))}</td><td class="num">${S.fmtN(c.total)}</td><td class="num bad-t">${S.fmtN(c.remaining)}</td><td>${S.badge(S.ST.contract, c.status)}</td></tr>`).join('') || `<tr><td colspan="6">${S.emptyHtml('لا توجد عقود')}</td></tr>`}
+            ${d.recent_contracts.map((c) => `<tr><td><a class="lk num" href="#/contracts/${c.id}">${esc(c.number)}</a></td><td>${esc(S.enName(c.student))}</td><td>${esc(S.gs(c, ''))}</td><td class="num">${S.fmtN(c.total)}</td><td class="num bad-t">${S.fmtN(c.remaining)}</td><td>${S.badge(S.ST.contract, c.status)}</td></tr>`).join('') || `<tr><td colspan="6">${S.emptyHtml('لا توجد عقود')}</td></tr>`}
             </tbody></table></div></div>
           <div class="card"><div class="hd"><h3>${ic('clock')} الطلاب المعلّقون</h3><span class="grow"></span><a class="btn ghost xs" href="#/students?status=pending">عرض الكل</a></div><div class="bd">
-            ${d.pending_students.map((s) => `<a class="li" href="#/students/${s.id}"><span class="avatar">${esc(S.initials(s.name))}</span><span class="t"><b>${esc(s.name)}</b><small>${esc(s.grade?.name_ar || '')} · ${esc(s.guardian?.name || '')}</small></span></a>`).join('') || '<div class="empty" style="padding:24px">لا يوجد طلاب</div>'}
+            ${d.pending_students.map((s) => `<a class="li" href="#/students/${s.id}"><span class="avatar">${esc(S.initials(S.enName(s)))}</span><span class="t"><b>${esc(S.enName(s))}</b><small>${esc(S.enName(s.grade))} · ${esc(S.enName(s.guardian))}</small></span></a>`).join('') || '<div class="empty" style="padding:24px">لا يوجد طلاب</div>'}
             ${d.applications_new ? `<a class="btn soft sm mt8" style="width:100%" href="#/applications?status=new">${ic('userPlus')} ${S.num(d.applications_new)} طلب تسجيل جديد بانتظار المراجعة</a>` : ''}
           </div></div>
         </div>
@@ -101,7 +101,7 @@
           <div class="card"><div class="hd"><h3>${ic('layers')} الطلاب حسب الصف</h3></div><div class="bd" id="bygrade"></div></div>
           <div class="card"><div class="hd"><h3>${ic('pie')} توزيع الطلاب</h3></div><div class="bd" id="gender"></div></div>
           <div class="card"><div class="hd"><h3>${ic('calendar')} أقرب الأقساط المستحقة</h3></div><div class="bd">
-            ${d.upcoming_installments.map((i) => `<div class="li"><span class="ic" style="${i.is_overdue ? 'background:var(--bad-bg);color:var(--bad)' : ''}">${ic('coins')}</span><span class="t"><b>${esc(i.student?.name)}</b><small class="num">${S.d(i.due_date)} · ${esc(i.contract?.number)}</small></span><b class="num ${i.is_overdue ? 'bad-t' : ''}">${S.fmtN(i.remaining)}</b></div>`).join('') || '<div class="empty" style="padding:24px">لا أقساط مستحقة</div>'}
+            ${d.upcoming_installments.map((i) => `<div class="li"><span class="ic" style="${i.is_overdue ? 'background:var(--bad-bg);color:var(--bad)' : ''}">${ic('coins')}</span><span class="t"><b>${esc(S.enName(i.student))}</b><small class="num">${S.d(i.due_date)} · ${esc(i.contract?.number)}</small></span><b class="num ${i.is_overdue ? 'bad-t' : ''}">${S.fmtN(i.remaining)}</b></div>`).join('') || '<div class="empty" style="padding:24px">لا أقساط مستحقة</div>'}
           </div></div>
         </div>`;
       S.bindYear(el);

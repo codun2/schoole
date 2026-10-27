@@ -17,7 +17,7 @@ class LeaveRequestController extends ResourceController
 
     protected array $filters = ['status', 'employee_id', 'leave_type_id'];
 
-    protected array $with = ['employee:id,name,number', 'leaveType:id,name'];
+    protected array $with = ['employee:id,name,name_en,number', 'leaveType:id,name,name_en'];
 
     protected ?string $dateColumn = 'from_date';
 

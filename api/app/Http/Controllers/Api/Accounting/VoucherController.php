@@ -23,7 +23,7 @@ class VoucherController extends ResourceController
 
     protected array $filters = ['type', 'category', 'cash_account_id', 'method', 'party_type'];
 
-    protected array $with = ['cashAccount:id,name', 'creator:id,name'];
+    protected array $with = ['cashAccount:id,name,name_en', 'creator:id,name'];
 
     protected array $sortable = ['id', 'date', 'amount'];
 

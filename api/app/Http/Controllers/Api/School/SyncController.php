@@ -40,7 +40,7 @@ class SyncController extends Controller
         'custom-fields'      => ['ctrl' => School\CustomFieldController::class, 'perm' => 'school'],
         'subjects'           => ['ctrl' => School\SubjectController::class, 'perm' => 'school'],
         'exam-terms'         => ['ctrl' => School\ExamTermController::class, 'perm' => 'school'],
-        'student-attendance' => ['model' => Models\StudentAttendance::class, 'with' => ['student:id,name'], 'perm' => 'school'],
+        'student-attendance' => ['model' => Models\StudentAttendance::class, 'with' => ['student:id,name,name_en'], 'perm' => 'school'],
         'grade-marks'        => ['model' => Models\GradeMark::class, 'with' => [], 'perm' => 'school'],
         'timetable-entries'  => ['model' => Models\TimetableEntry::class, 'with' => [], 'perm' => 'school'],
         // perm:students
@@ -49,7 +49,7 @@ class SyncController extends Controller
         'applications'       => ['ctrl' => School\ApplicationController::class, 'perm' => 'students'],
         // perm:finance
         'contracts'          => ['ctrl' => School\ContractController::class, 'with' => ['items'], 'perm' => 'finance'],
-        'installments'       => ['model' => Models\Installment::class, 'with' => ['student:id,name', 'contract:id,number'], 'perm' => 'finance'],
+        'installments'       => ['model' => Models\Installment::class, 'with' => ['student:id,name,name_en', 'contract:id,number'], 'perm' => 'finance'],
         // perm:accounting
         'cash-accounts'      => ['ctrl' => Accounting\CashAccountController::class, 'perm' => 'accounting'],
         'customers'          => ['ctrl' => Accounting\CustomerController::class, 'perm' => 'accounting'],

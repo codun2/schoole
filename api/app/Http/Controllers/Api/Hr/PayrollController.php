@@ -30,7 +30,7 @@ class PayrollController extends Controller
     public function show($id)
     {
         $p = Payroll::findOrFail($id);
-        $p->load(['items.employee:id,name,number,department_id,iban,bank_name', 'items.employee.department:id,name']);
+        $p->load(['items.employee:id,name,name_en,number,department_id,iban,bank_name', 'items.employee.department:id,name,name_en']);
 
         return response()->json($p);
     }

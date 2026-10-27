@@ -134,9 +134,9 @@ class DashboardController extends Controller
                 ->where('status', '!=', 'paid')->whereDate('due_date', '<', $today)->selectRaw('SUM(amount - paid) s')->value('s')),
             'by_grade'           => $byGrade,
             'gender'             => Student::where('academic_year_id', $yearId)->where('status', 'active')->selectRaw('gender, COUNT(*) c')->groupBy('gender')->pluck('c', 'gender'),
-            'recent_contracts'   => Contract::with(['student:id,name', 'grade:id,name_ar', 'section:id,name'])->where('academic_year_id', $yearId)->orderByDesc('id')->limit(6)->get(),
-            'pending_students'   => Student::with(['grade:id,name_ar', 'guardian:id,name,phone'])->where('academic_year_id', $yearId)->where('status', 'pending')->orderByDesc('id')->limit(6)->get(),
-            'upcoming_installments' => Installment::with(['student:id,name', 'contract:id,number'])->whereHas('contract', fn ($c) => $c->where('academic_year_id', $yearId)->where('status', 'active'))
+            'recent_contracts'   => Contract::with(['student:id,name,name_en', 'grade:id,name_ar,name_en', 'section:id,name,name_en'])->where('academic_year_id', $yearId)->orderByDesc('id')->limit(6)->get(),
+            'pending_students'   => Student::with(['grade:id,name_ar,name_en', 'guardian:id,name,name_en,phone'])->where('academic_year_id', $yearId)->where('status', 'pending')->orderByDesc('id')->limit(6)->get(),
+            'upcoming_installments' => Installment::with(['student:id,name,name_en', 'contract:id,number'])->whereHas('contract', fn ($c) => $c->where('academic_year_id', $yearId)->where('status', 'active'))
                 ->where('status', '!=', 'paid')->orderBy('due_date')->limit(6)->get(),
         ]);
     }
@@ -220,7 +220,7 @@ class DashboardController extends Controller
             'monthly'     => $monthly,
             'receipts_by_category' => Voucher::where('type', 'receipt')->whereBetween('date', [$f, $t])->selectRaw('category, SUM(amount) total, COUNT(*) n')->groupBy('category')->get(),
             'payments_by_category' => Voucher::where('type', 'payment')->whereBetween('date', [$f, $t])->selectRaw('category, SUM(amount) total, COUNT(*) n')->groupBy('category')->get(),
-            'debts'       => Contract::with(['guardian:id,name,phone'])->where('status', 'active')->where('remaining', '>', 0)
+            'debts'       => Contract::with(['guardian:id,name,name_en,phone'])->where('status', 'active')->where('remaining', '>', 0)
                 ->selectRaw('guardian_id, COUNT(*) contracts, SUM(total) total, SUM(paid) paid, SUM(remaining) remaining')
                 ->groupBy('guardian_id')->orderByDesc('remaining')->limit(100)->get(),
             'by_grade'    => Contract::whereIn('contracts.status', ['active', 'completed'])->join('grades', 'grades.id', '=', 'contracts.grade_id')

@@ -66,7 +66,7 @@
         async function loadLocal() {
           const res = await S.local.query(slug, { q: state.q, f: { ...(cfg.fixed || {}), ...state.f }, year: cfg.year ? S.yearId() : undefined, page: state.page, sort: state.sort });
           const rows = res.data; ctx.rows = rows; ctx.res = res;
-          $('#total').textContent = 'الإجمالي: ' + S.num(res.total);
+          $('#total').textContent = (S.isEn() ? 'Total: ' : 'الإجمالي: ') + S.num(res.total);
           const lastSync = await S.db.getMeta('last_sync_at');
           const online = navigator.onLine !== false; // online but the server was unreachable for this request
           const title = online ? 'تعذّر الوصول للخادم الآن' : 'بيانات محلية';
@@ -90,7 +90,7 @@
             }
             const rows = res.data || [];
             ctx.rows = rows; ctx.res = res;
-            $('#total').textContent = 'الإجمالي: ' + S.num(res.total ?? rows.length);
+            $('#total').textContent = (S.isEn() ? 'Total: ' : 'الإجمالي: ') + S.num(res.total ?? rows.length);
             $('#summary').innerHTML = cfg.summary ? cfg.summary(res, ctx) : '';
             renderTable(rows, res);
             renderPager(res);

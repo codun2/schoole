@@ -91,7 +91,7 @@ class PublicController extends Controller
             'city'   => $company->city,
             'phone'  => $company->phone,
             'year'   => AcademicYear::withoutGlobalScopes()->find($yearId)?->name,
-            'grades' => Grade::withoutGlobalScopes()->where('company_id', $company->id)->where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name_ar']),
+            'grades' => Grade::withoutGlobalScopes()->where('company_id', $company->id)->where('academic_year_id', $yearId)->orderBy('sort')->get(['id', 'name_ar', 'name_en']),
         ]);
     }
 

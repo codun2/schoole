@@ -22,6 +22,7 @@ class LeaveTypeController extends ResourceController
     {
         return [
             'name'          => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en'         => ['nullable', 'string', 'max:255'],
             'days_per_year' => ['nullable', 'integer', 'min:0'],
             'is_paid'       => ['boolean'],
         ];
@@ -41,13 +42,14 @@ class LeaveTypeController extends ResourceController
             ->selectRaw('employee_id, leave_type_id, SUM(days) d')->groupBy('employee_id', 'leave_type_id')->get()
             ->groupBy('employee_id');
 
-        $rows = \App\Models\Employee::where('status', '!=', 'terminated')->orderBy('name')->get(['id', 'number', 'name'])->map(function ($e) use ($types, $used) {
+        $rows = \App\Models\Employee::where('status', '!=', 'terminated')->orderBy('name')->get(['id', 'number', 'name', 'name_en'])->map(function ($e) use ($types, $used) {
             $mine = ($used[$e->id] ?? collect())->keyBy('leave_type_id');
 
             return [
                 'id'     => $e->id,
                 'number' => $e->number,
                 'name'   => $e->name,
+                'name_en'=> $e->name_en,
                 'types'  => $types->map(fn ($t) => ['type_id' => $t->id, 'allowed' => $t->days_per_year, 'used' => (int) ($mine[$t->id]->d ?? 0), 'left' => max(0, $t->days_per_year - (int) ($mine[$t->id]->d ?? 0))]),
             ];
         });

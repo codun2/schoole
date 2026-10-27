@@ -21,7 +21,7 @@ class GuardianController extends ResourceController
 
     protected array $withCount = ['students'];
 
-    protected array $showWith = ['students.grade:id,name_ar', 'students.section:id,name', 'contracts'];
+    protected array $showWith = ['students.grade:id,name_ar,name_en', 'students.section:id,name,name_en', 'contracts'];
 
     protected string $label = 'ولي أمر';
 
@@ -29,6 +29,7 @@ class GuardianController extends ResourceController
     {
         return [
             'name'        => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
+            'name_en'     => ['nullable', 'string', 'max:255'],
             'national_id' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) use ($record) {
                 if ($value === null || trim((string) $value) === '') {
                     return;

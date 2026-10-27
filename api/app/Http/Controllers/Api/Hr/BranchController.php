@@ -21,6 +21,7 @@ class BranchController extends ResourceController
     {
         return [
             'name'    => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en'   => ['nullable', 'string', 'max:255'],
             'city'    => ['nullable', 'string', 'max:120'],
             'phone'   => ['nullable', 'string', 'max:40'],
             'address' => ['nullable', 'string', 'max:255'],

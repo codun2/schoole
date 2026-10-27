@@ -24,7 +24,7 @@ class StudentController extends ResourceController
 
     protected array $filters = ['status', 'grade_id', 'section_id', 'bus_id', 'gender', 'guardian_id', 'nationality'];
 
-    protected array $with = ['guardian:id,name,phone', 'grade:id,name_ar', 'section:id,name', 'bus:id,number'];
+    protected array $with = ['guardian:id,name,name_en,phone', 'grade:id,name_ar,name_en', 'section:id,name,name_en', 'bus:id,number'];
 
     protected array $sortable = ['id', 'name', 'registered_at', 'created_at'];
 

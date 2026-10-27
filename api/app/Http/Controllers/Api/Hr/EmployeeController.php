@@ -27,7 +27,7 @@ class EmployeeController extends ResourceController
 
     protected array $filters = ['status', 'department_id', 'branch_id', 'job_title_id', 'is_teacher', 'gender'];
 
-    protected array $with = ['branch:id,name', 'department:id,name', 'jobTitle:id,name', 'user:id,email,role'];
+    protected array $with = ['branch:id,name,name_en', 'department:id,name,name_en', 'jobTitle:id,name,name_en', 'user:id,email,role'];
 
     protected array $sortable = ['id', 'name', 'number', 'hire_date', 'basic_salary'];
 
@@ -37,6 +37,7 @@ class EmployeeController extends ResourceController
     {
         return [
             'name'                => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
+            'name_en'               => ['nullable', 'string', 'max:255'],
             'national_id'         => ['nullable', 'string', 'max:40'],
             'nationality'         => ['nullable', 'string', 'max:80'],
             'gender'              => ['nullable', 'in:male,female'],
@@ -109,7 +110,7 @@ class EmployeeController extends ResourceController
         $record->has_login = $record->user_id !== null;
         $record->login_email = $record->relationLoaded('user') ? $record->user?->email : null;
         if ($detail) {
-            $record->leaves = LeaveRequest::with('leaveType:id,name')->where('employee_id', $record->id)->orderByDesc('from_date')->limit(10)->get();
+            $record->leaves = LeaveRequest::with('leaveType:id,name,name_en')->where('employee_id', $record->id)->orderByDesc('from_date')->limit(10)->get();
             $record->advances = EmployeeAdvance::where('employee_id', $record->id)->orderByDesc('date')->get();
             $record->payslips = PayrollItem::where('employee_id', $record->id)->join('payrolls', 'payrolls.id', '=', 'payroll_items.payroll_id')
                 ->orderByDesc('payrolls.month')->limit(12)->get(['payrolls.month', 'payrolls.status', 'payroll_items.*']);

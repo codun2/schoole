@@ -16,7 +16,7 @@ class FeeItemController extends ResourceController
 
     protected array $filters = ['type'];
 
-    protected array $with = ['grade:id,name_ar'];
+    protected array $with = ['grade:id,name_ar,name_en'];
 
     protected bool $yearScoped = true;
 

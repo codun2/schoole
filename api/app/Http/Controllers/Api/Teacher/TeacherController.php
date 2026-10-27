@@ -119,9 +119,9 @@ class TeacherController extends Controller
     public function home(Request $request)
     {
         $e = $this->emp($request);
-        $homeroom = Section::with('grade:id,name_ar')->where('teacher_id', $e->id)
+        $homeroom = Section::with('grade:id,name_ar,name_en')->where('teacher_id', $e->id)
             ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])->get();
-        $teaching = Section::with('grade:id,name_ar')->whereIn('id', $this->teachingSectionIds($e))->get(['id', 'name', 'grade_id']);
+        $teaching = Section::with('grade:id,name_ar,name_en')->whereIn('id', $this->teachingSectionIds($e))->get(['id', 'name', 'grade_id']);
         $subjectIds = TimetableEntry::where('teacher_id', $e->id)->distinct()->pluck('subject_id');
         $subjects = Subject::whereIn('id', $subjectIds)->orderBy('sort')->get(['id', 'name_ar']);
 
@@ -131,7 +131,7 @@ class TeacherController extends Controller
         $today = $this->myLessons($e, (int) now()->dayOfWeek); // 0=Sun..6=Sat
 
         // open assignments whose date has passed and that still have ungraded students
-        $open = Assignment::with(['section:id,name,grade_id', 'section.grade:id,name_ar', 'subject:id,name_ar'])
+        $open = Assignment::with(['section:id,name,name_en,grade_id', 'section.grade:id,name_ar,name_en', 'subject:id,name_ar,name_en'])
             ->where('teacher_id', $e->id)->where('status', 'open')->get();
         $totals = Student::whereIn('section_id', $open->pluck('section_id')->unique())->where('status', 'active')
             ->selectRaw('section_id, COUNT(*) c')->groupBy('section_id')->pluck('c', 'section_id');
@@ -173,7 +173,7 @@ class TeacherController extends Controller
     /** This teacher's timetable entries for one weekday (0=Sun..6=Sat), ordered by period. */
     private function myLessons(Employee $e, int $day)
     {
-        return TimetableEntry::with(['subject:id,name_ar', 'section:id,name,grade_id', 'section.grade:id,name_ar'])
+        return TimetableEntry::with(['subject:id,name_ar,name_en', 'section:id,name,name_en,grade_id', 'section.grade:id,name_ar,name_en'])
             ->where('teacher_id', $e->id)->where('day', $day)->orderBy('period')->get()
             ->map(fn ($x) => [
                 'period'  => $x->period,
@@ -189,7 +189,7 @@ class TeacherController extends Controller
     {
         $e = $this->emp($request);
         $s = $request->user()->company->settings ?? [];
-        $entries = TimetableEntry::with(['subject:id,name_ar', 'section:id,name,grade_id', 'section.grade:id,name_ar'])
+        $entries = TimetableEntry::with(['subject:id,name_ar,name_en', 'section:id,name,name_en,grade_id', 'section.grade:id,name_ar,name_en'])
             ->where('teacher_id', $e->id)->orderBy('day')->orderBy('period')->get()
             ->map(fn ($x) => [
                 'day'     => $x->day,
@@ -214,7 +214,7 @@ class TeacherController extends Controller
     {
         $e = $this->emp($request);
         $home = $this->homeroomIds($e);
-        $sections = Section::with('grade:id,name_ar')->whereIn('id', $this->mySectionIds($e))->orderBy('grade_id')->get()
+        $sections = Section::with('grade:id,name_ar,name_en')->whereIn('id', $this->mySectionIds($e))->orderBy('grade_id')->get()
             ->map(fn ($s) => [
                 'id'       => $s->id,
                 'name'     => $s->name,
@@ -254,7 +254,7 @@ class TeacherController extends Controller
         $sid = (int) $request->query('section_id');
         $this->assertHomeroom($e, $sid);
 
-        $students = Student::with('guardian:id,name,phone')->where('section_id', $sid)->orderBy('name')
+        $students = Student::with('guardian:id,name,name_en,phone')->where('section_id', $sid)->orderBy('name')
             ->get(['id', 'name', 'name_en', 'student_no', 'national_id', 'gender', 'status', 'guardian_id']);
 
         return response()->json(['data' => $students]);
@@ -306,7 +306,7 @@ class TeacherController extends Controller
         }
         Activity::log('create', $student, 'طالب (أضافه المعلم): '.$student->name);
 
-        return response()->json($student->load('guardian:id,name,phone'), 201);
+        return response()->json($student->load('guardian:id,name,name_en,phone'), 201);
     }
 
     public function updateStudent(Request $request, $id)
@@ -335,7 +335,7 @@ class TeacherController extends Controller
         }
         Activity::log('update', $student, 'طالب (عدّله المعلم): '.$student->name);
 
-        return response()->json($student->load('guardian:id,name,phone'));
+        return response()->json($student->load('guardian:id,name,name_en,phone'));
     }
 
     // ---------------------------------------------------------------- marks (delegated, pre-authorized)

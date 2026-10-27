@@ -17,7 +17,7 @@ class SubjectController extends ResourceController
 
     protected array $filters = [];
 
-    protected array $with = ['grade:id,name_ar'];
+    protected array $with = ['grade:id,name_ar,name_en'];
 
     protected array $sortable = ['id', 'sort', 'name_ar'];
 

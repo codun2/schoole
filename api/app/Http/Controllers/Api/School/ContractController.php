@@ -28,7 +28,7 @@ class ContractController extends ResourceController
 
     protected array $filters = ['status', 'grade_id', 'section_id', 'student_id', 'guardian_id'];
 
-    protected array $with = ['student:id,name,national_id', 'guardian:id,name,phone', 'grade:id,name_ar', 'section:id,name', 'year:id,name'];
+    protected array $with = ['student:id,name,name_en,national_id', 'guardian:id,name,name_en,phone', 'grade:id,name_ar,name_en', 'section:id,name,name_en', 'year:id,name'];
 
     protected array $showWith = ['items', 'installments', 'payments', 'bus:id,number,price'];
 

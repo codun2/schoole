@@ -82,8 +82,11 @@
   S.addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   S.MONTHS = MONTHS;
-  S.monthLabel = (ym, short) => { if (!ym) return '—'; const [y, m] = ym.split('-'); return MONTHS[+m - 1] + ' ' + (short ? y.slice(2) : y); };
-  S.longDate = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.toLocaleDateString('ar-OM-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+  const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  S.MONTHS_EN = MONTHS_EN;
+  S.monthName = (i) => (S.isEn && S.isEn() ? MONTHS_EN : MONTHS)[i];
+  S.monthLabel = (ym, short) => { if (!ym) return '—'; const [y, m] = ym.split('-'); return S.monthName(+m - 1) + ' ' + (short ? y.slice(2) : y); };
+  S.longDate = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.toLocaleDateString(S.isEn && S.isEn() ? 'en-GB' : 'ar-OM-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
   S.ago = (s) => { if (!s) return ''; const diff = (Date.now() - new Date(s).getTime()) / 1000; if (diff < 60) return 'الآن'; if (diff < 3600) return 'قبل ' + Math.floor(diff / 60) + ' دقيقة'; if (diff < 86400) return 'قبل ' + Math.floor(diff / 3600) + ' ساعة'; if (diff < 86400 * 7) return 'قبل ' + Math.floor(diff / 86400) + ' يوم'; return S.d(s); };
   S.initials = (n) => (n || '؟').trim().charAt(0);
   // FormData → plain object for the offline outbox; File/Blob values are dropped (attachments need a connection)
@@ -480,7 +483,7 @@
         <div><span>الطالب</span><b>${esc(s.name)}</b></div>
         <div><span>الرقم المدرسي</span><b>${esc(s.student_no || '—')}</b></div>
         <div><span>رقم الهوية</span><b>${esc(s.national_id || '—')}</b></div>
-        <div><span>الصف / الشعبة</span><b>${esc((s.grade && s.grade.name_ar || '') + ' / ' + (s.section && s.section.name || ''))}</b></div>
+        <div><span>الصف / الشعبة</span><b>${esc(S.gs(s, ''))}</b></div>
         <div><span>ولي الأمر</span><b>${esc(s.guardian && s.guardian.name || '—')}</b></div>
         <div><span>تاريخ الإصدار</span><b>${S.d(d.issued_at || S.today())}</b></div>
       </div>

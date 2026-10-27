@@ -22,7 +22,7 @@ class ApplicationController extends ResourceController
 
     protected array $filters = ['status', 'grade_id', 'source'];
 
-    protected array $with = ['grade:id,name_ar'];
+    protected array $with = ['grade:id,name_ar,name_en'];
 
     protected bool $yearScoped = true;
 
@@ -34,6 +34,7 @@ class ApplicationController extends ResourceController
 
         return [
             'student_name'         => [$req, 'string', 'max:255'],
+            'student_name_en'      => ['nullable', 'string', 'max:255'],
             'gender'               => ['nullable', 'in:male,female'],
             'birth_date'           => ['nullable', 'date'],
             'nationality'          => ['nullable', 'string', 'max:80'],
@@ -41,6 +42,7 @@ class ApplicationController extends ResourceController
             'grade_id'             => ['nullable', 'integer', $this->owned('grades')],
             'previous_school'      => ['nullable', 'string', 'max:255'],
             'guardian_name'        => [$req, 'string', 'max:255'],
+            'guardian_name_en'     => ['nullable', 'string', 'max:255'],
             'guardian_phone'       => [$req, 'string', 'max:40'],
             'guardian_national_id' => ['nullable', 'string', 'max:40'],
             'guardian_email'       => ['nullable', 'email'],

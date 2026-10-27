@@ -16,7 +16,7 @@ class InstallmentController extends Controller
         $today = now()->toDateString();
 
         $q = Installment::query()
-            ->with(['student:id,name,grade_id,section_id', 'student.grade:id,name_ar', 'contract:id,number,guardian_id,status', 'contract.guardian:id,name,phone'])
+            ->with(['student:id,name,name_en,grade_id,section_id', 'student.grade:id,name_ar,name_en', 'contract:id,number,guardian_id,status', 'contract.guardian:id,name,name_en,phone'])
             ->whereHas('contract', fn ($c) => $c->where('status', '!=', 'cancelled')->where('status', '!=', 'draft')
                 ->when($yearId, fn ($w) => $w->where('academic_year_id', $yearId)));
 
@@ -62,7 +62,7 @@ class InstallmentController extends Controller
 
         $sum = (clone $q)->sum('amount');
         $page = $q->orderByDesc('date')->orderByDesc('id')->paginate(min((int) ($request->per_page ?: 25), 500));
-        $contracts = \App\Models\Contract::with('student:id,name')->whereIn('id', $page->getCollection()->pluck('source_id'))->get(['id', 'number', 'student_id'])->keyBy('id');
+        $contracts = \App\Models\Contract::with('student:id,name,name_en')->whereIn('id', $page->getCollection()->pluck('source_id'))->get(['id', 'number', 'student_id'])->keyBy('id');
         $page->getCollection()->transform(function ($v) use ($contracts) {
             $c = $contracts[$v->source_id] ?? null;
             $v->contract_number = $c?->number;

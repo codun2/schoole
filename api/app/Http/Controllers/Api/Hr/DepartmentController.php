@@ -13,7 +13,7 @@ class DepartmentController extends ResourceController
 
     protected array $search = ['name'];
 
-    protected array $with = ['manager:id,name'];
+    protected array $with = ['manager:id,name,name_en'];
 
     protected array $withCount = ['employees'];
 
@@ -25,6 +25,7 @@ class DepartmentController extends ResourceController
     {
         return [
             'name'       => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en'      => ['nullable', 'string', 'max:255'],
             'manager_id' => ['nullable', 'integer', $this->owned('employees')],
         ];
     }

@@ -69,7 +69,7 @@ class BusController extends ResourceController
 
         return response()->json([
             'bus'      => $bus,
-            'students' => $bus->students()->with(['grade:id,name_ar', 'section:id,name', 'guardian:id,name,phone'])->orderBy('name')->get(),
+            'students' => $bus->students()->with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'guardian:id,name,name_en,phone'])->orderBy('name')->get(),
         ]);
     }
 

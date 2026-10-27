@@ -15,7 +15,7 @@ class JobTitleController extends ResourceController
 
     protected array $filters = ['department_id'];
 
-    protected array $with = ['department:id,name'];
+    protected array $with = ['department:id,name,name_en'];
 
     protected array $withCount = ['employees'];
 
@@ -27,6 +27,7 @@ class JobTitleController extends ResourceController
     {
         return [
             'name'          => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en'         => ['nullable', 'string', 'max:255'],
             'department_id' => ['nullable', 'integer', $this->owned('departments')],
         ];
     }

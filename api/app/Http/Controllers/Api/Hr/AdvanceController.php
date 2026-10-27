@@ -18,7 +18,7 @@ class AdvanceController extends ResourceController
 
     protected array $filters = ['status', 'employee_id'];
 
-    protected array $with = ['employee:id,name,number'];
+    protected array $with = ['employee:id,name,name_en,number'];
 
     protected ?string $dateColumn = 'date';
 

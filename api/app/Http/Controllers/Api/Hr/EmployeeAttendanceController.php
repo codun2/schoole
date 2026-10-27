@@ -14,7 +14,7 @@ class EmployeeAttendanceController extends Controller
     {
         $data = $request->validate(['date' => ['required', 'date'], 'branch_id' => ['nullable', 'integer'], 'department_id' => ['nullable', 'integer']]);
         $marks = EmployeeAttendance::whereDate('date', $data['date'])->get()->keyBy('employee_id');
-        $emps = Employee::with('department:id,name', 'jobTitle:id,name')->whereIn('status', ['active', 'on_leave'])
+        $emps = Employee::with('department:id,name,name_en', 'jobTitle:id,name,name_en')->whereIn('status', ['active', 'on_leave'])
             ->when($data['branch_id'] ?? null, fn ($q, $v) => $q->where('branch_id', $v))
             ->when($data['department_id'] ?? null, fn ($q, $v) => $q->where('department_id', $v))
             ->orderBy('name')->get();

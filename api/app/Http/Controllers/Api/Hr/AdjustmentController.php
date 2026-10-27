@@ -16,7 +16,7 @@ class AdjustmentController extends ResourceController
 
     protected array $filters = ['type', 'employee_id', 'month'];
 
-    protected array $with = ['employee:id,name,number'];
+    protected array $with = ['employee:id,name,name_en,number'];
 
     protected string $label = 'مكافأة/استقطاع';
 

@@ -13,7 +13,7 @@ class StudentPortalController extends Controller
 {
     private function student(Request $request): Student
     {
-        return Student::with(['grade:id,name_ar', 'section:id,name', 'guardian:id,name,phone'])->where('user_id', $request->user()->id)->firstOrFail();
+        return Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en', 'guardian:id,name,name_en,phone'])->where('user_id', $request->user()->id)->firstOrFail();
     }
 
     public function home(Request $request)

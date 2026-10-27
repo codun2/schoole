@@ -18,7 +18,7 @@ class AttendanceController extends Controller
             'section_id' => ['required', 'integer', $this->owned('sections')],
             'date'       => ['required', 'date'],
         ]);
-        $section = Section::with('grade:id,name_ar')->find($data['section_id']);
+        $section = Section::with('grade:id,name_ar,name_en')->find($data['section_id']);
         $marks = StudentAttendance::where('section_id', $section->id)->whereDate('date', $data['date'])->get()->keyBy('student_id');
 
         $students = Student::where('section_id', $section->id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'name_en', 'student_no', 'gender'])
@@ -84,7 +84,7 @@ class AttendanceController extends Controller
                 SUM(status='present') present, SUM(status='absent') absent,
                 SUM(status='late') late, SUM(status='excused') excused, COUNT(*) total")
             ->groupBy('student_id')->get();
-        $names = Student::with(['grade:id,name_ar', 'section:id,name'])->whereIn('id', $rows->pluck('student_id'))->get()->keyBy('id');
+        $names = Student::with(['grade:id,name_ar,name_en', 'section:id,name,name_en'])->whereIn('id', $rows->pluck('student_id'))->get()->keyBy('id');
 
         $daily = (clone $q)->selectRaw("date, SUM(status='present' OR status='late') present, COUNT(*) total")
             ->groupBy('date')->orderBy('date')->get()
@@ -94,6 +94,7 @@ class AttendanceController extends Controller
             'students' => $rows->map(fn ($r) => [
                 'student_id' => $r->student_id,
                 'name'       => $names[$r->student_id]->name ?? '—',
+                'name_en'    => $names[$r->student_id]->name_en ?? null,
                 'class'      => trim(($names[$r->student_id]->grade->name_ar ?? '').' / '.($names[$r->student_id]->section->name ?? ''), ' /'),
                 'present'    => (int) $r->present,
                 'absent'     => (int) $r->absent,

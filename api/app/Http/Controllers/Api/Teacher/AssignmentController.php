@@ -23,7 +23,7 @@ class AssignmentController extends Controller
 {
     use HandlesUploads;
 
-    private const WITH = ['section:id,name,grade_id', 'section.grade:id,name_ar', 'subject:id,name_ar,max_mark'];
+    private const WITH = ['section:id,name,name_en,grade_id', 'section.grade:id,name_ar,name_en', 'subject:id,name_ar,name_en,max_mark'];
 
     private function emp(Request $request): Employee
     {

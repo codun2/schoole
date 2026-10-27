@@ -21,7 +21,7 @@ class EmployeeContractController extends ResourceController
 
     protected array $filters = ['type', 'status', 'employee_id'];
 
-    protected array $with = ['employee:id,name,number'];
+    protected array $with = ['employee:id,name,name_en,number'];
 
     protected array $sortable = ['id', 'start_date', 'end_date'];
 

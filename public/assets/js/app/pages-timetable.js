@@ -3,7 +3,7 @@
   'use strict';
   const { esc, ic } = S;
   const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  const sectionOpts = (lk) => (lk.sections || []).map((s) => [s.id, (s.grade ? s.grade.name_ar + ' / ' : '') + s.name]);
+  const sectionOpts = (lk) => (lk.sections || []).map((s) => [s.id, (s.grade ? S.enName(s.grade) + ' / ' : '') + S.enName(s)]);
 
   S.page('timetable', {
     perm: 'school',
@@ -39,7 +39,7 @@
           const grid = { ...d.entries };
           const subjOpts = lk.subjects.filter((su) => !(su.grade_ids || []).length || su.grade_ids.map(Number).includes(Number(d.section.grade_id)));
           const draw = () => {
-            wrap.innerHTML = `<div class="toolbar"><div class="total-l">${esc((d.section.grade?.name_ar || '') + ' / ' + d.section.name)}</div><div class="sp"></div><button class="btn ghost" id="print">${ic('printer')} طباعة</button><button class="btn success" id="save">${ic('check')} حفظ الجدول</button></div>
+            wrap.innerHTML = `<div class="toolbar"><div class="total-l">${esc([S.enName(d.section.grade), S.enName(d.section)].filter(Boolean).join(' / '))}</div><div class="sp"></div><button class="btn ghost" id="print">${ic('printer')} طباعة</button><button class="btn success" id="save">${ic('check')} حفظ الجدول</button></div>
               <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>الحصة ${i + 1}</th>`).join('')}</tr></thead><tbody>
               ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const key = day + '-' + (pi + 1); const c = grid[key] || {}; return `<td class="ttcell" data-k="${key}" style="${c.subject_id ? `background:${subjColor(c.subject_id)}14` : ''}">${c.subject_id || c.teacher_id ? `<div class="b sm" style="color:${subjColor(c.subject_id)}">${esc(c.subject || '—')}</div><div class="muted xs">${esc(c.teacher || '')}</div>` : `<span class="muted xs">+</span>`}</td>`; }).join('')}</tr>`).join('')}
               </tbody></table></div></div><p class="muted sm mt8">اضغط أي خلية لإسناد مادة ومعلم. يتحقق النظام من تعارض المعلمين عند الحفظ.</p>`;
@@ -131,7 +131,7 @@
       }
 
       function printSection(d, grid) {
-        S.print('جدول ' + d.section.name, `<h2>الجدول الأسبوعي — ${esc((d.section.grade?.name_ar || '') + ' / ' + d.section.name)}</h2>
+        S.print('جدول ' + d.section.name, `<h2>الجدول الأسبوعي — ${esc([S.enName(d.section.grade), S.enName(d.section)].filter(Boolean).join(' / '))}</h2>
           <table><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>${i + 1}</th>`).join('')}</tr></thead><tbody>
           ${d.days.map((day) => `<tr><td><b>${DAYS[day]}</b></td>${Array.from({ length: d.periods }, (_, pi) => { const c = grid[day + '-' + (pi + 1)] || {}; return `<td>${c.subject ? esc(c.subject) + '<br><small>' + esc(c.teacher || '') + '</small>' : '—'}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`);
       }

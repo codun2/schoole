@@ -60,7 +60,7 @@
       const COL = { urgent: '#e0384c', important: '#d98a0b', normal: '#2f7ae5' };
       const draw = async () => {
         const y = cur.getFullYear(), mo = cur.getMonth();
-        el.querySelector('#ttl').textContent = S.MONTHS[mo] + ' ' + y;
+        el.querySelector('#ttl').textContent = S.monthName(mo) + ' ' + y;
         const first = new Date(y, mo, 1), start = new Date(first); start.setDate(1 - ((first.getDay() + 1) % 7)); // week starts Saturday
         const days = []; for (let i = 0; i < 42; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
         const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

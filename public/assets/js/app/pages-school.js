@@ -3,7 +3,7 @@
   'use strict';
   const { esc, ic, cell } = S;
   const gradeOpts = (lk) => (lk.grades || []).map((g) => [g.id, g.name_ar]);
-  const sectionOpts = (lk) => (lk.sections || []).map((s) => [s.id, (s.grade ? s.grade.name_ar + ' / ' : '') + s.name]);
+  const sectionOpts = (lk) => (lk.sections || []).map((s) => [s.id, (s.grade ? S.enName(s.grade) + ' / ' : '') + S.enName(s)]);
   const NATS = ['عماني', 'إماراتي', 'سعودي', 'كويتي', 'بحريني', 'قطري', 'يمني', 'مصري', 'أردني', 'سوري', 'سوداني', 'هندي', 'باكستاني', 'أخرى'];
   const natOpts = NATS.map((n) => [n, n]);
 
@@ -56,7 +56,7 @@
     const d = await S.get(`/app/buses/${r.id}/students`);
     S.print('كشف ركاب الحافلة ' + r.number, `<h2>كشف ركاب الحافلة رقم ${esc(r.number)}</h2>
       <div class="kv"><div><span>نوع الحافلة</span><b>${esc(r.type || '—')}</b></div><div><span>السائق</span><b>${esc(r.driver_name || '—')} — ${esc(r.driver_phone || '')}</b></div><div><span>المشرف</span><b>${esc(r.supervisor_name || '—')}</b></div><div><span>خط السير</span><b>${esc(r.route || '—')}</b></div><div><span>عدد الركاب</span><b>${d.students.length} / ${r.capacity}</b></div></div>
-      <table><thead><tr><th>#</th><th>اسم الطالب</th><th>الصف / الشعبة</th><th>ولي الأمر</th><th>الجوال</th><th>توقيع</th></tr></thead><tbody>${d.students.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(s.name)}</td><td>${esc((s.grade?.name_ar || '') + ' / ' + (s.section?.name || ''))}</td><td>${esc(s.guardian?.name || '')}</td><td>${esc(s.guardian?.phone || '')}</td><td style="width:90px"></td></tr>`).join('')}</tbody></table>`);
+      <table><thead><tr><th>#</th><th>اسم الطالب</th><th>الصف / الشعبة</th><th>ولي الأمر</th><th>الجوال</th><th>توقيع</th></tr></thead><tbody>${d.students.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(S.enName(s))}</td><td>${esc(S.gs(s, ''))}</td><td>${esc(S.enName(s.guardian))}</td><td>${esc(s.guardian?.phone || '')}</td><td style="width:90px"></td></tr>`).join('')}</tbody></table>`);
   };
   const busFields = (lk, row) => [
     { t: 'sec', l: 'بيانات الحافلة' },
@@ -90,7 +90,7 @@
 
   // ---------------------------------------------------------------- guardians
   const guardianFields = (lk, row) => [
-    { k: 'name', l: 'الاسم الكامل', req: true, full: true }, { k: 'national_id', l: 'رقم الهوية المدنية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' },
+    { k: 'name', l: 'الاسم الكامل', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'national_id', l: 'رقم الهوية المدنية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' },
     { k: 'phone', l: 'الجوال', t: 'tel', req: true }, { k: 'phone2', l: 'جوال إضافي', t: 'tel' }, { k: 'email', l: 'البريد الإلكتروني', t: 'email' }, { k: 'relation', l: 'صلة القرابة', t: 'select', opts: [['أب', 'أب'], ['أم', 'أم'], ['أخ', 'أخ'], ['جد', 'جد'], ['عم', 'عم'], ['خال', 'خال'], ['أخرى', 'أخرى']], def: 'أب' },
     { k: 'job', l: 'المهنة' }, { k: 'workplace', l: 'جهة العمل' }, { k: 'address', l: 'العنوان', full: true },
     ...customFieldSpecs(lk, 'guardian'),
@@ -114,7 +114,7 @@
     title: 'أولياء الأمور', singular: 'ولي أمر', api: '/app/guardians', perm: 'students', icon: 'parents', lookups: ['custom_fields'], invalidate: ['guardians'], editPage: 'guardian-form',
     search: 'بحث بالاسم أو رقم الهوية أو الجوال...',
     columns: [
-      { l: 'الاسم', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(r.name)}</a> ${r.has_login ? `<span title="لديه دخول للبوابة">🔑</span>` : ''}` },
+      { l: 'الاسم', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(S.enName(r))}</a> ${r.has_login ? `<span title="لديه دخول للبوابة">🔑</span>` : ''}` },
       { l: 'رقم الهوية المدنية', v: (r) => cell.num(r.national_id || '—') }, { l: 'الجنسية', v: (r) => esc(r.nationality || '—') },
       { l: 'الجوال', v: (r) => cell.phone(r.phone) }, { l: 'الطلاب', v: (r) => `<a href="#/students?guardian_id=${r.id}&year=all">${cell.cnt(r.students_count)}</a>` },
     ],
@@ -123,10 +123,10 @@
       const g = await S.get('/app/guardians/' + row.id);
       m.$('#ed').onclick = () => { m.close(); ctx.openForm(g); };
       const cfs = (ctx.lk.custom_fields || []).filter((f) => f.entity === 'guardian');
-      m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(g.name))}</span><div><h3>${esc(g.name)}</h3><div class="muted">${esc(g.relation || '')} ${g.has_login ? '· <span class="ok-t">لديه دخول للبوابة</span>' : ''}</div></div></div>
+      m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(S.enName(g)))}</span><div><h3>${esc(S.enName(g))}</h3><div class="muted">${esc(g.relation || '')} ${g.has_login ? '· <span class="ok-t">لديه دخول للبوابة</span>' : ''}</div></div></div>
         ${S.kv([['رقم الهوية', `<span class="num">${esc(g.national_id || '—')}</span>`], ['الجنسية', esc(g.nationality || '—')], ['الجوال', `<span class="num">${esc(g.phone || '—')}</span>`], ['جوال إضافي', `<span class="num">${esc(g.phone2 || '—')}</span>`], ['البريد', esc(g.email || '—')], ['المهنة', esc(g.job || '—')], ['جهة العمل', esc(g.workplace || '—')], ['العنوان', esc(g.address || '—')], ...cfs.map((f) => [f.label, esc((g.custom || {})[f.key] || '—')])])}
         <div class="sec-t">${ic('users')} الأبناء</div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">الطالب</th><th>الصف / الشعبة</th><th>الحالة</th></tr></thead><tbody>${g.students.map((s) => `<tr><td class="s"><a class="lk" href="#/students/${s.id}">${esc(s.name)}</a></td><td>${esc((s.grade?.name_ar || '') + ' / ' + (s.section?.name || ''))}</td><td>${S.badge(S.ST.student, s.status)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">لا يوجد أبناء</td></tr>'}</tbody></table></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">الطالب</th><th>الصف / الشعبة</th><th>الحالة</th></tr></thead><tbody>${g.students.map((s) => `<tr><td class="s"><a class="lk" href="#/students/${s.id}">${esc(S.enName(s))}</a></td><td>${esc(S.gs(s, ''))}</td><td>${S.badge(S.ST.student, s.status)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">لا يوجد أبناء</td></tr>'}</tbody></table></div>
         <div class="sec-t">${ic('contract')} العقود</div>
         <div class="tbl-wrap"><table class="tbl"><thead><tr><th>رقم العقد</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>الباقي</th><th>الحالة</th></tr></thead><tbody>${g.contracts.map((c) => `<tr><td><a class="lk num" href="#/contracts/${c.id}">${esc(c.number)}</a></td><td class="num">${S.d(c.date)}</td><td class="num">${S.fmtN(c.total)}</td><td class="num ok-t">${S.fmtN(c.paid)}</td><td class="num bad-t">${S.fmtN(c.remaining)}</td><td>${S.badge(S.ST.contract, c.status)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">لا توجد عقود</td></tr>'}</tbody></table></div>`;
     },
@@ -143,7 +143,7 @@
       if (!g) return `<div class="card pad"><p class="muted sm">${ic('parents')} سجّل بيانات ولي الأمر. يمكنك لاحقاً ربط أبنائه به من شاشة الطلاب، وتفعيل دخوله لبوابة ولي الأمر من هذا النموذج.</p></div>`;
       return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px"><span class="avatar">${esc(S.initials(g.name))}</span><div class="grow"><b>${esc(g.name)}</b><div class="muted sm">${esc(g.relation || '')}</div></div>${g.has_login ? '<span class="bdg l-ok">دخول مفعّل</span>' : '<span class="bdg l-mut">بلا دخول</span>'}</div>
         <div class="sec-t" style="margin-top:0">${ic('users')} الأبناء (${(g.students || []).length})</div>
-        <div class="chips">${(g.students || []).map((s) => `<a class="bdg l-info" href="#/students/${s.id}">${esc(s.name)}</a>`).join('') || '<span class="muted sm">لا يوجد</span>'}</div>
+        <div class="chips">${(g.students || []).map((s) => `<a class="bdg l-info" href="#/students/${s.id}">${esc(S.enName(s))}</a>`).join('') || '<span class="muted sm">لا يوجد</span>'}</div>
         ${(g.contracts || []).length ? `<div class="sec-t">${ic('contract')} العقود</div><div class="chips">${g.contracts.map((c) => `<a class="bdg l-mut num" href="#/contracts/${c.id}">${esc(c.number)} · ${S.fmtN(c.remaining)}</a>`).join('')}</div>` : ''}</div>`;
     },
   }));
@@ -174,14 +174,14 @@
     m.$('#rc').onclick = () => { m.close(); S.reportCard(s.id); };
     const a = s.attendance_summary, tot = a.present + a.absent + a.late + a.excused;
     const cfs = (ctx.lk.custom_fields || []).filter((f) => f.entity === 'student');
-    m.body.innerHTML = `<div class="profile-h">${S.avatarHtml(s.photo, s.name)}<div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.name_en || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div>
+    m.body.innerHTML = `<div class="profile-h">${S.avatarHtml(s.photo, S.enName(s))}<div class="grow"><h3>${esc(S.enName(s))}</h3><div class="muted">${esc(s.name_en || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div>
       <div class="grid g4 mb16">
         ${S.ui.stat('c-green', 'check', tot ? Math.round(((a.present + a.late) * 100) / tot) + '%' : '—', 'نسبة الحضور')}
         ${S.ui.stat('c-red', 'x', S.num(a.absent), 'أيام الغياب')}
         ${S.ui.stat('c-amber', 'clock', S.num(a.late), 'مرات التأخير')}
         ${S.ui.stat('c-violet', 'coins', S.money(s.contracts.reduce((x, c) => x + (c.status === 'cancelled' ? 0 : +c.remaining), 0), true), 'المتبقي من الرسوم')}
       </div>
-      ${S.kv([['الصف / الشعبة', esc((s.grade?.name_ar || '—') + ' / ' + (s.section?.name || '—'))], ['ولي الأمر', s.guardian ? `<a class="lk" href="#/guardians/${s.guardian.id}">${esc(s.guardian.name)}</a>` : '—'], ['جوال ولي الأمر', `<span class="num">${esc(s.guardian?.phone || '—')}</span>`], ['رقم الهوية', `<span class="num">${esc(s.national_id || '—')}</span>`], ['الجنس', S.LBL.gender[s.gender]], ['تاريخ الميلاد', `<span class="num">${S.d(s.birth_date)}</span>`], ['الجنسية', esc(s.nationality || '—')], ['فصيلة الدم', esc(s.blood_type || '—')], ['الحافلة', esc(s.bus?.number || 'بدون')], ['تاريخ التسجيل', `<span class="num">${S.d(s.registered_at)}</span>`], ['دخول البوابة', s.has_login ? `<span class="bdg l-ok">مفعّل</span> <span class="muted xs num">${esc(s.student_no || '')}</span>` : '<span class="muted">غير مفعّل</span>'], ...cfs.map((f) => [f.label, esc((s.custom || {})[f.key] || '—')]), ['العنوان', esc(s.address || '—')], ['ملاحظات صحية', esc(s.medical_notes || '—')]])}
+      ${S.kv([['الصف / الشعبة', esc(S.gs(s))], ['ولي الأمر', s.guardian ? `<a class="lk" href="#/guardians/${s.guardian.id}">${esc(S.enName(s.guardian))}</a>` : '—'], ['جوال ولي الأمر', `<span class="num">${esc(s.guardian?.phone || '—')}</span>`], ['رقم الهوية', `<span class="num">${esc(s.national_id || '—')}</span>`], ['الجنس', S.LBL.gender[s.gender]], ['تاريخ الميلاد', `<span class="num">${S.d(s.birth_date)}</span>`], ['الجنسية', esc(s.nationality || '—')], ['فصيلة الدم', esc(s.blood_type || '—')], ['الحافلة', esc(s.bus?.number || 'بدون')], ['تاريخ التسجيل', `<span class="num">${S.d(s.registered_at)}</span>`], ['دخول البوابة', s.has_login ? `<span class="bdg l-ok">مفعّل</span> <span class="muted xs num">${esc(s.student_no || '')}</span>` : '<span class="muted">غير مفعّل</span>'], ...cfs.map((f) => [f.label, esc((s.custom || {})[f.key] || '—')]), ['العنوان', esc(s.address || '—')], ['ملاحظات صحية', esc(s.medical_notes || '—')]])}
       <div class="sec-t">${ic('contract')} العقود</div>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>رقم العقد</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>الباقي</th><th>الحالة</th></tr></thead><tbody>${s.contracts.map((c) => `<tr><td><a class="lk num" href="#/contracts/${c.id}">${esc(c.number)}</a></td><td class="num">${S.d(c.date)}</td><td class="num">${S.fmtN(c.total)}</td><td class="num ok-t">${S.fmtN(c.paid)}</td><td class="num bad-t">${S.fmtN(c.remaining)}</td><td>${S.badge(S.ST.contract, c.status)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">لا توجد عقود بعد</td></tr>'}</tbody></table></div>
       ${s.recent_absences.length ? `<div class="sec-t">${ic('calendar')} آخر حالات الغياب والتأخير</div><div class="chips">${s.recent_absences.map((x) => `<span class="bdg ${x.status === 'absent' ? 'l-bad' : 'l-warn'} num">${S.d(x.date)} — ${S.ST.att[x.status][0]}</span>`).join('')}</div>` : ''}`;
@@ -192,8 +192,8 @@
     passParams: ['guardian_id', 'bus_id'],
     filters: [{ k: 'status', l: 'الحالة', all: 'جميع الحالات', opts: S.opts(S.ST.student) }, { k: 'grade_id', l: 'الصف', all: 'كل الصفوف', opts: gradeOpts }, { k: 'section_id', l: 'الشعبة', all: 'كل الشعب', opts: sectionOpts }],
     columns: [
-      { l: 'اسم الطالب', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(r.name)}</a>` }, { l: 'رقم الهوية المدنية', v: (r) => cell.num(r.national_id || '—') },
-      { l: 'الصف / الشعبة', v: (r) => esc((r.grade?.name_ar || '—') + '  /  ' + (r.section?.name || '—')) }, { l: 'ولي الأمر', v: (r) => esc(r.guardian?.name || '—') },
+      { l: 'اسم الطالب', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(S.enName(r))}</a>` }, { l: 'رقم الهوية المدنية', v: (r) => cell.num(r.national_id || '—') },
+      { l: 'الصف / الشعبة', v: (r) => esc(S.gs(r)) }, { l: 'ولي الأمر', v: (r) => esc(S.enName(r.guardian) || '—') },
       { l: 'جوال ولي الأمر', v: (r) => cell.phone(r.guardian?.phone) }, { l: 'الحالة', v: (r) => S.badge(S.ST.student, r.status) }, { l: 'الجنسية', v: (r) => esc(r.nationality || '—') }, { l: 'تاريخ التسجيل', v: (r) => cell.num(S.d(r.registered_at)) },
     ],
     view: studentProfile, invalidate: [],
@@ -211,17 +211,17 @@
       if (!s) return `<div class="card pad"><p class="muted sm">${ic('userPlus')} عبّئ بيانات الطالب وسجّله في الشعبة المناسبة. بعد الحفظ يمكنك إنشاء عقد له من ملفّه أو من قائمة الطلاب.</p></div>`;
       const a = s.attendance_summary || { present: 0, absent: 0, late: 0, excused: 0 }, tot = a.present + a.absent + a.late + a.excused;
       const rem = (s.contracts || []).reduce((x, c) => x + (c.status === 'cancelled' ? 0 : +c.remaining), 0);
-      return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px">${S.avatarHtml(s.photo, s.name)}<div class="grow"><b>${esc(s.name)}</b><div class="muted sm num">${esc(s.student_no || '')}</div></div>${S.badge(S.ST.student, s.status)}</div>
+      return `<div class="card pad"><div class="profile-h" style="margin:0 0 12px">${S.avatarHtml(s.photo, S.enName(s))}<div class="grow"><b>${esc(S.enName(s))}</b><div class="muted sm num">${esc(s.student_no || '')}</div></div>${S.badge(S.ST.student, s.status)}</div>
         ${s.photo ? `<img src="${esc(s.photo)}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid var(--line);margin-bottom:12px">` : ''}
         <div class="grid g2 mb8">${S.ui.stat('c-green', 'check', tot ? Math.round(((a.present + a.late) * 100) / tot) + '%' : '—', 'الحضور')}${S.ui.stat('c-red', 'x', S.num(a.absent), 'الغياب')}</div>
-        ${S.kv([['ولي الأمر', s.guardian ? `<a class="lk" href="#/guardians/${s.guardian.id}">${esc(s.guardian.name)}</a>` : '—'], ['المتبقي من الرسوم', S.moneyT(rem)]])}
+        ${S.kv([['ولي الأمر', s.guardian ? `<a class="lk" href="#/guardians/${s.guardian.id}">${esc(S.enName(s.guardian))}</a>` : '—'], ['المتبقي من الرسوم', S.moneyT(rem)]])}
         <div class="row wrap mt8"><button class="btn ghost sm" onclick="S.reportCard(${s.id})">${ic('fileText')} كشف الدرجات</button><button class="btn ghost sm" onclick="S.contractBuilder(null,{student_id:${s.id}})">${ic('contract')} عقد جديد</button></div></div>`;
     },
   }));
   function bulkMove(ctx) {
     if (!ctx.rows || !ctx.rows.length) return S.toast('لا يوجد طلاب في القائمة الحالية', 'bad');
     const m = S.modal({ title: 'نقل/تحديث جماعي للطلاب', size: 'wide', body: `<div class="fgrid mb16"><label class="fld"><span>نقل إلى الشعبة</span><select class="inp" id="bs"><option value="">— بدون تغيير —</option>${sectionOpts(ctx.lk).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label><label class="fld"><span>تغيير الحالة</span><select class="inp" id="bst"><option value="">— بدون تغيير —</option>${S.opts(S.ST.student).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label></div>
-      <label class="check mb8"><input type="checkbox" id="all"> تحديد الكل (${ctx.rows.length})</label><div class="tbl-wrap" style="max-height:340px;overflow:auto"><table class="tbl"><tbody>${ctx.rows.map((r) => `<tr><td class="chk"><input type="checkbox" value="${r.id}" class="bk"></td><td class="s">${esc(r.name)}</td><td>${esc((r.grade?.name_ar || '') + ' / ' + (r.section?.name || ''))}</td></tr>`).join('')}</tbody></table></div>`, foot: '<button class="btn ghost" data-close>إلغاء</button><button class="btn" id="go">تطبيق</button>' });
+      <label class="check mb8"><input type="checkbox" id="all"> تحديد الكل (${ctx.rows.length})</label><div class="tbl-wrap" style="max-height:340px;overflow:auto"><table class="tbl"><tbody>${ctx.rows.map((r) => `<tr><td class="chk"><input type="checkbox" value="${r.id}" class="bk"></td><td class="s">${esc(S.enName(r))}</td><td>${esc(S.gs(r, ''))}</td></tr>`).join('')}</tbody></table></div>`, foot: '<button class="btn ghost" data-close>إلغاء</button><button class="btn" id="go">تطبيق</button>' });
     m.$('#all').onchange = (e) => m.body.querySelectorAll('.bk').forEach((c) => (c.checked = e.target.checked));
     m.$('#go').onclick = async () => {
       const ids = [...m.body.querySelectorAll('.bk:checked')].map((c) => +c.value);
@@ -233,13 +233,13 @@
   // ---------------------------------------------------------------- applications
   const appFields = (lk) => [
     { t: 'sec', l: 'بيانات الطالب' },
-    { k: 'student_name', l: 'اسم الطالب', req: true, full: true }, { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'national_id', l: 'رقم الهوية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'grade_id', l: 'الصف المطلوب', t: 'select', opts: gradeOpts(lk) }, { k: 'previous_school', l: 'المدرسة السابقة', full: true },
+    { k: 'student_name', l: 'اسم الطالب', req: true, full: true }, { k: 'student_name_en', l: 'اسم الطالب بالإنجليزية', dir: 'ltr', full: true }, { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'national_id', l: 'رقم الهوية', dir: 'ltr' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'grade_id', l: 'الصف المطلوب', t: 'select', opts: gradeOpts(lk) }, { k: 'previous_school', l: 'المدرسة السابقة', full: true },
     { t: 'sec', l: 'بيانات ولي الأمر' },
-    { k: 'guardian_name', l: 'اسم ولي الأمر', req: true }, { k: 'guardian_phone', l: 'الجوال', t: 'tel', req: true }, { k: 'guardian_national_id', l: 'رقم هوية ولي الأمر', dir: 'ltr' }, { k: 'guardian_email', l: 'البريد', t: 'email' }, { k: 'guardian_relation', l: 'صلة القرابة', def: 'أب' },
+    { k: 'guardian_name', l: 'اسم ولي الأمر', req: true }, { k: 'guardian_name_en', l: 'اسم ولي الأمر بالإنجليزية', dir: 'ltr' }, { k: 'guardian_phone', l: 'الجوال', t: 'tel', req: true }, { k: 'guardian_national_id', l: 'رقم هوية ولي الأمر', dir: 'ltr' }, { k: 'guardian_email', l: 'البريد', t: 'email' }, { k: 'guardian_relation', l: 'صلة القرابة', def: 'أب' },
     { t: 'sec', l: 'ملاحظات' },
     { k: 'notes', l: 'ملاحظات إضافية', t: 'textarea', full: true },
   ];
-  const appViewRows = (r) => [['اسم الطالب', esc(r.student_name)], ['الجنس', S.LBL.gender[r.gender]], ['تاريخ الميلاد', `<span class="num">${S.d(r.birth_date)}</span>`], ['الجنسية', esc(r.nationality || '—')], ['رقم الهوية', `<span class="num">${esc(r.national_id || '—')}</span>`], ['الصف المطلوب', esc(r.grade?.name_ar || '—')], ['المدرسة السابقة', esc(r.previous_school || '—')], ['ولي الأمر', esc(r.guardian_name)], ['الجوال', `<span class="num">${esc(r.guardian_phone)}</span>`], ['هوية ولي الأمر', `<span class="num">${esc(r.guardian_national_id || '—')}</span>`], ['البريد', `<span class="num">${esc(r.guardian_email || '—')}</span>`], ['الحالة', S.badge(S.ST.app, r.status)], ['المصدر', r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>'], ['تاريخ الطلب', `<span class="num">${S.d(r.created_at)}</span>`], ['ملاحظات', esc(r.notes || '—')]];
+  const appViewRows = (r) => [['اسم الطالب', esc(S.enT(r.student_name, r.student_name_en))], ['الجنس', S.LBL.gender[r.gender]], ['تاريخ الميلاد', `<span class="num">${S.d(r.birth_date)}</span>`], ['الجنسية', esc(r.nationality || '—')], ['رقم الهوية', `<span class="num">${esc(r.national_id || '—')}</span>`], ['الصف المطلوب', esc(S.enName(r.grade) || '—')], ['المدرسة السابقة', esc(r.previous_school || '—')], ['ولي الأمر', esc(S.enT(r.guardian_name, r.guardian_name_en))], ['الجوال', `<span class="num">${esc(r.guardian_phone)}</span>`], ['هوية ولي الأمر', `<span class="num">${esc(r.guardian_national_id || '—')}</span>`], ['البريد', `<span class="num">${esc(r.guardian_email || '—')}</span>`], ['الحالة', S.badge(S.ST.app, r.status)], ['المصدر', r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>'], ['تاريخ الطلب', `<span class="num">${S.d(r.created_at)}</span>`], ['ملاحظات', esc(r.notes || '—')]];
   const acceptApp = (r, lk, onDone) => {
     const gradeName = (lk.grades.find((g) => String(g.id) === String(r.grade_id)) || {}).name_ar;
     const matching = sectionOpts(lk).filter(([id]) => (lk.sections.find((s) => s.id === id) || {}).grade_id === r.grade_id);
@@ -272,7 +272,7 @@
       if (!r && S.db) r = await S.db.get('applications', params.id);
       if (!r) { el.innerHTML = S.emptyHtml('تعذّر تحميل الطلب', 'لا توجد نسخة محفوظة من هذا الطلب على الجهاز', 'alert'); return; }
       el.innerHTML = `<div class="crumbs"><a class="acc-t" href="#/applications">استمارة التسجيل</a> ${ic('chevL')} <b>تفاصيل الطلب</b></div>
-        <div class="page-h"><div><h2>${esc(r.student_name)} ${S.badge(S.ST.app, r.status)}</h2><p>${r.source === 'online' ? 'طلب إلكتروني' : 'طلب من المكتب'} · <span class="num">${S.d(r.created_at)}</span></p></div>
+        <div class="page-h"><div><h2>${esc(S.enT(r.student_name, r.student_name_en))} ${S.badge(S.ST.app, r.status)}</h2><p>${r.source === 'online' ? 'طلب إلكتروني' : 'طلب من المكتب'} · <span class="num">${S.d(r.created_at)}</span></p></div>
           <div class="row wrap">${r.status === 'new' ? `<button class="btn success" id="acc">${ic('check')} قبول وتسجيل</button><button class="btn danger" id="rej">${ic('x')} رفض</button><a class="btn ghost" href="#/application-form/${r.id}">${ic('edit')} تعديل</a>` : ''}<a class="btn ghost" href="#/applications">${ic('chevR')} رجوع للقائمة</a></div></div>
         <div class="card pad">${S.kv(appViewRows(r))}</div>`;
       const back = () => (location.hash = '#/applications');
@@ -289,8 +289,8 @@
     filters: [{ k: 'grade_id', l: 'الصف المطلوب', opts: gradeOpts }, { k: 'source', l: 'المصدر', opts: [['online', 'إلكتروني'], ['office', 'المكتب']] }],
     search: 'بحث باسم الطالب أو ولي الأمر أو الجوال...',
     columns: [
-      { l: 'اسم الطالب', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(r.student_name)}</a>` }, { l: 'الصف المطلوب', v: (r) => esc(r.grade?.name_ar || '—') }, { l: 'الجنس', v: (r) => S.LBL.gender[r.gender] },
-      { l: 'ولي الأمر', v: (r) => esc(r.guardian_name) }, { l: 'الجوال', v: (r) => cell.phone(r.guardian_phone) }, { l: 'المصدر', v: (r) => (r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>') },
+      { l: 'اسم الطالب', s: true, v: (r) => `<a class="lk" href="#" data-open>${esc(S.enT(r.student_name, r.student_name_en))}</a>` }, { l: 'الصف المطلوب', v: (r) => esc(S.enName(r.grade) || '—') }, { l: 'الجنس', v: (r) => S.LBL.gender[r.gender] },
+      { l: 'ولي الأمر', v: (r) => esc(S.enT(r.guardian_name, r.guardian_name_en)) }, { l: 'الجوال', v: (r) => cell.phone(r.guardian_phone) }, { l: 'المصدر', v: (r) => (r.source === 'online' ? '<span class="bdg l-info">إلكتروني</span>' : '<span class="bdg l-mut">المكتب</span>') },
       { l: 'تاريخ الطلب', v: (r) => cell.num(S.d(r.created_at)) }, { l: 'الحالة', v: (r) => S.badge(S.ST.app, r.status) },
     ],
     canEdit: (r) => r.status === 'new',
@@ -361,7 +361,7 @@
           const draw = () => {
             const c = (k) => st.filter((s) => s.status === k).length;
             sh.innerHTML = `<div class="toolbar"><span class="bdg ${d.saved ? 'l-ok' : 'l-warn'}">${d.saved ? 'تم تسجيل الحضور مسبقاً — يمكنك التعديل' : 'لم يُسجّل بعد'}</span><span class="bdg l-ok">حاضر ${c('present')}</span><span class="bdg l-bad">غائب ${c('absent')}</span><span class="bdg l-warn">متأخر ${c('late')}</span><span class="bdg l-info">بعذر ${c('excused')}</span><div class="sp"></div><button class="btn ghost sm" id="allp">${ic('check')} الكل حاضر</button><button class="btn success" id="save">${ic('check')} حفظ الحضور</button></div>
-              <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم المدرسي</th><th>الحالة</th><th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(s.name)}</td><td class="num muted">${esc(s.student_no || '')}</td><td><div class="att-opts">${opts.map((o) => `<button data-i="${i}" data-s="${o}" class="${o} ${s.status === o ? 'on' : ''}">${S.ST.att[o][0]}</button>`).join('')}</div></td><td><input class="inp" style="height:32px;min-width:160px" data-n="${i}" value="${esc(s.note || '')}" placeholder="—"></td></tr>`).join('')}</tbody></table></div>`;
+              <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم المدرسي</th><th>الحالة</th><th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(S.enName(s))}</td><td class="num muted">${esc(s.student_no || '')}</td><td><div class="att-opts">${opts.map((o) => `<button data-i="${i}" data-s="${o}" class="${o} ${s.status === o ? 'on' : ''}">${S.ST.att[o][0]}</button>`).join('')}</div></td><td><input class="inp" style="height:32px;min-width:160px" data-n="${i}" value="${esc(s.note || '')}" placeholder="—"></td></tr>`).join('')}</tbody></table></div>`;
             sh.querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => { st[+b.dataset.i].status = b.dataset.s; draw(); }));
             sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (st[+inp.dataset.n].note = inp.value)));
             sh.querySelector('#allp').onclick = () => { st.forEach((s) => (s.status = 'present')); draw(); };
@@ -379,7 +379,7 @@
           const r = body.querySelector('#rep'); r.innerHTML = S.spinner;
           last = await S.get('/app/attendance/report', { from: body.querySelector('#f').value, to: body.querySelector('#t').value, grade_id: body.querySelector('#g').value, section_id: body.querySelector('#s').value });
           r.innerHTML = `<div class="card mb16"><div class="hd"><h3>${ic('activity')} نسبة الحضور اليومية</h3></div><div class="bd" id="trend"></div></div>
-            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الصف / الشعبة</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>بعذر</th><th>نسبة الحضور</th></tr></thead><tbody>${last.students.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(s.name)}</td><td>${esc(s.class)}</td><td class="num ok-t">${s.present}</td><td class="num bad-t b">${s.absent}</td><td class="num warn-t">${s.late}</td><td class="num">${s.excused}</td><td>${S.prog(Math.round(s.rate))}</td></tr>`).join('') || `<tr><td colspan="8">${S.emptyHtml('لا توجد سجلات حضور في هذه الفترة')}</td></tr>`}</tbody></table></div>`;
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الصف / الشعبة</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>بعذر</th><th>نسبة الحضور</th></tr></thead><tbody>${last.students.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(S.enName(s))}</td><td>${esc(s.class)}</td><td class="num ok-t">${s.present}</td><td class="num bad-t b">${s.absent}</td><td class="num warn-t">${s.late}</td><td class="num">${s.excused}</td><td>${S.prog(Math.round(s.rate))}</td></tr>`).join('') || `<tr><td colspan="8">${S.emptyHtml('لا توجد سجلات حضور في هذه الفترة')}</td></tr>`}</tbody></table></div>`;
           if (last.daily.length) S.chart.area(r.querySelector('#trend'), { labels: last.daily.map((x) => x.date.slice(5)), series: [{ name: 'نسبة الحضور %', color: '#14a06b', data: last.daily.map((x) => x.rate) }], height: 200 });
           else r.querySelector('#trend').innerHTML = S.emptyHtml();
         };

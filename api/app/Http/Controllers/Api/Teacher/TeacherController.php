@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\School\AttendanceController;
 use App\Http\Controllers\Api\School\MarkController;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
 use App\Models\Employee;
 use App\Models\ExamTerm;
 use App\Models\Guardian;
@@ -86,7 +88,25 @@ class TeacherController extends Controller
 
         $today = $this->myLessons($e, (int) now()->dayOfWeek); // 0=Sun..6=Sat
 
+        // open assignments whose date has passed and that still have ungraded students
+        $open = Assignment::with(['section:id,name,grade_id', 'section.grade:id,name_ar', 'subject:id,name_ar'])
+            ->where('teacher_id', $e->id)->where('status', 'open')->get();
+        $totals = Student::whereIn('section_id', $open->pluck('section_id')->unique())->where('status', 'active')
+            ->selectRaw('section_id, COUNT(*) c')->groupBy('section_id')->pluck('c', 'section_id');
+        $graded = AssignmentSubmission::whereIn('assignment_id', $open->pluck('id'))->whereNotNull('mark')
+            ->selectRaw('assignment_id, COUNT(*) c')->groupBy('assignment_id')->pluck('c', 'assignment_id');
+        $todayStr = now()->toDateString();
+        $brief = fn ($a) => ['id' => $a->id, 'title' => $a->title, 'type' => $a->type, 'due_date' => $a->due_date?->format('Y-m-d'), 'due_time' => $a->due_time,
+            'section' => trim(($a->section?->grade?->name_ar ?? '').' — '.($a->section?->name ?? ''), ' —'), 'subject' => $a->subject?->name_ar,
+            'pending' => max(0, (int) ($totals[$a->section_id] ?? 0) - (int) ($graded[$a->id] ?? 0))];
+        $toGrade = $open->filter(fn ($a) => $a->due_date && $a->due_date->format('Y-m-d') <= $todayStr && ((int) ($totals[$a->section_id] ?? 0) - (int) ($graded[$a->id] ?? 0)) > 0)
+            ->sortBy('due_date')->values()->map($brief);
+        $upcoming = $open->filter(fn ($a) => in_array($a->type, ['quiz', 'exam'], true) && $a->due_date && $a->due_date->format('Y-m-d') >= $todayStr && $a->due_date->diffInDays(now()) <= 14)
+            ->sortBy('due_date')->values()->map($brief);
+
         return response()->json([
+            'to_grade' => $toGrade,
+            'upcoming' => $upcoming,
             'teacher'  => $e->only(['id', 'name', 'number']),
             'school'   => $request->user()->company->only(['name', 'logo', 'phone', 'email', 'currency']),
             'homeroom' => $homeroom,
@@ -99,6 +119,8 @@ class TeacherController extends Controller
                 'students'          => $studentIds->count(),
                 'attendance_today'  => $todayTaken,
                 'lessons_today'     => $today->count(),
+                'to_grade'          => $toGrade->count(),
+                'upcoming'          => $upcoming->count(),
             ],
             'announcements' => Announcement::where('is_active', true)->whereIn('audience', ['staff', 'all'])
                 ->where(fn ($q) => $q->whereNull('company_id')->orWhere('company_id', $request->user()->company_id))

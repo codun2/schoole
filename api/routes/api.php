@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Portal\PortalController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\School;
 use App\Http\Controllers\Api\Inventory;
+use App\Http\Controllers\Api\Teacher;
 use App\Http\Controllers\Api\Teacher\TeacherController;
 use App\Http\Controllers\Api\Super\PlatformController;
 use Illuminate\Support\Facades\Route;
@@ -240,6 +241,13 @@ Route::middleware(['auth:sanctum', 'teacher', 'company'])->prefix('teacher')->gr
     Route::get('class-results', [TeacherController::class, 'classResults']);
     Route::get('attendance/sheet', [TeacherController::class, 'attendanceSheet']);
     Route::get('attendance/report', [TeacherController::class, 'attendanceReport']);
+    // homework / quizzes / exams
+    Route::get('assignments', [Teacher\AssignmentController::class, 'index']);
+    Route::post('assignments', [Teacher\AssignmentController::class, 'store']);
+    Route::match(['put', 'patch', 'post'], 'assignments/{id}', [Teacher\AssignmentController::class, 'update'])->whereNumber('id');
+    Route::delete('assignments/{id}', [Teacher\AssignmentController::class, 'destroy'])->whereNumber('id');
+    Route::get('assignments/{id}/grading', [Teacher\AssignmentController::class, 'grading'])->whereNumber('id');
+    Route::post('assignments/{id}/grading', [Teacher\AssignmentController::class, 'gradingSave'])->whereNumber('id');
     Route::post('attendance', [TeacherController::class, 'attendanceSave']);
 });
 

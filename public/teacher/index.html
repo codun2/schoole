@@ -36,9 +36,11 @@
   S.setSession(null, me);
 
   const ATT = { present: ['حاضر', 'l-ok'], absent: ['غائب', 'l-bad'], late: ['متأخر', 'l-warn'], excused: ['بعذر', 'l-info'] };
+  const ATYPE = { homework: ['واجب', 'l-info'], quiz: ['اختبار قصير', 'l-warn'], exam: ['اختبار', 'l-bad'] };
+  const ASTATUS = { open: ['مفتوح', 'l-ok'], closed: ['مغلق', 'l-mut'], archived: ['مؤرشف', 'l-mut'] };
 
   document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة المعلم — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="lng" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button><button class="tbtn" id="mode" title="الوضع الليلي">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div>
-    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/students" data-r="students">طلابي</a><a href="#/marks" data-r="marks">رصد الدرجات</a><a href="#/attendance" data-r="attendance">الحضور</a><a href="#/reports" data-r="reports">التقارير</a></div><div id="v"><div class="spin"></div></div></div>`;
+    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/students" data-r="students">طلابي</a><a href="#/marks" data-r="marks">رصد الدرجات</a><a href="#/assignments" data-r="assignments">الواجبات والاختبارات</a><a href="#/attendance" data-r="attendance">الحضور</a><a href="#/reports" data-r="reports">التقارير</a></div><div id="v"><div class="spin"></div></div></div>`;
   document.getElementById('mode').onclick = S.toggleMode;
   const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
   S.i18nStart && S.i18nStart();
@@ -57,6 +59,10 @@
     const st = d.stats;
     v.innerHTML = `<div class="grid g4 mb16">${stat('c-blue', 'calendar', S.num(st.lessons_today), 'حصص اليوم')}${stat('c-violet', 'users', S.num(st.students), 'طلاب فصولي')}${stat('c-green', 'book', S.num(st.teaching_sections), 'شعب أُدرّسها')}${stat('c-amber', 'calCheck', S.num(st.attendance_today), 'حضور رُصد اليوم')}</div>
       ${(d.today && d.today.length) ? `<div class="sec-t">${ic('calendar')} حصص اليوم</div><div class="card mb16"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>الحصة</th><th class="s">المادة</th><th>الشعبة</th><th>الغرفة</th></tr></thead><tbody>${d.today.map((t) => `<tr><td class="num b">${t.period}</td><td class="s b">${esc(t.subject || '—')}</td><td>${esc([t.grade, t.section].filter(Boolean).join(' — ') || '—')}</td><td>${esc(t.room || '—')}</td></tr>`).join('')}</tbody></table></div></div>` : `<div class="card pad mb16 muted sm">${ic('calendar')} لا حصص لك اليوم في الجدول. <a class="acc-t" href="#/timetable">عرض جدولي الأسبوعي</a></div>`}
+      <div class="grid g2 mb16">
+        <div class="card"><div class="hd"><h3>${ic('edit')} واجبات تحتاج تصحيح</h3><div class="sp"></div><span class="bdg ${st.to_grade ? 'l-bad' : 'l-ok'}">${S.num(st.to_grade || 0)}</span></div><div class="bd">${(d.to_grade || []).length ? d.to_grade.map((x) => `<a class="row" href="#/grading?id=${x.id}" style="padding:7px 0;border-bottom:1px solid var(--line);gap:10px;color:inherit"><div class="grow"><b class="sm">${esc(x.title)}</b><div class="muted xs">${esc(x.section)}${x.subject ? ' · ' + esc(x.subject) : ''} · ${S.badge(ATYPE, x.type)}</div></div><span class="bdg l-bad">${x.pending} بلا درجة</span></a>`).join('') : '<div class="muted sm">لا توجد واجبات بانتظار التصحيح.</div>'}</div></div>
+        <div class="card"><div class="hd"><h3>${ic('clock')} اختبارات قريبة</h3><div class="sp"></div><span class="bdg ${st.upcoming ? 'l-warn' : 'l-mut'}">${S.num(st.upcoming || 0)}</span></div><div class="bd">${(d.upcoming || []).length ? d.upcoming.map((x) => `<a class="row" href="#/grading?id=${x.id}" style="padding:7px 0;border-bottom:1px solid var(--line);gap:10px;color:inherit"><div class="grow"><b class="sm">${esc(x.title)}</b><div class="muted xs">${esc(x.section)}${x.subject ? ' · ' + esc(x.subject) : ''} · ${S.badge(ATYPE, x.type)}</div></div><span class="num sm b">${esc(x.due_date)}${x.due_time ? ' ' + esc(x.due_time) : ''}</span></a>`).join('') : '<div class="muted sm">لا اختبارات خلال الأسبوعين القادمين.</div>'}</div></div>
+      </div>
       ${d.homeroom.length ? `<div class="sec-t">${ic('clipboard')} فصولي (مربّي الفصل)</div><div class="grid g3 mb16">${d.homeroom.map((s) => `<div class="card pad secard" data-sec="${s.id}"><div class="row"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">${ic('users')}</span><div class="grow"><b>${esc(s.grade?.name_ar || '')} — ${esc(s.name)}</b><div class="muted sm">${s.students_count} طالب</div></div>${ic('chevL')}</div></div>`).join('')}</div>` : ''}
       ${d.teaching.length ? `<div class="sec-t">${ic('book')} شعب أُدرّس فيها</div><div class="chips mb16">${d.teaching.map((s) => `<span class="bdg l-info">${esc(s.grade?.name_ar || '')} — ${esc(s.name)}</span>`).join('')}</div>` : ''}
       ${d.subjects.length ? `<div class="sec-t">${ic('book')} موادي</div><div class="chips mb16">${d.subjects.map((s) => `<span class="bdg l-mut">${esc(s.name_ar)}</span>`).join('')}</div>` : ''}
@@ -197,6 +203,79 @@
     }
   }
 
+  // --------------------------------------------------------------- homework / quizzes / exams
+  const subjectsFor = async (sectionId) => { try { return (await S.get('/teacher/grade-options', { section_id: sectionId })).subjects.map((s) => [s.id, s.name_ar]); } catch { return []; } };
+  async function assignments(q) {
+    await loadSections();
+    if (!SECTIONS.length) { v.innerHTML = S.emptyHtml('لا توجد شعب مسندة إليك', '', 'book'); return; }
+    const f = { section_id: q.get('section') || '', type: q.get('type') || '', status: q.get('status') || '' };
+    v.innerHTML = `<div class="selrow"><label>الشعبة<select id="fs" class="inp"><option value="">كل الشعب</option>${SECTIONS.map((s) => `<option value="${s.id}" ${String(s.id) === f.section_id ? 'selected' : ''}>${secLabel(s)}</option>`).join('')}</select></label><label>النوع<select id="ft" class="inp"><option value="">الكل</option>${Object.entries(ATYPE).map(([k, x]) => `<option value="${k}" ${f.type === k ? 'selected' : ''}>${x[0]}</option>`).join('')}</select></label><label>الحالة<select id="fst" class="inp"><option value="">المفتوحة والمغلقة</option><option value="open" ${f.status === 'open' ? 'selected' : ''}>مفتوح</option><option value="closed" ${f.status === 'closed' ? 'selected' : ''}>مغلق</option><option value="archived" ${f.status === 'archived' ? 'selected' : ''}>الأرشيف</option></select></label><div class="grow"></div><button class="btn" id="add">${ic('plus')} واجب / اختبار جديد</button></div><div id="list"><div class="spin"></div></div>`;
+    const list = v.querySelector('#list');
+    const load = async () => {
+      list.innerHTML = '<div class="spin"></div>';
+      const d = await S.get('/teacher/assignments', { section_id: v.querySelector('#fs').value, type: v.querySelector('#ft').value, status: v.querySelector('#fst').value });
+      list.innerHTML = d.data.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>النوع</th><th class="s">العنوان</th><th>الشعبة</th><th>المادة</th><th>الموعد</th><th>الدرجة</th><th>التصحيح</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>${d.data.map((a) => `<tr><td>${S.badge(ATYPE, a.type)}</td><td class="s"><b>${esc(a.title)}</b>${a.attachment ? ` <a class="acc-t xs" target="_blank" href="${esc(a.attachment)}">${ic('file')} مرفق</a>` : ''}</td><td>${esc((a.section?.grade?.name_ar || '') + ' — ' + (a.section?.name || ''))}</td><td>${esc(a.subject?.name_ar || '—')}</td><td class="num">${esc(a.due_date)}${a.due_time ? `<div class="muted xs">${esc(a.due_time)}${a.duration_minutes ? ` · ${a.duration_minutes} د` : ''}</div>` : ''}</td><td class="num">${S.fmtN(a.max_mark, 1)}</td><td>${a.pending_count ? `<span class="bdg l-bad">${a.pending_count} بلا درجة</span>` : `<span class="bdg l-ok">مكتمل</span>`}<div class="muted xs">${a.graded_count}/${a.students_total} مصحّح</div></td><td>${S.badge(ASTATUS, a.status)}</td><td><div class="acts"><a class="ibtn g" href="#/grading?id=${a.id}" title="التصحيح والتسليم">${ic('check')}</a><button class="ibtn v" data-edit="${a.id}" title="تعديل">${ic('edit')}</button>${a.status === 'open' ? `<button class="ibtn" data-st="${a.id}" data-to="closed" title="إغلاق">${ic('lock')}</button>` : a.status === 'closed' ? `<button class="ibtn" data-st="${a.id}" data-to="open" title="إعادة فتح">${ic('refresh')}</button>` : ''}${a.status !== 'archived' ? `<button class="ibtn" data-st="${a.id}" data-to="archived" title="أرشفة">${ic('archive')}</button>` : ''}<button class="ibtn d" data-del="${a.id}" title="حذف">${ic('trash')}</button></div></td></tr>`).join('')}</tbody></table></div></div>`
+        : S.emptyHtml('لا توجد واجبات أو اختبارات', 'اضغط «واجب / اختبار جديد» لإنشاء أول واحد.', 'book');
+      list.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => assignmentForm(d.data.find((x) => String(x.id) === b.dataset.edit), load)));
+      list.querySelectorAll('[data-st]').forEach((b) => (b.onclick = async () => { try { await S.patch('/teacher/assignments/' + b.dataset.st, { status: b.dataset.to }); S.toast('تم التحديث', 'ok'); load(); } catch (er) { S.toast(er.message, 'bad'); } }));
+      list.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => { if (!(await S.confirm('حذف هذا العنصر وكل درجاته؟ لا يمكن التراجع.', 'حذف'))) return; try { await S.del('/teacher/assignments/' + b.dataset.del); S.toast('تم الحذف', 'ok'); load(); } catch (er) { S.toast(er.message, 'bad'); } }));
+    };
+    ['#fs', '#ft', '#fst'].forEach((s) => (v.querySelector(s).onchange = load));
+    v.querySelector('#add').onclick = () => assignmentForm(null, load);
+    load();
+  }
+
+  async function assignmentForm(row, onDone) {
+    const secId = row ? row.section_id : SECTIONS[0].id;
+    const subjects = await subjectsFor(secId);
+    const fields = [
+      { k: 'type', l: 'النوع', t: 'select', req: true, opts: Object.entries(ATYPE).map(([k, x]) => [k, x[0]]), def: 'homework' },
+      { k: 'section_id', l: 'الشعبة', t: 'select', req: true, opts: SECTIONS.map((s) => [s.id, secLabel(s)]) },
+      { k: 'subject_id', l: 'المادة', t: 'select', opts: subjects, blank: '— بدون —' },
+      { k: 'title', l: 'العنوان', req: true, full: true, ph: 'مثال: حل تمارين الوحدة الثانية' },
+      { k: 'due_date', l: 'الموعد (التسليم / يوم الاختبار)', t: 'date', req: true, def: S.today() },
+      { k: 'due_time', l: 'وقت الاختبار', t: 'time', show: (x) => x.type !== 'homework' },
+      { k: 'duration_minutes', l: 'المدة بالدقائق', t: 'number', min: 1, show: (x) => x.type === 'exam' },
+      { k: 'max_mark', l: 'الدرجة النهائية', t: 'number', min: 0.5, step: 0.5, def: 10, req: true },
+      { k: 'description', l: 'الوصف / التعليمات', t: 'textarea', full: true },
+      { k: 'attachment', l: row && row.attachment ? 'استبدال المرفق' : 'مرفق (ورقة عمل، صورة، PDF)', t: 'file', full: true, accept: 'image/*,.pdf,.doc,.docx' },
+      ...(row && row.attachment ? [{ k: 'remove_attachment', l: 'حذف المرفق الحالي', t: 'check' }] : []),
+    ];
+    S.formModal({
+      title: row ? 'تعديل ' + (ATYPE[row.type] || ['عنصر'])[0] : 'واجب / اختبار جديد', fields, values: row ? { ...row, section_id: row.section_id } : { type: 'homework', section_id: secId, max_mark: 10, due_date: S.today() }, size: 'wide',
+      afterRender: (m, form) => {
+        const sec = form.querySelector('[name=section_id]'), sub = form.querySelector('[name=subject_id]');
+        if (sec && sub) sec.onchange = async () => { const opts = await subjectsFor(sec.value); sub.innerHTML = '<option value="">— بدون —</option>' + opts.map(([id, l]) => `<option value="${id}">${esc(l)}</option>`).join(''); };
+      },
+      onSave: async (vals) => {
+        if (row) await S.api('/teacher/assignments/' + row.id, { method: vals instanceof FormData ? 'POST' : 'PATCH', body: vals });
+        else await S.api('/teacher/assignments', { method: 'POST', body: vals });
+        S.toast(row ? 'تم حفظ التعديلات' : 'تمت الإضافة', 'ok'); onDone && onDone();
+      },
+    });
+  }
+
+  async function grading(q) {
+    const id = q.get('id'); if (!id) { location.hash = '#/assignments'; return; }
+    let d; try { d = await S.get('/teacher/assignments/' + id + '/grading'); } catch (er) { v.innerHTML = S.emptyHtml('تعذّر تحميل التصحيح', er.message, 'alert'); return; }
+    const a = d.assignment, max = +a.max_mark, rows = d.students.map((s) => ({ ...s }));
+    const counts = () => { const sub = rows.filter((r) => r.submitted || r.mark != null).length, gr = rows.filter((r) => r.mark != null).length; return `<span class="bdg l-info">سلّم ${sub}/${rows.length}</span><span class="bdg l-ok">مصحّح ${gr}</span><span class="bdg ${rows.length - gr ? 'l-bad' : 'l-mut'}">بلا درجة ${rows.length - gr}</span><span class="bdg l-warn">لم يسلّم ${rows.filter((r) => !r.submitted && r.mark == null).length}</span>`; };
+    v.innerHTML = `<div class="selrow"><a class="btn ghost" href="#/assignments">${ic('chevR')} رجوع</a><div class="grow"></div></div>
+      <div class="card pad mb16"><div class="row wrap gap8" style="align-items:flex-start"><div class="grow"><div class="row gap8">${S.badge(ATYPE, a.type)}${S.badge(ASTATUS, a.status)}</div><h3 class="mt8">${esc(a.title)}</h3><div class="muted sm">${esc((a.section?.grade?.name_ar || '') + ' — ' + (a.section?.name || ''))}${a.subject ? ' · ' + esc(a.subject.name_ar) : ''} · الموعد <span class="num">${esc(a.due_date)}${a.due_time ? ' ' + esc(a.due_time) : ''}</span> · الدرجة من <b class="num">${S.fmtN(max, 1)}</b></div>${a.description ? `<p class="t2 sm mt8" style="white-space:pre-line">${esc(a.description)}</p>` : ''}${a.attachment ? `<a class="btn ghost sm mt8" target="_blank" href="${esc(a.attachment)}">${ic('file')} فتح المرفق</a>` : ''}</div></div></div>
+      <div class="toolbar" id="cnt">${counts()}<div class="sp"></div><button class="btn ghost sm" id="allsub">${ic('check')} تعليم الكل «سلّم»</button><button class="btn success" id="sv">${ic('check')} حفظ التصحيح</button></div>
+      <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>سلّم</th><th>الدرجة (من ${S.fmtN(max, 1)})</th><th>ملاحظة</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(r.name)}<div class="muted xs num">${esc(r.student_no || '')}</div></td><td><input type="checkbox" data-s="${i}" ${r.submitted ? 'checked' : ''}></td><td><input class="inp mk num" type="number" min="0" max="${max}" step="0.5" value="${r.mark ?? ''}" data-m="${i}"></td><td><input class="inp" value="${esc(r.note || '')}" data-n="${i}" placeholder="—"></td></tr>`).join('')}</tbody></table></div></div>
+      <p class="muted sm mt8">إدخال درجة يعني أن الطالب سلّم تلقائياً. اترك الدرجة فارغة لمن لم يسلّم بعد.</p>`;
+    const refresh = () => { v.querySelector('#cnt').innerHTML = counts() + '<div class="sp"></div>' + v.querySelector('#allsub').outerHTML + v.querySelector('#sv').outerHTML; bind(); };
+    const bind = () => {
+      v.querySelector('#allsub').onclick = () => { rows.forEach((r) => (r.submitted = true)); v.querySelectorAll('[data-s]').forEach((c) => (c.checked = true)); refresh(); };
+      v.querySelector('#sv').onclick = async (ev) => { const _b = ev.currentTarget; S.btnBusy(_b, true); try { const res = await S.post('/teacher/assignments/' + id + '/grading', { rows: rows.map((r) => ({ student_id: r.id, submitted: !!r.submitted, mark: r.mark ?? null, note: r.note || null })) }); S.toast(res.message, 'ok'); } catch (er) { S.toast(er.message, 'bad'); } S.btnBusy(_b, false); };
+    };
+    v.querySelectorAll('[data-s]').forEach((c) => (c.onchange = () => { rows[+c.dataset.s].submitted = c.checked; refresh(); }));
+    v.querySelectorAll('[data-m]').forEach((inp) => (inp.oninput = () => { let x = inp.value === '' ? null : Math.min(+inp.value, max); if (x !== null && +inp.value > max) inp.value = max; rows[+inp.dataset.m].mark = x; if (x !== null) { rows[+inp.dataset.m].submitted = true; const c = v.querySelector(`[data-s="${inp.dataset.m}"]`); if (c) c.checked = true; } refresh(); }));
+    v.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (rows[+inp.dataset.n].note = inp.value)));
+    bind();
+  }
+
   // --------------------------------------------------------------- reports (monthly attendance / class results)
   async function reports(q) {
     await loadSections();
@@ -270,7 +349,7 @@
   }
 
   // --------------------------------------------------------------- router
-  const routes = { '': home, timetable, students, marks, attendance, reports };
+  const routes = { '': home, timetable, students, marks, attendance, reports, assignments, grading };
   async function route() {
     const raw = location.hash.replace(/^#\//, '');
     const [path, qs] = raw.split('?');

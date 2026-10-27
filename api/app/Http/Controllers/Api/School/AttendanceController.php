@@ -21,10 +21,11 @@ class AttendanceController extends Controller
         $section = Section::with('grade:id,name_ar')->find($data['section_id']);
         $marks = StudentAttendance::where('section_id', $section->id)->whereDate('date', $data['date'])->get()->keyBy('student_id');
 
-        $students = Student::where('section_id', $section->id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'student_no', 'gender'])
+        $students = Student::where('section_id', $section->id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'name_en', 'student_no', 'gender'])
             ->map(fn ($s) => [
                 'id'         => $s->id,
                 'name'       => $s->name,
+                'name_en'    => $s->name_en,
                 'student_no' => $s->student_no,
                 'gender'     => $s->gender,
                 'status'     => $marks[$s->id]->status ?? null,

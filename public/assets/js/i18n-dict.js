@@ -1753,4 +1753,8 @@ window.SCH_DICT = {
   'مرفق (ورقة عمل، صورة، PDF)': 'Attachment (worksheet, image, PDF)',
   'استبدال المرفق': 'Replace attachment',
   'حذف المرفق الحالي': 'Remove current attachment',
+
+  // ---- homework form
+  'عنوان الواجب/الاختبار': 'Title',
+  'مثال: حل تمارين الوحدة الثانية': 'e.g. Solve Unit 2 exercises',
 };

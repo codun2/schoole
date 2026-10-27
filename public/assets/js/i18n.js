@@ -20,6 +20,14 @@
   S.lang = () => { try { return localStorage.getItem(KEY) || 'ar'; } catch { return 'ar'; } };
   S.isEn = () => S.lang() === 'en';
 
+  /** A record's display name: its English name when English is on and set, else the Arabic name.
+   *  Used for data whose values are too many/unique to live in the dictionary (people's names). */
+  S.enName = (o) => {
+    if (!o) return '';
+    if (S.isEn() && o.name_en && String(o.name_en).trim()) return o.name_en;
+    return o.name || o.name_ar || '';
+  };
+
   function translateString(raw) {
     const d = DICT();
     const key = raw.trim();

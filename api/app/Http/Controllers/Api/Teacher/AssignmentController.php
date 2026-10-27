@@ -153,9 +153,9 @@ class AssignmentController extends Controller
     {
         $a = $this->mine($request, $id);
         $subs = $a->submissions()->get()->keyBy('student_id');
-        $students = Student::where('section_id', $a->section_id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'student_no'])
+        $students = Student::where('section_id', $a->section_id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'name_en', 'student_no'])
             ->map(fn ($s) => [
-                'id' => $s->id, 'name' => $s->name, 'student_no' => $s->student_no,
+                'id' => $s->id, 'name' => $s->name, 'name_en' => $s->name_en, 'student_no' => $s->student_no,
                 'submitted' => (bool) ($subs[$s->id]->submitted ?? false),
                 'mark' => isset($subs[$s->id]) && $subs[$s->id]->mark !== null ? (float) $subs[$s->id]->mark : null,
                 'note' => $subs[$s->id]->note ?? null,

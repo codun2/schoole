@@ -33,10 +33,11 @@ class MarkController extends Controller
         $term = ExamTerm::findOrFail($data['exam_term_id']);
         $marks = GradeMark::where('section_id', $section->id)->where('subject_id', $subject->id)->where('exam_term_id', $term->id)->get()->keyBy('student_id');
 
-        $students = Student::where('section_id', $section->id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'student_no'])
+        $students = Student::where('section_id', $section->id)->where('status', 'active')->orderBy('name')->get(['id', 'name', 'name_en', 'student_no'])
             ->map(fn ($s) => [
                 'id'         => $s->id,
                 'name'       => $s->name,
+                'name_en'    => $s->name_en,
                 'student_no' => $s->student_no,
                 'mark'       => isset($marks[$s->id]) ? (float) $marks[$s->id]->mark : null,
                 'note'       => $marks[$s->id]->note ?? null,
@@ -157,7 +158,7 @@ class MarkController extends Controller
         $weightSum = max(0.0001, (float) $terms->sum('weight'));
         $subjects = Subject::where('academic_year_id', $section->academic_year_id)
             ->where(fn ($q) => $q->whereNull('grade_ids')->orWhereJsonContains('grade_ids', (int) $section->grade_id))->get()->keyBy('id');
-        $students = Student::where('section_id', $section->id)->where('status', 'active')->get(['id', 'name', 'student_no']);
+        $students = Student::where('section_id', $section->id)->where('status', 'active')->get(['id', 'name', 'name_en', 'student_no']);
         $allMarks = GradeMark::where('section_id', $section->id)->get()->groupBy('student_id');
 
         $rows = $students->map(function ($st) use ($subjects, $terms, $weightSum, $allMarks) {
@@ -186,7 +187,7 @@ class MarkController extends Controller
             }
             $overall = $counted ? round($sum / $counted, 2) : null;
 
-            return ['student_id' => $st->id, 'name' => $st->name, 'student_no' => $st->student_no, 'percent' => $overall, 'subjects_counted' => $counted, 'failed' => $failed, 'grade' => Grading::grade($overall)];
+            return ['student_id' => $st->id, 'name' => $st->name, 'name_en' => $st->name_en, 'student_no' => $st->student_no, 'percent' => $overall, 'subjects_counted' => $counted, 'failed' => $failed, 'grade' => Grading::grade($overall)];
         })->sortByDesc(fn ($r) => $r['percent'] ?? -1)->values();
 
         $rank = 1;

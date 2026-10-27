@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>تسجيل الدخول — سكوول</title>
 <link rel="stylesheet" href="/assets/css/app.css">
+<style>.logininp{text-align:right}html[dir="ltr"] .logininp{text-align:left}</style>
 </head>
 <body>
 <button id="lang" class="btn ghost sm" style="position:fixed;top:14px;inset-inline-end:14px;z-index:20;font-weight:800">EN</button>
@@ -13,8 +14,8 @@
     <form id="f" novalidate>
       <a href="/" class="row" style="gap:10px;margin-bottom:8px"><span class="avatar" style="width:44px;height:44px;border-radius:13px;background:var(--accent);color:#fff" id="lg"></span><b style="font-family:var(--head);font-size:20px">سكوول</b></a>
       <div><h1>مرحباً بعودتك 👋</h1><p class="muted">سجّل الدخول لإدارة مدرستك، أو لمتابعة أبنائك كولي أمر.</p></div>
-      <label class="fld"><span>البريد أو الجوال أو الرقم المدرسي للطالب</span><input class="inp" name="login" dir="ltr" style="text-align:right" autocomplete="username" required></label>
-      <label class="fld"><span>كلمة المرور</span><input class="inp" type="password" name="password" dir="ltr" style="text-align:right" autocomplete="current-password" required></label>
+      <label class="fld"><span>البريد أو الجوال أو الرقم المدرسي للطالب</span><input class="inp" name="login" dir="ltr" class="logininp" autocomplete="username" required></label>
+      <label class="fld"><span>كلمة المرور</span><input class="inp" type="password" name="password" dir="ltr" class="logininp" autocomplete="current-password" required></label>
       <div class="ferr hide" id="err"></div>
       <button class="btn" id="go">تسجيل الدخول</button>
       <p class="muted sm" style="text-align:center">مدرسة جديدة؟ <a href="/register.html" class="acc-t b">ابدأ تجربتك المجانية</a></p>

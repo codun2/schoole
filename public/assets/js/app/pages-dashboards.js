@@ -106,7 +106,7 @@
         </div>`;
       S.bindYear(el);
       S.chart.hbars(el.querySelector('#bygrade'), d.by_grade.map((g, i) => ({ label: g.name, value: g.c, color: S.PALETTE[i % S.PALETTE.length] })));
-      S.chart.donut(el.querySelector('#gender'), { items: [{ label: 'ذكور', value: d.gender.male || 0, color: '#2f7ae5' }, { label: 'إناث', value: d.gender.female || 0, color: '#db2777' }] });
+      S.chart.donut(el.querySelector('#gender'), { items: [{ label: S.tr('ذكور'), value: d.gender.male || 0, color: '#2f7ae5' }, { label: S.tr('إناث'), value: d.gender.female || 0, color: '#db2777' }] });
       el.querySelector('#qs').onkeydown = (e) => { if (e.key === 'Enter') location.hash = '#/students?q=' + encodeURIComponent(e.target.value.trim()); };
     },
   });
@@ -168,7 +168,7 @@
           <div class="card"><div class="hd"><h3>${ic('contract')} عقود قاربت على الانتهاء</h3><span class="grow"></span><a class="btn ghost xs" href="#/employee-contracts?state=expiring">عرض الكل</a></div><div class="bd">${(d.contracts_expiring || []).map((c) => `<div class="li"><span class="ic" style="background:${c.state === 'expired' ? 'var(--bad-bg)' : 'var(--warn-bg)'};color:${c.state === 'expired' ? 'var(--bad)' : 'var(--warn)'}">${ic('contract')}</span><span class="t"><b>${esc(c.employee?.name || '')}</b><small class="num">${esc(c.number)} · ينتهي ${S.d(c.end_date)}</small></span>${S.badge(S.ST.license, c.state)}</div>`).join('') || '<div class="empty" style="padding:24px">لا عقود قريبة الانتهاء</div>'}</div></div>
           <div class="card"><div class="hd"><h3>${ic('star')} أحدث التقييمات</h3><span class="grow"></span><a class="btn ghost xs" href="#/evaluations">عرض الكل</a></div><div class="bd">${(d.recent_evaluations || []).map((v) => `<div class="li"><span class="avatar">${esc(S.initials(v.employee?.name))}</span><span class="t"><b>${esc(v.employee?.name || '')}</b><small>${esc(v.period?.name || '')}</small></span><b class="num">${S.fmtN(v.total_score, 0)}% <span class="bdg l-info">${esc(v.grade || '')}</span></b></div>`).join('') || '<div class="empty" style="padding:24px">لا توجد تقييمات بعد</div>'}</div></div>
         </div>`;
-      S.chart.donut(el.querySelector('#att'), { items: [['present', 'حاضر', '#14a06b'], ['late', 'متأخر', '#d98a0b'], ['absent', 'غائب', '#e0384c'], ['leave', 'إجازة', '#2f7ae5']].map(([k, l, c]) => ({ label: l, value: a[k] || 0, color: c })) });
+      S.chart.donut(el.querySelector('#att'), { items: [['present', 'حاضر', '#14a06b'], ['late', 'متأخر', '#d98a0b'], ['absent', 'غائب', '#e0384c'], ['leave', 'إجازة', '#2f7ae5']].map(([k, l, c]) => ({ label: S.tr(l), value: a[k] || 0, color: c })) });
       S.chart.hbars(el.querySelector('#deps'), d.by_department.map((x, i) => ({ label: x.name, value: x.c, color: S.PALETTE[i % 10] })));
     },
   });
@@ -193,10 +193,10 @@
           <div class="card"><div class="hd"><h3>${ic('shield')} تراخيص تنتهي قريباً</h3></div><div class="bd">${d.licenses_expiring.map((l) => `<div class="li"><span class="ic" style="background:${l.state === 'expired' ? 'var(--bad-bg)' : 'var(--warn-bg)'};color:${l.state === 'expired' ? 'var(--bad)' : 'var(--warn)'}">${ic('shield')}</span><span class="t"><b>${esc(l.name)}</b><small class="num">${S.d(l.expiry_date)}</small></span>${S.badge(S.ST.license, l.state)}</div>`).join('') || '<div class="empty" style="padding:24px">كل التراخيص سارية</div>'}</div></div>
         </div>
         <div class="card mt16"><div class="hd"><h3>${ic('calendar')} المهام القادمة</h3><span class="grow"></span><a class="btn ghost xs" href="#/tasks">عرض الكل</a></div><div class="tbl-scroll"><table class="tbl"><thead><tr><th class="s">المهمة</th><th>الأولوية</th><th>الحالة</th><th>التقدم</th><th>تاريخ الانتهاء</th><th>المسؤول</th></tr></thead><tbody>
-          ${d.upcoming_tasks.map((x) => `<tr><td class="s"><a class="lk" href="#/tasks/${x.id}">${esc(x.title)}</a></td><td>${S.badge(S.ST.prio, x.priority)}</td><td>${S.badge(S.ST.taskStatus, x.status)}</td><td>${S.prog(x.progress)}</td><td class="num ${x.end_date && x.end_date < S.today() ? 'bad-t b' : ''}">${S.d(x.end_date)}</td><td>${esc(x.assignee?.name || '—')}</td></tr>`).join('')}
+          ${d.upcoming_tasks.map((x) => `<tr><td class="s"><a class="lk" href="#/tasks/${x.id}">${esc(x.title)}</a></td><td>${S.badge(S.ST.prio, x.priority)}</td><td>${S.badge(S.ST.taskStatus, x.status)}</td><td>${S.prog(x.progress)}</td><td class="num ${x.end_date && x.end_date < S.today() ? 'bad-t b' : ''}">${S.d(x.end_date)}</td><td>${esc(S.enName(x.assignee) || '—')}</td></tr>`).join('')}
         </tbody></table></div></div>`;
-      S.chart.donut(el.querySelector('#tk'), { items: [['new', 'جديدة', '#64748b'], ['in_progress', 'قيد التنفيذ', '#2f7ae5'], ['done', 'منتهية', '#14a06b'], ['cancelled', 'ملغاة', '#e0384c']].map(([k, l, col]) => ({ label: l, value: t[k] || 0, color: col })) });
-      S.chart.donut(el.querySelector('#cr'), { items: [['incoming', 'واردة', '#2f7ae5'], ['outgoing', 'صادرة', '#7c5ce6'], ['internal', 'داخلية', '#0f9d9a']].map(([k, l, col]) => ({ label: l, value: c[k] || 0, color: col })) });
+      S.chart.donut(el.querySelector('#tk'), { items: [['new', 'جديدة', '#64748b'], ['in_progress', 'قيد التنفيذ', '#2f7ae5'], ['done', 'منتهية', '#14a06b'], ['cancelled', 'ملغاة', '#e0384c']].map(([k, l, col]) => ({ label: S.tr(l), value: t[k] || 0, color: col })) });
+      S.chart.donut(el.querySelector('#cr'), { items: [['incoming', 'واردة', '#2f7ae5'], ['outgoing', 'صادرة', '#7c5ce6'], ['internal', 'داخلية', '#0f9d9a']].map(([k, l, col]) => ({ label: S.tr(l), value: c[k] || 0, color: col })) });
     },
   });
 })();

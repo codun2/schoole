@@ -27,6 +27,7 @@ class InventoryLocationController extends ResourceController
     {
         return [
             'name'  => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ];
     }

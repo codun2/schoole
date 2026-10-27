@@ -37,6 +37,16 @@
     return (g || d) + ' / ' + (s || d);
   };
 
+  // EN-aware dictionary lookup for a known UI string that is rendered where the DOM observer can't
+  // reach it (e.g. chart/SVG legend labels, canvas text). Returns the English term when English is
+  // on and the term is in the dictionary, otherwise the original Arabic.
+  S.tr = (str) => {
+    if (str == null) return str;
+    if (!S.isEn()) return str;
+    const hit = DICT()[String(str).trim()];
+    return hit != null ? hit : str;
+  };
+
   function translateString(raw) {
     const d = DICT();
     const key = raw.trim();

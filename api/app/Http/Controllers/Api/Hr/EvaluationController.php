@@ -21,7 +21,7 @@ class EvaluationController extends Controller
 {
     public function index(Request $request)
     {
-        $q = Evaluation::with(['employee:id,name,name_en,number', 'period:id,name', 'evaluator:id,name'])
+        $q = Evaluation::with(['employee:id,name,name_en,number', 'period:id,name,name_en', 'evaluator:id,name,name_en'])
             ->when($request->period_id, fn ($w, $v) => $w->where('period_id', $v))
             ->when($request->employee_id, fn ($w, $v) => $w->where('employee_id', $v))
             ->when(trim((string) $request->q), fn ($w, $t) => $w->whereHas('employee', fn ($e) => $e->where('name', 'like', "%{$t}%")));
@@ -31,7 +31,7 @@ class EvaluationController extends Controller
 
     public function show(Request $request, $id)
     {
-        $e = Evaluation::with(['employee:id,name,name_en,number', 'period', 'evaluator:id,name', 'scores'])->findOrFail($id);
+        $e = Evaluation::with(['employee:id,name,name_en,number', 'period', 'evaluator:id,name,name_en', 'scores'])->findOrFail($id);
         $e->criteria = EvaluationCriterion::orderBy('sort')->get();
         $e->grade_info = Grading::grade($e->total_score);
 

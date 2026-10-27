@@ -25,6 +25,7 @@ class EvaluationCriterionController extends ResourceController
     {
         return [
             'name'      => [$record ? 'sometimes' : 'required', 'string', 'max:160'],
+            'name_en'  => ['nullable', 'string', 'max:255'],
             'weight'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'max_score' => ['nullable', 'numeric', 'min:1'],
             'sort'      => ['nullable', 'integer', 'min:0'],

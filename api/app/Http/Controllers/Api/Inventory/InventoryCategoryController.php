@@ -27,6 +27,7 @@ class InventoryCategoryController extends ResourceController
     {
         return [
             'name' => [$record ? 'sometimes' : 'required', 'string', 'max:120'],
+            'name_en' => ['nullable', 'string', 'max:255'],
             'sort' => ['nullable', 'integer', 'min:0'],
         ];
     }

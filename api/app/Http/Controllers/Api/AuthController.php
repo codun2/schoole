@@ -178,6 +178,18 @@ class AuthController extends Controller
         foreach (\App\Models\Branch::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
             $map[$x->name] = $x->name_en;
         }
+        foreach (\App\Models\InventoryCategory::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\InventoryLocation::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\EvaluationCriterion::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
+        foreach (\App\Models\EvaluationPeriod::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            $map[$x->name] = $x->name_en;
+        }
         foreach ((array) ($company->settings['translations'] ?? []) as $ar => $en) {
             if (is_string($ar) && is_string($en) && trim($ar) !== '' && trim($en) !== '') {
                 $map[trim($ar)] = trim($en);

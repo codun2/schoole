@@ -5,8 +5,8 @@
   const TYPE = { asset: ['أصل / عُهدة', 'l-info'], consumable: ['مستهلك', 'l-violet'] };
   const COND = { good: ['جيد', 'l-ok'], needs_repair: ['يحتاج صيانة', 'l-warn'], damaged: ['تالف', 'l-bad'] };
   const MOVE = { in: ['إدخال', 'l-ok'], out: ['صرف', 'l-bad'], transfer: ['نقل', 'l-info'], adjust: ['تسوية جرد', 'l-warn'], dispose: ['إتلاف', 'l-mut'] };
-  const catOpts = (lk) => (lk.inv_categories || []).map((c) => [c.id, c.name]);
-  const locOpts = (lk) => (lk.inv_locations || []).map((l) => [l.id, l.name]);
+  const catOpts = (lk) => (lk.inv_categories || []).map((c) => [c.id, S.enName(c)]);
+  const locOpts = (lk) => (lk.inv_locations || []).map((l) => [l.id, S.enName(l)]);
   const lowStock = (r) => r.type === 'consumable' && +r.min_quantity > 0 && +r.quantity <= +r.min_quantity;
   const offline = (e) => S.local && S.local.isOfflineError(e) && S.db;
   const OFF = { offline: true, status: 503 };
@@ -65,7 +65,7 @@
   // ---------------------------------------------------------------- items
   const itemFields = (lk, row) => [
     { t: 'sec', l: 'بيانات الصنف' },
-    { k: 'name', l: 'اسم الصنف', req: true, full: true },
+    { k: 'name', l: 'اسم الصنف', req: true, full: true }, { k: 'name_en', l: 'اسم الصنف بالإنجليزية', dir: 'ltr', full: true },
     { k: 'type', l: 'النوع', t: 'select', req: true, opts: S.opts(TYPE), def: 'asset', help: 'أصل/عُهدة: أثاث وأجهزة تُتابَع بالعدد والحالة — مستهلك: قرطاسية ومواد تنقص بالصرف' },
     { k: 'category_id', l: 'الفئة', t: 'select', opts: catOpts(lk), blank: '— بدون فئة —' },
     { k: 'location_id', l: 'الموقع', t: 'select', opts: locOpts(lk), blank: '— غير محدد —' },
@@ -107,14 +107,14 @@
   S.page('inventory-categories', S.crud({
     title: 'فئات المخزون', singular: 'فئة', api: '/app/inventory-categories', perm: 'inventory', icon: 'tag', invalidate: ['inv_categories'],
     search: 'بحث باسم الفئة…',
-    fields: () => [{ k: 'name', l: 'اسم الفئة', req: true, full: true, ph: 'أثاث، أجهزة، قرطاسية، معدات مختبر…' }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 }],
+    fields: () => [{ k: 'name', l: 'اسم الفئة', req: true, full: true, ph: 'أثاث، أجهزة، قرطاسية، معدات مختبر…' }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr', full: true }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 }],
     columns: [{ l: 'الفئة', s: true, v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'عدد الأصناف', v: (r) => `<a href="#/inventory-items?category_id=${r.id}" class="num">${S.num(r.items_count ?? 0)}</a>` }, { l: 'الترتيب', v: (r) => `<span class="num">${esc(r.sort ?? 0)}</span>` }],
   }));
   S.page('inventory-locations', S.crud({
     title: 'المواقع والمخازن', singular: 'موقع', api: '/app/inventory-locations', perm: 'inventory', icon: 'layers', invalidate: ['inv_locations'],
     search: 'بحث باسم الموقع…',
-    fields: () => [{ k: 'name', l: 'اسم الموقع', req: true, full: true, ph: 'المخزن الرئيسي، مختبر العلوم، الفصل 1-أ…' }, { k: 'notes', l: 'ملاحظات', t: 'textarea', full: true }],
-    columns: [{ l: 'الموقع', s: true, v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'عدد الأصناف', v: (r) => `<a href="#/inventory-items?location_id=${r.id}" class="num">${S.num(r.items_count ?? 0)}</a>` }, { l: 'ملاحظات', v: (r) => `<span class="muted sm">${esc(r.notes || '—')}</span>` }],
+    fields: () => [{ k: 'name', l: 'اسم الموقع', req: true, full: true, ph: 'المخزن الرئيسي، مختبر العلوم، الفصل 1-أ…' }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr', full: true }, { k: 'notes', l: 'ملاحظات', t: 'textarea', full: true }],
+    columns: [{ l: 'الموقع', s: true, v: (r) => `<b>${esc(S.enName(r))}</b>` }, { l: 'عدد الأصناف', v: (r) => `<a href="#/inventory-items?location_id=${r.id}" class="num">${S.num(r.items_count ?? 0)}</a>` }, { l: 'ملاحظات', v: (r) => `<span class="muted sm">${esc(r.notes || '—')}</span>` }],
   }));
 
   // ---------------------------------------------------------------- movements

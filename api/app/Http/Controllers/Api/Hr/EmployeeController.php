@@ -115,7 +115,7 @@ class EmployeeController extends ResourceController
             $record->payslips = PayrollItem::where('employee_id', $record->id)->join('payrolls', 'payrolls.id', '=', 'payroll_items.payroll_id')
                 ->orderByDesc('payrolls.month')->limit(12)->get(['payrolls.month', 'payrolls.status', 'payroll_items.*']);
             $record->contracts = EmployeeContract::where('employee_id', $record->id)->orderByDesc('id')->get();
-            $record->evaluations = Evaluation::with('period:id,name')->where('employee_id', $record->id)->orderByDesc('id')->limit(6)->get();
+            $record->evaluations = Evaluation::with('period:id,name,name_en')->where('employee_id', $record->id)->orderByDesc('id')->limit(6)->get();
             $month = now()->format('Y-m');
             $record->attendance_month = EmployeeAttendance::where('employee_id', $record->id)->where('date', 'like', $month.'%')
                 ->selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status');

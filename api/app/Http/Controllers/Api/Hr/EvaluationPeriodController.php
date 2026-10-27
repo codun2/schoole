@@ -21,6 +21,7 @@ class EvaluationPeriodController extends ResourceController
     {
         return [
             'name'      => [$record ? 'sometimes' : 'required', 'string', 'max:160'],
+            'name_en'  => ['nullable', 'string', 'max:255'],
             'from_date' => ['nullable', 'date'],
             'to_date'   => ['nullable', 'date', 'after_or_equal:from_date'],
             'status'    => ['nullable', 'in:open,closed'],

@@ -21,7 +21,7 @@ class InventoryItemController extends ResourceController
 
     protected array $filters = ['category_id', 'location_id', 'type', 'condition'];
 
-    protected array $with = ['category:id,name', 'location:id,name'];
+    protected array $with = ['category:id,name,name_en', 'location:id,name,name_en'];
 
     protected array $sortable = ['id', 'name', 'quantity', 'unit_cost', 'purchase_date', 'created_at'];
 
@@ -37,6 +37,7 @@ class InventoryItemController extends ResourceController
 
         return [
             'name'          => [$req, 'string', 'max:255'],
+            'name_en'      => ['nullable', 'string', 'max:255'],
             'type'          => ['nullable', 'in:'.implode(',', InventoryItem::TYPES)],
             'category_id'   => ['nullable', 'integer', $this->owned('inventory_categories')],
             'location_id'   => ['nullable', 'integer', $this->owned('inventory_locations')],

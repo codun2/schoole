@@ -25,20 +25,20 @@
     chips: { k: 'state', items: [['', 'الكل'], ['expiring', 'قاربت على الانتهاء'], ['expired', 'منتهية']] },
     filters: [{ k: 'type', l: 'نوع العقد', opts: S.opts(CTYPE) }, { k: 'employee_id', l: 'الموظف', opts: empOpts }],
     columns: [
-      { l: 'رقم العقد', v: (r) => `<a class="lk num" href="#" data-open>${esc(r.number)}</a>` }, { l: 'الموظف', s: true, v: (r) => cell.name(r.employee?.name, `<span class="num">${esc(r.employee?.number || '')}</span>`) },
+      { l: 'رقم العقد', v: (r) => `<a class="lk num" href="#" data-open>${esc(r.number)}</a>` }, { l: 'الموظف', s: true, v: (r) => cell.name(S.enName(r.employee), `<span class="num">${esc(r.employee?.number || '')}</span>`) },
       { l: 'النوع', v: (r) => `<span class="bdg l-info">${CTYPE[r.type] || r.type}</span>` }, { l: 'البداية', v: (r) => cell.num(S.d(r.start_date)) }, { l: 'النهاية', v: (r) => `<span class="num ${r.state === 'expired' || r.state === 'expiring' ? 'bad-t b' : ''}">${S.d(r.end_date) || 'غير محدد'}</span>` },
       { l: 'الراتب', v: (r) => S.money(+r.basic_salary + +r.allowances) }, { l: 'الحالة', v: (r) => (r.status === 'terminated' ? '<span class="bdg mut">منتهٍ</span>' : S.badge(S.ST.license, r.state)) }, { l: 'مرفق', v: (r) => cell.file(r.attachment) },
     ],
     rowClass: (r) => (r.status !== 'terminated' && (r.state === 'expired' || r.state === 'expiring') ? 'warn-row' : ''),
-    viewFields: (r) => [['رقم العقد', esc(r.number)], ['الموظف', esc(r.employee?.name)], ['النوع', CTYPE[r.type]], ['البداية', S.d(r.start_date)], ['النهاية', S.d(r.end_date) || 'غير محدد'], ['الراتب الأساسي', S.money(r.basic_salary)], ['البدلات', S.money(r.allowances)], ['الحالة', r.status === 'terminated' ? 'منتهٍ' : S.ST.license[r.state][0]], ['المرفق', r.attachment ? `<a class="lk" target="_blank" href="${esc(r.attachment)}">فتح</a>` : '—'], ['ملاحظات', esc(r.notes || '—')]],
-    exportCols: [{ l: 'رقم العقد', v: (r) => r.number }, { l: 'الموظف', v: (r) => r.employee?.name }, { l: 'النوع', v: (r) => CTYPE[r.type] }, { l: 'البداية', v: (r) => S.d(r.start_date) }, { l: 'النهاية', v: (r) => S.d(r.end_date) }, { l: 'الراتب', v: (r) => +r.basic_salary + +r.allowances }, { l: 'الحالة', v: (r) => r.status }],
+    viewFields: (r) => [['رقم العقد', esc(r.number)], ['الموظف', esc(S.enName(r.employee))], ['النوع', CTYPE[r.type]], ['البداية', S.d(r.start_date)], ['النهاية', S.d(r.end_date) || 'غير محدد'], ['الراتب الأساسي', S.money(r.basic_salary)], ['البدلات', S.money(r.allowances)], ['الحالة', r.status === 'terminated' ? 'منتهٍ' : S.ST.license[r.state][0]], ['المرفق', r.attachment ? `<a class="lk" target="_blank" href="${esc(r.attachment)}">فتح</a>` : '—'], ['ملاحظات', esc(r.notes || '—')]],
+    exportCols: [{ l: 'رقم العقد', v: (r) => r.number }, { l: 'الموظف', v: (r) => S.enName(r.employee) }, { l: 'النوع', v: (r) => CTYPE[r.type] }, { l: 'البداية', v: (r) => S.d(r.start_date) }, { l: 'النهاية', v: (r) => S.d(r.end_date) }, { l: 'الراتب', v: (r) => +r.basic_salary + +r.allowances }, { l: 'الحالة', v: (r) => r.status }],
   }));
   S.page('employee-contract-form', S.formPage({
     api: '/app/employee-contracts', title: 'عقود الموظفين', singular: 'عقد موظف', perm: 'hr', backTo: 'employee-contracts', lookups: ['employees'],
     fields: contractFields,
     newDefaults: () => ({ type: 'permanent', status: 'active', start_date: S.today() }),
     toPayload: (v) => { if (v instanceof FormData) return v; const f = new FormData(); Object.entries(v).forEach(([k, x]) => x != null && f.append(k, typeof x === 'boolean' ? (x ? 1 : 0) : x)); return f; },
-    context: (r) => r ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('contract')} ملخص العقد</div>${S.kv([['رقم العقد', `<span class="num">${esc(r.number || '—')}</span>`], ['الموظف', esc(r.employee?.name || '—')], ['إجمالي الراتب', S.moneyT(+(r.basic_salary || 0) + +(r.allowances || 0))], ['الحالة', r.status === 'terminated' ? 'منتهٍ' : (S.ST.license[r.state] ? S.ST.license[r.state][0] : '—')]])}${r.attachment ? `<a class="btn ghost sm mt8" target="_blank" href="${esc(r.attachment)}">${ic('file')} فتح نسخة العقد</a>` : ''}</div>`
+    context: (r) => r ? `<div class="card pad"><div class="sec-t" style="margin-top:0">${ic('contract')} ملخص العقد</div>${S.kv([['رقم العقد', `<span class="num">${esc(r.number || '—')}</span>`], ['الموظف', esc(S.enName(r.employee) || '—')], ['إجمالي الراتب', S.moneyT(+(r.basic_salary || 0) + +(r.allowances || 0))], ['الحالة', r.status === 'terminated' ? 'منتهٍ' : (S.ST.license[r.state] ? S.ST.license[r.state][0] : '—')]])}${r.attachment ? `<a class="btn ghost sm mt8" target="_blank" href="${esc(r.attachment)}">${ic('file')} فتح نسخة العقد</a>` : ''}</div>`
       : `<div class="card pad"><p class="muted sm">${ic('contract')} اختر الموظف وحدّد نوع العقد ومدته وراتبه التعاقدي، وأرفق نسخة العقد. يُولّد رقم العقد تلقائياً عند الحفظ.</p></div>`,
   }));
 
@@ -46,16 +46,16 @@
   S.page('evaluation-criteria', S.crud({
     title: 'معايير التقييم', singular: 'معيار', api: '/app/evaluation-criteria', perm: 'hr', icon: 'sliders', invalidate: ['eval_criteria'], search: false,
     intro: '<p class="t2 mb16">معايير تقييم أداء الموظفين. «الوزن» نسبة مساهمة المعيار في الدرجة النهائية (يُفضّل أن يساوي المجموع 100%).</p>',
-    columns: [{ l: 'المعيار', s: true, v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'الوزن', v: (r) => `<span class="num">${S.fmtN(r.weight, 0)}%</span>` }, { l: 'الدرجة العظمى', v: (r) => cell.num(S.fmtN(r.max_score, 0)) }, { l: 'الترتيب', v: (r) => cell.num(r.sort) }],
-    fields: () => [{ k: 'name', l: 'اسم المعيار', req: true, full: true }, { k: 'weight', l: 'الوزن %', t: 'number', min: 0, max: 100, def: 20 }, { k: 'max_score', l: 'الدرجة العظمى', t: 'number', min: 1, def: 100 }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 }],
+    columns: [{ l: 'المعيار', s: true, v: (r) => `<b>${esc(S.enName(r))}</b>` }, { l: 'الوزن', v: (r) => `<span class="num">${S.fmtN(r.weight, 0)}%</span>` }, { l: 'الدرجة العظمى', v: (r) => cell.num(S.fmtN(r.max_score, 0)) }, { l: 'الترتيب', v: (r) => cell.num(r.sort) }],
+    fields: () => [{ k: 'name', l: 'اسم المعيار', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr', full: true }, { k: 'weight', l: 'الوزن %', t: 'number', min: 0, max: 100, def: 20 }, { k: 'max_score', l: 'الدرجة العظمى', t: 'number', min: 1, def: 100 }, { k: 'sort', l: 'الترتيب', t: 'number', min: 0 }],
     foot: (rows) => `<tr><td class="s">مجموع الأوزان</td><td class="num ${Math.round(rows.reduce((a, r) => a + +r.weight, 0)) === 100 ? 'ok-t' : 'warn-t'} b">${S.fmtN(rows.reduce((a, r) => a + +r.weight, 0), 0)}%</td><td colspan="2"></td></tr>`,
   }));
 
   // ---------------------------------------------------------------- evaluation periods
   S.page('evaluation-periods', S.crud({
     title: 'فترات التقييم', singular: 'فترة تقييم', api: '/app/evaluation-periods', perm: 'hr', icon: 'calendar', invalidate: ['eval_periods'], search: 'بحث...',
-    columns: [{ l: 'الفترة', s: true, v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'من', v: (r) => cell.num(S.d(r.from_date)) }, { l: 'إلى', v: (r) => cell.num(S.d(r.to_date)) }, { l: 'التقييمات', v: (r) => cell.cnt(r.evaluations_count) }, { l: 'الحالة', v: (r) => (r.status === 'open' ? '<span class="bdg ok">مفتوحة</span>' : '<span class="bdg mut">مغلقة</span>') }],
-    fields: () => [{ k: 'name', l: 'اسم الفترة', req: true, full: true }, { k: 'from_date', l: 'من تاريخ', t: 'date' }, { k: 'to_date', l: 'إلى تاريخ', t: 'date' }, { k: 'status', l: 'الحالة', t: 'select', opts: [['open', 'مفتوحة'], ['closed', 'مغلقة']], def: 'open' }],
+    columns: [{ l: 'الفترة', s: true, v: (r) => `<b>${esc(S.enName(r))}</b>` }, { l: 'من', v: (r) => cell.num(S.d(r.from_date)) }, { l: 'إلى', v: (r) => cell.num(S.d(r.to_date)) }, { l: 'التقييمات', v: (r) => cell.cnt(r.evaluations_count) }, { l: 'الحالة', v: (r) => (r.status === 'open' ? '<span class="bdg ok">مفتوحة</span>' : '<span class="bdg mut">مغلقة</span>') }],
+    fields: () => [{ k: 'name', l: 'اسم الفترة', req: true, full: true }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'from_date', l: 'من تاريخ', t: 'date' }, { k: 'to_date', l: 'إلى تاريخ', t: 'date' }, { k: 'status', l: 'الحالة', t: 'select', opts: [['open', 'مفتوحة'], ['closed', 'مغلقة']], def: 'open' }],
     newDefaults: () => ({ status: 'open' }),
   }));
 
@@ -112,7 +112,7 @@
         catch (e) { if (!(S.local && S.local.evalList && S.local.isOfflineError(e))) { $('#list').innerHTML = S.emptyHtml('تعذّر تحميل التقييمات', e.message, 'alert'); return; } d = await S.local.evalList(st.period_id, st.q); }
         rows = d.data;
         $('#list').innerHTML = rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الموظف</th><th>الفترة</th><th>التاريخ</th><th>النتيجة</th><th>التقدير</th><th>المقيّم</th><th>الإجراءات</th></tr></thead><tbody>
-          ${rows.map((r, i) => { const g = gradeOf(+r.total_score); return `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(r.employee?.name)}<div class="muted xs num">${esc(r.employee?.number || '')}</div></td><td>${esc(r.period?.name || '')}</td><td class="num">${S.d(r.date)}</td><td class="num b" style="color:${g.color}">${S.fmtN(r.total_score, 1)}%</td><td>${gBadge(g)}</td><td>${esc(r.evaluator?.name || '—')}</td><td><div class="acts"><button class="ibtn v" data-v="${i}" title="عرض">${ic('eye')}</button><button class="ibtn e" data-e="${i}" title="تعديل">${ic('edit')}</button><button class="ibtn d" data-d="${r.id}" title="حذف">${ic('trash')}</button></div></td></tr>`; }).join('')}
+          ${rows.map((r, i) => { const g = gradeOf(+r.total_score); return `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(S.enName(r.employee))}<div class="muted xs num">${esc(r.employee?.number || '')}</div></td><td>${esc(S.enName(r.period) || '')}</td><td class="num">${S.d(r.date)}</td><td class="num b" style="color:${g.color}">${S.fmtN(r.total_score, 1)}%</td><td>${gBadge(g)}</td><td>${esc(S.enName(r.evaluator) || '—')}</td><td><div class="acts"><button class="ibtn v" data-v="${i}" title="عرض">${ic('eye')}</button><button class="ibtn e" data-e="${i}" title="تعديل">${ic('edit')}</button><button class="ibtn d" data-d="${r.id}" title="حذف">${ic('trash')}</button></div></td></tr>`; }).join('')}
           </tbody></table></div>` : S.emptyHtml('لا توجد تقييمات في هذه الفترة', 'اضغط «تقييم موظف» للبدء', 'star');
         $('#list').querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => viewEval(rows[+b.dataset.v].id)));
         $('#list').querySelectorAll('[data-e]').forEach((b) => (b.onclick = () => { const r = rows[+b.dataset.e]; evalForm(lk, r.employee_id, r.period_id, load); }));
@@ -126,7 +126,7 @@
         if (!e && S.local && S.local.evaluation) e = await S.local.evaluation(id, gradeOf);
         if (!e) { m.body.innerHTML = S.emptyHtml('لا توجد نسخة محفوظة من هذا التقييم على الجهاز'); return; }
         const scByC = {}; (e.scores || []).forEach((s) => (scByC[s.criterion_id] = s));
-        m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(e.employee?.name))}</span><div class="grow"><h3>${esc(e.employee?.name)}</h3><div class="muted">${esc(e.period?.name || '')} · ${S.d(e.date)}</div></div><div style="text-align:center"><div class="v" style="font-family:var(--head);font-size:24px;font-weight:700;color:${e.grade_info.color}">${S.fmtN(e.total_score, 1)}%</div>${gBadge(e.grade_info)}</div></div>
+        m.body.innerHTML = `<div class="profile-h"><span class="avatar">${esc(S.initials(S.enName(e.employee)))}</span><div class="grow"><h3>${esc(S.enName(e.employee))}</h3><div class="muted">${esc(S.enName(e.period) || '')} · ${S.d(e.date)}</div></div><div style="text-align:center"><div class="v" style="font-family:var(--head);font-size:24px;font-weight:700;color:${e.grade_info.color}">${S.fmtN(e.total_score, 1)}%</div>${gBadge(e.grade_info)}</div></div>
           <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="s">المعيار</th><th>الوزن</th><th>الدرجة</th><th>النسبة</th><th class="s">ملاحظة</th></tr></thead><tbody>
           ${e.criteria.map((c) => { const sc = scByC[c.id]; const pct = sc ? (sc.score / c.max_score) * 100 : null; return `<tr><td class="s b">${esc(c.name)}</td><td class="num">${S.fmtN(c.weight, 0)}%</td><td class="num">${sc ? S.fmtN(sc.score, 1) + ' / ' + S.fmtN(c.max_score, 0) : '—'}</td><td class="num">${pct != null ? S.fmtN(pct, 0) + '%' : '—'}</td><td class="s muted">${esc(sc?.note || '')}</td></tr>`; }).join('')}
           </tbody></table></div>${e.notes ? `<p class="t2 mt16"><b>ملاحظات:</b> ${esc(e.notes)}</p>` : ''}`;
@@ -137,7 +137,7 @@
       };
       $('#per').onchange = (e) => { st.period_id = e.target.value; load(); };
       $('#q').oninput = S.debounce((e) => { st.q = e.target.value; load(); }, 350);
-      $('#ex').onclick = () => S.exportXlsx('التقييمات', [{ l: 'الموظف', v: (r) => r.employee?.name }, { l: 'الفترة', v: (r) => r.period?.name }, { l: 'التاريخ', v: (r) => S.d(r.date) }, { l: 'النتيجة', v: (r) => +r.total_score }, { l: 'التقدير', v: (r) => r.grade }], rows);
+      $('#ex').onclick = () => S.exportXlsx('التقييمات', [{ l: 'الموظف', v: (r) => S.enName(r.employee) }, { l: 'الفترة', v: (r) => S.enName(r.period) }, { l: 'التاريخ', v: (r) => S.d(r.date) }, { l: 'النتيجة', v: (r) => +r.total_score }, { l: 'التقدير', v: (r) => r.grade }], rows);
       await load();
     },
   });

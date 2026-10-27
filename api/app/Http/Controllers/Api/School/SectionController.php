@@ -15,7 +15,7 @@ class SectionController extends ResourceController
 
     protected array $filters = ['grade_id'];
 
-    protected array $with = ['grade:id,name_ar,name_en,sort', 'teacher:id,name'];
+    protected array $with = ['grade:id,name_ar,name_en,sort', 'teacher:id,name,name_en'];
 
     protected array $withCount = ['students'];
 
@@ -37,6 +37,7 @@ class SectionController extends ResourceController
             'name_en'    => ['nullable', 'string', 'max:80'],
             'capacity'   => ['nullable', 'integer', 'min:0'],
             'room'       => ['nullable', 'string', 'max:80'],
+            'room_en'    => ['nullable', 'string', 'max:80'],
             'teacher_id' => ['nullable', 'integer', $this->owned('employees')],
         ];
     }

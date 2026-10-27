@@ -27,12 +27,16 @@ class BusController extends ResourceController
         return [
             'number'          => [$record ? 'sometimes' : 'required', 'string', 'max:40'],
             'type'            => ['nullable', 'string', 'max:60'],
+            'type_en'         => ['nullable', 'string', 'max:60'],
             'driver_name'     => ['nullable', 'string', 'max:120'],
+            'driver_name_en'  => ['nullable', 'string', 'max:120'],
+            'supervisor_name_en' => ['nullable', 'string', 'max:120'],
             'driver_phone'    => ['nullable', 'string', 'max:40'],
             'supervisor_name' => ['nullable', 'string', 'max:120'],
             'capacity'        => ['nullable', 'integer', 'min:0'],
             'price'           => ['nullable', 'numeric', 'min:0'],
             'route'           => ['nullable', 'string', 'max:255'],
+            'route_en'        => ['nullable', 'string', 'max:255'],
             'photo'           => ['nullable', 'image', 'max:5120'], // optional bus photo (≤5MB)
             'remove_photo'    => ['nullable', 'boolean'],
         ];

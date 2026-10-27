@@ -41,12 +41,12 @@
     title: 'الشعب', singular: 'شعبة', api: '/app/sections', perm: 'school', year: true, icon: 'columns', lookups: ['grades', 'teachers'], invalidate: ['sections'],
     filters: [{ k: 'grade_id', l: 'الصف', opts: gradeOpts }],
     columns: [
-      { l: 'الصف', v: (r) => esc(r.grade?.name_ar) }, { l: 'الشعبة', v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'القاعة', v: (r) => esc(r.room || '—') },
-      { l: 'رائد الفصل', v: (r) => esc(r.teacher?.name || '—') },
+      { l: 'الصف', v: (r) => esc(r.grade?.name_ar) }, { l: 'الشعبة', v: (r) => `<b>${esc(r.name)}</b>` }, { l: 'القاعة', v: (r) => esc(S.enT(r.room, r.room_en) || '—') },
+      { l: 'رائد الفصل', v: (r) => esc(S.enName(r.teacher) || '—') },
       { l: 'الطلاب / السعة', v: (r) => `<span class="num">${r.students_count} / ${r.capacity}</span>` },
       { l: 'الإشغال', v: (r) => S.prog(r.capacity ? Math.round((r.students_count * 100) / r.capacity) : 0) },
     ],
-    fields: (lk) => [{ k: 'grade_id', l: 'الصف', t: 'select', req: true, opts: gradeOpts(lk) }, { k: 'name', l: 'اسم الشعبة', req: true, ph: 'شعبة أ' }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'capacity', l: 'السعة', t: 'number', min: 0, def: 30 }, { k: 'room', l: 'القاعة' }, { k: 'teacher_id', l: 'رائد الفصل', t: 'select', opts: (lk.teachers || []).map((t) => [t.id, t.name]) }],
+    fields: (lk) => [{ k: 'grade_id', l: 'الصف', t: 'select', req: true, opts: gradeOpts(lk) }, { k: 'name', l: 'اسم الشعبة', req: true, ph: 'شعبة أ' }, { k: 'name_en', l: 'الاسم بالإنجليزية', dir: 'ltr' }, { k: 'capacity', l: 'السعة', t: 'number', min: 0, def: 30 }, { k: 'room', l: 'القاعة' }, { k: 'room_en', l: 'القاعة بالإنجليزية', dir: 'ltr' }, { k: 'teacher_id', l: 'رائد الفصل', t: 'select', opts: (lk.teachers || []).map((t) => [t.id, S.enName(t)]) }],
     rowActions: [{ ic: 'calCheck', cls: 'g', t: 'تسجيل الحضور', run: (r) => (location.hash = '#/attendance?section_id=' + r.id) }, { ic: 'users', cls: 'v', t: 'الطلاب', run: (r) => (location.hash = '#/students?section_id=' + r.id) }],
     newDefaults: (st) => ({ grade_id: st.f.grade_id, capacity: 30 }),
   }));
@@ -55,14 +55,14 @@
   const printBus = async (r) => {
     const d = await S.get(`/app/buses/${r.id}/students`);
     S.print('كشف ركاب الحافلة ' + r.number, `<h2>كشف ركاب الحافلة رقم ${esc(r.number)}</h2>
-      <div class="kv"><div><span>نوع الحافلة</span><b>${esc(r.type || '—')}</b></div><div><span>السائق</span><b>${esc(r.driver_name || '—')} — ${esc(r.driver_phone || '')}</b></div><div><span>المشرف</span><b>${esc(r.supervisor_name || '—')}</b></div><div><span>خط السير</span><b>${esc(r.route || '—')}</b></div><div><span>عدد الركاب</span><b>${d.students.length} / ${r.capacity}</b></div></div>
+      <div class="kv"><div><span>نوع الحافلة</span><b>${esc(S.enT(r.type, r.type_en) || '—')}</b></div><div><span>السائق</span><b>${esc(S.enT(r.driver_name, r.driver_name_en) || '—')} — ${esc(r.driver_phone || '')}</b></div><div><span>المشرف</span><b>${esc(S.enT(r.supervisor_name, r.supervisor_name_en) || '—')}</b></div><div><span>خط السير</span><b>${esc(S.enT(r.route, r.route_en) || '—')}</b></div><div><span>عدد الركاب</span><b>${d.students.length} / ${r.capacity}</b></div></div>
       <table><thead><tr><th>#</th><th>اسم الطالب</th><th>الصف / الشعبة</th><th>ولي الأمر</th><th>الجوال</th><th>توقيع</th></tr></thead><tbody>${d.students.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(S.enName(s))}</td><td>${esc(S.gs(s, ''))}</td><td>${esc(S.enName(s.guardian))}</td><td>${esc(s.guardian?.phone || '')}</td><td style="width:90px"></td></tr>`).join('')}</tbody></table>`);
   };
   const busFields = (lk, row) => [
     { t: 'sec', l: 'بيانات الحافلة' },
-    { k: 'number', l: 'رقم الحافلة / رقم اللوحة', req: true, dir: 'ltr' }, { k: 'type', l: 'نوع الحافلة', ph: 'باص 26 راكب' }, { k: 'capacity', l: 'عدد الركاب (السعة)', t: 'number', min: 0 }, { k: 'route', l: 'خط السير / المسار', full: true },
+    { k: 'number', l: 'رقم الحافلة / رقم اللوحة', req: true, dir: 'ltr' }, { k: 'type', l: 'نوع الحافلة', ph: 'باص 26 راكب' }, { k: 'type_en', l: 'النوع بالإنجليزية', dir: 'ltr' }, { k: 'capacity', l: 'عدد الركاب (السعة)', t: 'number', min: 0 }, { k: 'route', l: 'خط السير / المسار', full: true }, { k: 'route_en', l: 'خط السير بالإنجليزية', dir: 'ltr', full: true },
     { t: 'sec', l: 'السائق والمشرف' },
-    { k: 'driver_name', l: 'اسم السائق' }, { k: 'driver_phone', l: 'هاتف السائق', t: 'tel' }, { k: 'supervisor_name', l: 'المشرف/ة' },
+    { k: 'driver_name', l: 'اسم السائق' }, { k: 'driver_name_en', l: 'اسم السائق بالإنجليزية', dir: 'ltr' }, { k: 'driver_phone', l: 'هاتف السائق', t: 'tel' }, { k: 'supervisor_name', l: 'المشرف/ة' }, { k: 'supervisor_name_en', l: 'المشرف بالإنجليزية', dir: 'ltr' },
     { t: 'sec', l: 'الرسوم' },
     { k: 'price', l: 'السعر السنوي المتفق عليه', t: 'money' },
     { t: 'sec', l: 'صورة الحافلة (اختياري)' },
@@ -72,8 +72,8 @@
   S.page('buses', S.crud({
     title: 'الحافلات', singular: 'حافلة', api: '/app/buses', perm: 'school', year: true, icon: 'bus', invalidate: ['buses'], editPage: 'bus-form',
     columns: [
-      { l: 'رقم الحافلة', v: (r) => `<b class="num">${esc(r.number)}</b>` }, { l: 'نوع الحافلة', v: (r) => esc(r.type || '—') }, { l: 'السائق', v: (r) => esc(r.driver_name || '—') },
-      { l: 'هاتف السائق', v: (r) => cell.phone(r.driver_phone) }, { l: 'خط السير', v: (r) => `<span class="sm t2">${esc(r.route || '—')}</span>` }, { l: 'عدد الركاب', v: (r) => cell.num(r.capacity) },
+      { l: 'رقم الحافلة', v: (r) => `<b class="num">${esc(r.number)}</b>` }, { l: 'نوع الحافلة', v: (r) => esc(S.enT(r.type, r.type_en) || '—') }, { l: 'السائق', v: (r) => esc(S.enT(r.driver_name, r.driver_name_en) || '—') },
+      { l: 'هاتف السائق', v: (r) => cell.phone(r.driver_phone) }, { l: 'خط السير', v: (r) => `<span class="sm t2">${esc(S.enT(r.route, r.route_en) || '—')}</span>` }, { l: 'عدد الركاب', v: (r) => cell.num(r.capacity) },
       { l: 'الطلاب', v: (r) => `<a href="#/students?bus_id=${r.id}">${cell.cnt(r.students_count, 'r')}</a>` }, { l: 'السعر المتفق عليه', v: (r) => S.money(r.price) },
     ],
     rowActions: [{ ic: 'printer', cls: 'p', t: 'طباعة كشف الركاب', run: printBus }],
@@ -155,7 +155,7 @@
     { k: 'gender', l: 'الجنس', t: 'select', req: true, opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' }, { k: 'nationality', l: 'الجنسية', t: 'select', opts: natOpts, def: 'عماني' }, { k: 'blood_type', l: 'فصيلة الدم', t: 'select', opts: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((b) => [b, b]) },
     { t: 'sec', l: 'التسجيل' },
     { k: 'guardian_id', l: 'ولي الأمر', t: 'select', opts: (lk.guardians || []).map((g) => [g.id, S.enName(g) + (g.phone ? ' — ' + g.phone : '')]), help: 'غير موجود؟ أضفه من شاشة أولياء الأمور أولاً' },
-    { k: 'section_id', l: 'الصف / الشعبة', t: 'select', opts: sectionOpts(lk) }, { k: 'bus_id', l: 'الحافلة', t: 'select', blank: 'بدون حافلة', opts: (lk.buses || []).map((b) => [b.id, b.number + (b.type ? ' — ' + b.type : '')]) },
+    { k: 'section_id', l: 'الصف / الشعبة', t: 'select', opts: sectionOpts(lk) }, { k: 'bus_id', l: 'الحافلة', t: 'select', blank: 'بدون حافلة', opts: (lk.buses || []).map((b) => [b.id, b.number + (b.type ? ' — ' + S.enT(b.type, b.type_en) : '')]) },
     { k: 'status', l: 'الحالة', t: 'select', req: true, opts: S.opts(S.ST.student), def: 'active' }, { k: 'registered_at', l: 'تاريخ التسجيل', t: 'date', def: S.today() }, { k: 'student_no', l: 'الرقم المدرسي', dir: 'ltr', ph: 'يُولّد تلقائياً' },
     ...(customFieldSpecs(lk, 'student').length ? [{ t: 'sec', l: 'حقول مخصّصة' }, ...customFieldSpecs(lk, 'student')] : []),
     { t: 'sec', l: 'صورة الطالب (اختياري)' },
@@ -360,7 +360,7 @@
           const opts = ['present', 'absent', 'late', 'excused'];
           const draw = () => {
             const c = (k) => st.filter((s) => s.status === k).length;
-            sh.innerHTML = `<div class="toolbar"><span class="bdg ${d.saved ? 'l-ok' : 'l-warn'}">${d.saved ? 'تم تسجيل الحضور مسبقاً — يمكنك التعديل' : 'لم يُسجّل بعد'}</span><span class="bdg l-ok">حاضر ${c('present')}</span><span class="bdg l-bad">غائب ${c('absent')}</span><span class="bdg l-warn">متأخر ${c('late')}</span><span class="bdg l-info">بعذر ${c('excused')}</span><div class="sp"></div><button class="btn ghost sm" id="allp">${ic('check')} الكل حاضر</button><button class="btn success" id="save">${ic('check')} حفظ الحضور</button></div>
+            sh.innerHTML = `<div class="toolbar"><span class="bdg ${d.saved ? 'l-ok' : 'l-warn'}">${d.saved ? 'تم تسجيل الحضور مسبقاً — يمكنك التعديل' : 'لم يُسجّل بعد'}</span><span class="bdg l-ok">${S.isEn()?'Present':'حاضر'} ${c('present')}</span><span class="bdg l-bad">${S.isEn()?'Absent':'غائب'} ${c('absent')}</span><span class="bdg l-warn">${S.isEn()?'Late':'متأخر'} ${c('late')}</span><span class="bdg l-info">${S.isEn()?'Excused':'بعذر'} ${c('excused')}</span><div class="sp"></div><button class="btn ghost sm" id="allp">${ic('check')} الكل حاضر</button><button class="btn success" id="save">${ic('check')} حفظ الحضور</button></div>
               <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th class="s">الطالب</th><th>الرقم المدرسي</th><th>الحالة</th><th>ملاحظة</th></tr></thead><tbody>${st.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="s b">${esc(S.enName(s))}</td><td class="num muted">${esc(s.student_no || '')}</td><td><div class="att-opts">${opts.map((o) => `<button data-i="${i}" data-s="${o}" class="${o} ${s.status === o ? 'on' : ''}">${S.ST.att[o][0]}</button>`).join('')}</div></td><td><input class="inp" style="height:32px;min-width:160px" data-n="${i}" value="${esc(s.note || '')}" placeholder="—"></td></tr>`).join('')}</tbody></table></div>`;
             sh.querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => { st[+b.dataset.i].status = b.dataset.s; draw(); }));
             sh.querySelectorAll('[data-n]').forEach((inp) => (inp.oninput = () => (st[+inp.dataset.n].note = inp.value)));

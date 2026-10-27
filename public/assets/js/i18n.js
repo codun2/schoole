@@ -62,6 +62,16 @@
   }
   S.i18nApply = () => translateRoot(document.body);
 
+  /** Merge extra Arabic→English pairs (e.g. the school's own subject/grade names) into the dictionary.
+   *  Existing keys (the static UI dictionary) are kept, so data names only fill gaps. */
+  S.i18nMerge = function (extra) {
+    if (!extra || typeof extra !== 'object') return;
+    const d = (window.SCH_DICT = window.SCH_DICT || {});
+    let added = false;
+    for (const k in extra) { if (extra[k] && !(k in d)) { d[k] = extra[k]; added = true; } }
+    if (added && S.isEn()) translateRoot(document.body);
+  };
+
   function applyDir() {
     const en = S.isEn();
     document.documentElement.lang = en ? 'en' : 'ar';

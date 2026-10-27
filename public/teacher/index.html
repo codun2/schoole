@@ -44,6 +44,7 @@
     <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/students" data-r="students">طلابي</a><a href="#/marks" data-r="marks">رصد الدرجات</a><a href="#/assignments" data-r="assignments">الواجبات والاختبارات</a><a href="#/attendance" data-r="attendance">الحضور</a><a href="#/reports" data-r="reports">التقارير</a></div><div id="v"><div class="spin"></div></div></div>`;
   document.getElementById('mode').onclick = S.toggleMode;
   const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
+  S.i18nMerge && S.i18nMerge(me && me.dict);
   S.i18nStart && S.i18nStart();
   document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
   const v = document.getElementById('v');

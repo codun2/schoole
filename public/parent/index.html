@@ -36,6 +36,7 @@
   document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة ولي الأمر — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="lng" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button><button class="tbtn" id="mode">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div><div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/payments" data-r="payments">المدفوعات</a></div><div id="v"></div></div>`;
   document.getElementById('mode').onclick = S.toggleMode;
   const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
+  S.i18nMerge && S.i18nMerge(me && me.dict);
   S.i18nStart && S.i18nStart();
   document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
   const v = document.getElementById('v');

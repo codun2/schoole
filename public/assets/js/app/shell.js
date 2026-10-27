@@ -102,6 +102,7 @@
     S.applyTheme();
     if (!localStorage.getItem('sch_year') && me.company) localStorage.setItem('sch_year', me.company.current_year_id || '');
     renderShell(me);
+    S.i18nMerge && S.i18nMerge(me && me.dict);
     S.i18nStart && S.i18nStart();
     window.addEventListener('hashchange', route);
     route();

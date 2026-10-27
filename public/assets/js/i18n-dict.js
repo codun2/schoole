@@ -1727,4 +1727,12 @@ window.SCH_DICT = {
   'رجوع لأبنائي': 'Back to my children',
   'اختر تبويباً من الأعلى لعرض تفاصيل المتابعة': 'Pick a tab above to view monitoring details',
   'الرسوم والأقساط': 'Fees & Installments',
+
+  // ---- section labels
+  'شعبة أ': 'Section A',
+  'شعبة ب': 'Section B',
+  'شعبة ج': 'Section C',
+  'شعبة د': 'Section D',
+  'شعبة هـ': 'Section E',
+  'شعبة و': 'Section F',
 };

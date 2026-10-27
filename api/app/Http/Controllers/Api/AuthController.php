@@ -137,6 +137,22 @@ class AuthController extends Controller
                 'trial_ends_at' => $company->trial_ends_at,
                 'current_year_id' => $company->currentYearId(),
             ] : null,
+            // the school's own data names (subjects/grades) as Arabic→English pairs, merged into the
+            // translation dictionary so these DB values render in English too (respecting custom name_en).
+            'dict' => $company ? $this->nameDict($company->id) : (object) [],
         ];
+    }
+
+    private function nameDict(int $companyId): object
+    {
+        $map = [];
+        foreach (\App\Models\Subject::withoutGlobalScopes()->where('company_id', $companyId)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $s) {
+            $map[$s->name_ar] = $s->name_en;
+        }
+        foreach (\App\Models\Grade::withoutGlobalScopes()->where('company_id', $companyId)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $g) {
+            $map[$g->name_ar] = $g->name_en;
+        }
+
+        return (object) $map;
     }
 }

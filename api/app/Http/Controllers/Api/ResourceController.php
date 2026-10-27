@@ -94,7 +94,7 @@ abstract class ResourceController extends Controller
         $data = $request->validate($this->rules($request, null));
 
         $record = DB::transaction(function () use ($data, $request) {
-            $data = $this->prepare($data, $request, null);
+            $data = $this->coerceDefaults($this->prepare($data, $request, null));
             $record = new $this->model;
             $record->fill($data);
             if ($this->yearScoped && empty($record->academic_year_id)) {
@@ -117,7 +117,7 @@ abstract class ResourceController extends Controller
         $data = $request->validate($this->rules($request, $record));
 
         DB::transaction(function () use ($data, $request, $record) {
-            $data = $this->prepare($data, $request, $record);
+            $data = $this->coerceDefaults($this->prepare($data, $request, $record));
             $record->fill($data)->save();
             $this->afterSave($record, $request, false);
         });
@@ -194,6 +194,17 @@ abstract class ResourceController extends Controller
     }
 
     protected function extraFilters(Builder $query, Request $request): void {}
+
+    /** Forms submit an empty "order" box as null; `sort` columns are NOT NULL DEFAULT 0, and an explicit
+     *  null bypasses the default and fails the insert — so coerce it before fill(). */
+    private function coerceDefaults(array $data): array
+    {
+        if (array_key_exists('sort', $data) && $data['sort'] === null) {
+            $data['sort'] = 0;
+        }
+
+        return $data;
+    }
 
     protected function prepare(array $data, Request $request, ?Model $record): array
     {

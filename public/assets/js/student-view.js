@@ -20,10 +20,10 @@
       const cell = (dy, p) => { const e = byKey[dy + '-' + p]; const bg = hot(dy) ? ' style="background:var(--accent-soft)"' : ''; if (!e) return `<td${bg} class="muted">·</td>`; return `<td${bg}><b class="sm">${esc(e.subject || '—')}</b>${e.teacher ? `<div class="muted xs">${esc(e.teacher)}</div>` : ''}${e.room ? `<div class="muted xs">${esc(e.room)}</div>` : ''}</td>`; };
       return `<div class="card"><div class="tbl-wrap"><table class="tbl" style="text-align:center"><thead><tr><th>الحصة</th>${days.map((dy) => `<th${hot(dy) ? ' style="background:var(--accent-soft);color:var(--accent)"' : ''}>${esc(d.day_names[dy])}${hot(dy) ? ' <span class="xs">(اليوم)</span>' : ''}</th>`).join('')}</tr></thead><tbody>${Array.from({ length: d.periods }, (_, i) => i + 1).map((p) => `<tr><td class="num b">${p}</td>${days.map((dy) => cell(dy, p)).join('')}</tr>`).join('')}</tbody></table></div></div>`;
     },
-    attendance(a) {
+    attendance(a, o = {}) {
       const t = (a && a.totals) || {};
-      return `<div class="grid g4 mb16">${stat('c-green', 'check', S.num(t.present || 0), 'حضور')}${stat('c-red', 'x', S.num(t.absent || 0), 'غياب')}${stat('c-amber', 'clock', S.num(t.late || 0), 'تأخير')}${stat('c-blue', 'calCheck', t.rate != null ? S.fmtN(t.rate, 1) + '%' : '—', 'نسبة الحضور')}</div>
-        ${(a && a.rows && a.rows.length) ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>الحالة</th><th class="s">ملاحظة</th></tr></thead><tbody>${a.rows.map((r) => `<tr><td class="num">${S.d(r.date)}</td><td>${S.badge(ATT, r.status)}</td><td class="s muted sm">${esc(r.note || '—')}</td></tr>`).join('')}</tbody></table></div></div>` : S.emptyHtml('لا يوجد سجل حضور في هذه الفترة', '', 'calCheck')}`;
+      const stats = o.stats === false ? '' : `<div class="grid g4 mb16">${stat('c-green', 'check', S.num(t.present || 0), 'حضور')}${stat('c-red', 'x', S.num(t.absent || 0), 'غياب')}${stat('c-amber', 'clock', S.num(t.late || 0), 'تأخير')}${stat('c-blue', 'calCheck', t.rate != null ? S.fmtN(t.rate, 1) + '%' : '—', 'نسبة الحضور')}</div>`;
+      return `${stats}${(a && a.rows && a.rows.length) ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>الحالة</th><th class="s">ملاحظة</th></tr></thead><tbody>${a.rows.map((r) => `<tr><td class="num">${S.d(r.date)}</td><td>${S.badge(ATT, r.status)}</td><td class="s muted sm">${esc(r.note || '—')}</td></tr>`).join('')}</tbody></table></div></div>` : S.emptyHtml('لا يوجد سجل حضور في هذه الفترة', '', 'calCheck')}`;
     },
     reportCard(r) {
       if (!r || !r.rows || !r.rows.some((x) => x.percent != null)) return S.emptyHtml('لا توجد درجات مرصودة بعد', '', 'book');

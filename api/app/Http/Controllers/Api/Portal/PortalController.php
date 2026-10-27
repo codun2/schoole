@@ -12,9 +12,10 @@ use App\Models\StudentAttendance;
 use App\Models\TimetableEntry;
 use App\Http\Controllers\Api\School\MarkController;
 use App\Models\Voucher;
+use App\Support\StudentView;
 use Illuminate\Http\Request;
 
-/** Parent portal: a guardian sees only their own children and their family's finances. */
+/** Parent portal: a guardian sees only their own children; what it shows is controlled by the school admin. */
 class PortalController extends Controller
 {
     private function guardian(Request $request): Guardian
@@ -22,30 +23,41 @@ class PortalController extends Controller
         return Guardian::where('user_id', $request->user()->id)->firstOrFail();
     }
 
+    /** Which sections the school lets parents see (all on by default). */
+    private function view(Request $request): array
+    {
+        $pv = $request->user()->company->settings['parent_view'] ?? [];
+        $on = fn ($k) => (bool) ($pv[$k] ?? true);
+
+        return ['grades' => $on('grades'), 'attendance' => $on('attendance'), 'assignments' => $on('assignments'), 'timetable' => $on('timetable'), 'finance' => $on('finance')];
+    }
+
     public function home(Request $request)
     {
         $g = $this->guardian($request);
+        $view = $this->view($request);
         $children = Student::with(['grade:id,name_ar', 'section:id,name', 'bus:id,number,driver_name,driver_phone'])
             ->where('guardian_id', $g->id)->whereIn('status', ['active', 'pending', 'suspended'])->orderBy('name')->get();
-        $contracts = Contract::where('guardian_id', $g->id)->whereIn('status', ['active', 'completed']);
-        $nextDue = Installment::whereIn('contract_id', (clone $contracts)->pluck('id'))->where('status', '!=', 'paid')->orderBy('due_date')->first();
+        $children->each(fn ($s) => $s->monitor = StudentView::badges($s)); // attendance %, absences, pending homework, upcoming exams
 
-        $children->each(function ($s) {
-            $att = StudentAttendance::where('student_id', $s->id)->selectRaw("SUM(status IN ('present','late')) p, COUNT(*) t, SUM(status='absent') a")->first();
-            $s->attendance_rate = $att->t ? round($att->p * 100 / $att->t, 1) : null;
-            $s->absences = (int) $att->a;
-        });
-
-        return response()->json([
-            'guardian'  => $g->only(['id', 'name', 'phone', 'email']),
-            'school'    => $request->user()->company->only(['name', 'logo', 'phone', 'email', 'currency', 'address']),
-            'children'  => $children,
-            'finance'   => [
+        $finance = null;
+        if ($view['finance']) {
+            $contracts = Contract::where('guardian_id', $g->id)->whereIn('status', ['active', 'completed']);
+            $nextDue = Installment::whereIn('contract_id', (clone $contracts)->pluck('id'))->where('status', '!=', 'paid')->orderBy('due_date')->first();
+            $finance = [
                 'total'     => round((float) (clone $contracts)->sum('total'), 3),
                 'paid'      => round((float) (clone $contracts)->sum('paid'), 3),
                 'remaining' => round((float) (clone $contracts)->sum('remaining'), 3),
                 'next_due'  => $nextDue,
-            ],
+            ];
+        }
+
+        return response()->json([
+            'guardian'  => $g->only(['id', 'name', 'phone', 'email']),
+            'school'    => $request->user()->company->only(['name', 'logo', 'phone', 'email', 'currency', 'address']),
+            'view'      => $view,
+            'children'  => $children,
+            'finance'   => $finance,
             'announcements' => Announcement::where('is_active', true)->whereIn('audience', ['guardians', 'all'])
                 ->where(fn ($q) => $q->whereNull('company_id')->orWhere('company_id', $request->user()->company_id))->orderByDesc('id')->limit(10)->get(),
         ]);
@@ -54,31 +66,36 @@ class PortalController extends Controller
     public function child(Request $request, $id)
     {
         $g = $this->guardian($request);
+        $view = $this->view($request);
         $s = Student::with(['grade:id,name_ar', 'section:id,name', 'bus:id,number,driver_name,driver_phone,route'])->where('guardian_id', $g->id)->findOrFail($id);
 
         $report = null;
-        try {
-            $report = app(MarkController::class)->reportCard($request, $s->id)->getData(true);
-        } catch (\Throwable) {
+        if ($view['grades']) {
+            try {
+                $report = app(MarkController::class)->reportCard($request, $s->id)->getData(true);
+            } catch (\Throwable) {
+            }
         }
 
         return response()->json([
-            'student'    => $s,
-            'assignments' => \App\Support\StudentView::assignments($s), // same view the student portal shows
-            'attendance' => StudentAttendance::where('student_id', $s->id)->orderByDesc('date')->limit(60)->get(['date', 'status', 'note']),
-            'contracts'  => Contract::with('installments')->where('student_id', $s->id)->whereIn('status', ['active', 'completed'])->orderByDesc('id')->get(),
-            'report'     => $report,
-            'timetable'  => $s->section_id ? [
-                'config'  => ['days' => $request->user()->company->settings['school_days'] ?? [0, 1, 2, 3, 4], 'periods' => (int) ($request->user()->company->settings['periods'] ?? 7)],
-                'entries' => TimetableEntry::with(['subject:id,name_ar', 'teacher:id,name'])->where('section_id', $s->section_id)->get()
-                    ->mapWithKeys(fn ($e) => [$e->day.'-'.$e->period => ['subject' => $e->subject?->name_ar, 'teacher' => $e->teacher?->name, 'room' => $e->room]]),
-            ] : null,
+            'student'     => $s,
+            'view'        => $view,
+            'monitor'     => StudentView::badges($s),
+            'today'       => $view['timetable'] ? StudentView::todayLessons($s) : [],
+            'assignments' => $view['assignments'] ? StudentView::assignments($s) : null,
+            'attendance'  => $view['attendance'] ? StudentView::attendance($s) : null,
+            'report'      => $view['grades'] ? $report : null,
+            'timetable'   => $view['timetable'] ? StudentView::timetable($s, $request->user()->company->settings ?? []) : null,
+            'contracts'   => $view['finance'] ? Contract::with('installments')->where('student_id', $s->id)->whereIn('status', ['active', 'completed'])->orderByDesc('id')->get() : [],
         ]);
     }
 
     public function payments(Request $request)
     {
         $g = $this->guardian($request);
+        if (! $this->view($request)['finance']) {
+            return response()->json(['data' => []]); // the school hid finance from parents
+        }
         $ids = Contract::where('guardian_id', $g->id)->pluck('id');
         $contracts = Contract::with('student:id,name')->whereIn('id', $ids)->get()->keyBy('id');
 

@@ -74,6 +74,22 @@ class StudentView
         ];
     }
 
+    /** Light monitoring summary for a child card (no heavy report-card build). */
+    public static function badges(Student $s): array
+    {
+        $a = self::attendance($s)['totals'];
+        $as = self::assignments($s);
+        $today = now()->toDateString();
+
+        return [
+            'attendance_rate' => $a['rate'],
+            'absences'        => $a['absent'],
+            'pending'         => $as->filter(fn ($x) => $x['type'] === 'homework' && $x['status'] === 'open' && ! $x['submitted'] && $x['mark'] === null)->count(),
+            'upcoming'        => $as->filter(fn ($x) => in_array($x['type'], ['quiz', 'exam'], true) && $x['status'] === 'open' && $x['due_date'] && $x['due_date'] >= $today)->count(),
+            'overdue'         => $as->filter(fn ($x) => $x['overdue'])->count(),
+        ];
+    }
+
     public static function todayLessons(Student $s)
     {
         if (! $s->section_id) {

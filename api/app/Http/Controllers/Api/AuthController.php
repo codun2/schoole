@@ -139,18 +139,25 @@ class AuthController extends Controller
             ] : null,
             // the school's own data names (subjects/grades) as Arabic→English pairs, merged into the
             // translation dictionary so these DB values render in English too (respecting custom name_en).
-            'dict' => $company ? $this->nameDict($company->id) : (object) [],
+            'dict' => $company ? $this->nameDict($company) : (object) [],
         ];
     }
 
-    private function nameDict(int $companyId): object
+    /** Arabic→English pairs merged into the UI dictionary: subject/grade name_en, then the
+     *  school's own custom translations (settings.translations) which take priority. */
+    private function nameDict($company): object
     {
         $map = [];
-        foreach (\App\Models\Subject::withoutGlobalScopes()->where('company_id', $companyId)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $s) {
+        foreach (\App\Models\Subject::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $s) {
             $map[$s->name_ar] = $s->name_en;
         }
-        foreach (\App\Models\Grade::withoutGlobalScopes()->where('company_id', $companyId)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $g) {
+        foreach (\App\Models\Grade::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name_ar', 'name_en']) as $g) {
             $map[$g->name_ar] = $g->name_en;
+        }
+        foreach ((array) ($company->settings['translations'] ?? []) as $ar => $en) {
+            if (is_string($ar) && is_string($en) && trim($ar) !== '' && trim($en) !== '') {
+                $map[trim($ar)] = trim($en);
+            }
         }
 
         return (object) $map;

@@ -113,6 +113,7 @@
         <div class="card"><div class="hd"><h3>${ic('sun')} لون الواجهة</h3></div><div class="bd"><div class="chips">${THEMES.map(([k, col, n]) => `<button class="chip ${c.theme === k ? 'on' : ''}" data-th="${k}"><i style="width:12px;height:12px;border-radius:50%;background:${col}"></i>${n}</button>`).join('')}</div></div></div>
         <div class="card"><div class="hd"><h3>${ic('layers')} الوحدات الاختيارية</h3></div><div class="bd"><label class="row gap8" style="cursor:pointer;align-items:flex-start"><input type="checkbox" id="mod-corr" ${c.settings?.modules?.correspondence ? 'checked' : ''} style="margin-top:3px"><span><b>المراسلات</b><div class="muted sm">إظهار المراسلات الواردة والصادرة والداخلية وفئاتها في القائمة. أوقفها إذا كانت مدرستك لا تستخدم أرشفة المراسلات الرسمية.</div></span></label></div></div>
         <div class="card"><div class="hd"><h3>${ic('parents')} ما يظهر لولي الأمر والطالب في بوابتهما</h3></div><div class="bd"><p class="muted sm mb8">تحكّم بما يراه ولي الأمر عن ابنه في بوابته. المالية (الرسوم) تخص ولي الأمر فقط.</p>${PV.map(([k, t, dsc]) => `<label class="row gap8 mb8" style="cursor:pointer;align-items:flex-start"><input type="checkbox" class="pv" data-k="${k}" ${(c.settings?.parent_view?.[k] ?? true) ? 'checked' : ''} style="margin-top:3px"><span><b>${t}</b><div class="muted sm">${dsc}</div></span></label>`).join('')}</div></div>
+        <div class="card"><div class="hd"><h3>${ic('book')} الترجمة الإنجليزية للمصطلحات</h3></div><div class="bd"><p class="muted sm mb8">أضف ترجمة إنجليزية لأي مصطلح يظهر عربياً في الوضع الإنجليزي (أسماء الشعب، الغرف، أي مسمّى). تُطبَّق فوراً في كل الواجهات والبوابات. للمواد والصفوف استخدم حقل «الاسم بالإنجليزية» في نماذجها.</p><div id="trz"></div><button class="btn ghost sm mt8" id="trAdd">${ic('plus')} إضافة مصطلح</button><div class="row mt8" style="justify-content:flex-end"><button class="btn" id="trSave">${ic('check')} حفظ الترجمات</button></div></div></div>
         <div class="card"><div class="hd"><h3>${ic('shield')} الاشتراك</h3></div><div class="bd">${S.kv([['الباقة', esc(c.plan?.name || '—')], ['الحالة', S.badge(S.ST.school, c.status)], ['التجربة تنتهي', c.trial_ends_at ? S.d(c.trial_ends_at) : '—'], ['الاشتراك ينتهي', c.subscription_ends_at ? S.d(c.subscription_ends_at) : '—'], ['رابط التسجيل', `<span class="ltr xs">/apply.html?school=${esc(c.slug)}</span>`]]).replace('class="kv"', 'class="kv" style="grid-template-columns:1fr"')}</div></div></div></div>`;
       el.querySelector('#sv').onclick = async (e) => {
         const f = el.querySelector('#f form'); if (!S.validate(f, fields)) return;
@@ -127,6 +128,19 @@
         const on = e.target.checked;
         try { await S.patch('/app/settings', { settings: { modules: { correspondence: on } } }); const me = S.me(); me.company.modules = { ...(me.company.modules || {}), correspondence: on }; S.setSession(null, me); S.toast('تم الحفظ — سيظهر التغيير في القائمة بعد التحديث', 'ok'); setTimeout(() => location.reload(), 700); }
         catch (er) { S.toast(er.message, 'bad'); e.target.checked = !on; }
+      };
+      // custom term translations (Arabic → English), merged into the dictionary via /auth/me
+      const trRow = (ar = '', en = '') => `<div class="row gap8 mb8 trrow"><input class="inp tr-ar" placeholder="المصطلح بالعربية" value="${esc(ar)}" style="flex:1"><span class="muted">→</span><input class="inp tr-en ltr" placeholder="English" value="${esc(en)}" dir="ltr" style="flex:1"><button class="ibtn d tr-del" title="حذف">${ic('trash')}</button></div>`;
+      const bindTrDel = () => el.querySelectorAll('#trz .tr-del').forEach((b) => (b.onclick = () => b.closest('.trrow').remove()));
+      const trEntries = Object.entries(c.settings?.translations || {});
+      el.querySelector('#trz').innerHTML = (trEntries.length ? trEntries : [['', '']]).map(([a, e]) => trRow(a, e)).join(''); bindTrDel();
+      el.querySelector('#trAdd').onclick = () => { el.querySelector('#trz').insertAdjacentHTML('beforeend', trRow()); bindTrDel(); };
+      el.querySelector('#trSave').onclick = async (e) => {
+        const map = {}; el.querySelectorAll('#trz .trrow').forEach((r) => { const a = r.querySelector('.tr-ar').value.trim(), en = r.querySelector('.tr-en').value.trim(); if (a && en) map[a] = en; });
+        const _b = e.currentTarget; S.btnBusy(_b, true);
+        try { await S.patch('/app/settings', { settings: { translations: map } }); if (S.i18nMerge) S.i18nMerge(map); S.toast('تم حفظ الترجمات — تظهر في الوضع الإنجليزي', 'ok'); }
+        catch (er) { S.toast(er.message, 'bad'); }
+        S.btnBusy(_b, false);
       };
       el.querySelectorAll('.pv').forEach((cb) => (cb.onchange = async () => {
         const parent_view = {}; el.querySelectorAll('.pv').forEach((x) => (parent_view[x.dataset.k] = x.checked)); // send the whole object (settings merge is shallow)

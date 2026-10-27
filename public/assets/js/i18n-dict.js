@@ -242,6 +242,8 @@ window.SCH_DICT = {
   'لا يوجد أبناء': 'No children',
   'لا توجد عقود': 'No contracts',
   'current': 'current',
+  'حالة المهام': 'Task Status',
+  'تراخيص تنتهي قريباً': 'Licenses Expiring Soon',
   'الكل حاضر': 'All Present',
   'النوع بالإنجليزية': 'English Type',
   'خط السير بالإنجليزية': 'English Route',

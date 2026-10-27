@@ -283,8 +283,8 @@
     filters: [{ k: 'method', l: 'طريقة الدفع', opts: S.opts(S.LBL.method) }, { k: 'from', l: 'من تاريخ', t: 'date' }, { k: 'to', l: 'إلى تاريخ', t: 'date' }],
     summary: (res) => `<div class="grid g3 mb16">${S.ui.stat('c-green', 'download', S.money(res.sum, true), 'إجمالي المحصّل (حسب الفلتر)')}${S.ui.stat('c-blue', 'receipt', S.num(res.total), 'عدد السندات')}</div>`,
     columns: [
-      { l: 'رقم السند', v: (r) => `<b class="num">${esc(r.number)}</b>` }, { l: 'التاريخ', v: (r) => cell.num(S.d(r.date)) }, { l: 'الطالب', v: (r) => esc(r.student_name || '—') }, { l: 'ولي الأمر', v: (r) => esc(r.party_name || '—') },
-      { l: 'رقم العقد', v: (r) => `<a class="lk num" href="#" data-c="${r.source_id}">${esc(r.contract_number || '')}</a>` }, { l: 'المبلغ', v: (r) => `<b class="num ok-t">${S.fmtN(r.amount)}</b>` }, { l: 'الطريقة', v: (r) => S.LBL.method[r.method] || r.method }, { l: 'الصندوق', v: (r) => esc(r.cash_account?.name || '—') }, { l: 'بواسطة', v: (r) => esc(r.creator?.name || '—') },
+      { l: 'رقم السند', v: (r) => `<b class="num">${esc(r.number)}</b>` }, { l: 'التاريخ', v: (r) => cell.num(S.d(r.date)) }, { l: 'الطالب', v: (r) => esc(S.enT(r.student_name, r.student_name_en) || '—') }, { l: 'ولي الأمر', v: (r) => esc(S.enT(r.party_name, r.party_name_en) || '—') },
+      { l: 'رقم العقد', v: (r) => `<a class="lk num" href="#" data-c="${r.source_id}">${esc(r.contract_number || '')}</a>` }, { l: 'المبلغ', v: (r) => `<b class="num ok-t">${S.fmtN(r.amount)}</b>` }, { l: 'الطريقة', v: (r) => S.LBL.method[r.method] || r.method }, { l: 'الصندوق', v: (r) => esc(S.enName(r.cash_account) || '—') }, { l: 'بواسطة', v: (r) => esc(S.enName(r.creator) || '—') },
     ],
     rowActions: [{ ic: 'printer', cls: 'p', t: 'طباعة السند', run: (r) => S.printReceipt(r, { student: r.student_name, contract: r.contract_number }) }],
     afterRender: (ctx) => ctx.el.addEventListener('click', (e) => { const a = e.target.closest('[data-c]'); if (a) { e.preventDefault(); S.contractView(+a.dataset.c, ctx.reload); } }),

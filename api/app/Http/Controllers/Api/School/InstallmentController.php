@@ -54,7 +54,7 @@ class InstallmentController extends Controller
     public function payments(Request $request)
     {
         $q = Voucher::query()->where('source_type', 'contract')->where('type', 'receipt')
-            ->with(['cashAccount:id,name', 'creator:id,name'])
+            ->with(['cashAccount:id,name,name_en', 'creator:id,name,name_en'])
             ->when(trim((string) $request->q), fn ($w, $t) => $w->where(fn ($x) => $x->where('number', 'like', "%{$t}%")->orWhere('party_name', 'like', "%{$t}%")->orWhere('description', 'like', "%{$t}%")))
             ->when($request->from, fn ($w, $v) => $w->whereDate('date', '>=', $v))
             ->when($request->to, fn ($w, $v) => $w->whereDate('date', '<=', $v))
@@ -62,11 +62,13 @@ class InstallmentController extends Controller
 
         $sum = (clone $q)->sum('amount');
         $page = $q->orderByDesc('date')->orderByDesc('id')->paginate(min((int) ($request->per_page ?: 25), 500));
-        $contracts = \App\Models\Contract::with('student:id,name,name_en')->whereIn('id', $page->getCollection()->pluck('source_id'))->get(['id', 'number', 'student_id'])->keyBy('id');
+        $contracts = \App\Models\Contract::with(['student:id,name,name_en', 'guardian:id,name,name_en'])->whereIn('id', $page->getCollection()->pluck('source_id'))->get(['id', 'number', 'student_id', 'guardian_id'])->keyBy('id');
         $page->getCollection()->transform(function ($v) use ($contracts) {
             $c = $contracts[$v->source_id] ?? null;
             $v->contract_number = $c?->number;
             $v->student_name = $c?->student?->name;
+            $v->student_name_en = $c?->student?->name_en;
+            $v->party_name_en = $c?->guardian?->name_en;
 
             return $v;
         });

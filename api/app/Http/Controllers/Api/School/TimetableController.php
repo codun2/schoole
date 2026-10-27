@@ -124,6 +124,7 @@ class TimetableController extends Controller
             ->mapWithKeys(fn ($e) => [$e->day.'-'.$e->period => [
                 'subject' => $e->subject?->name_ar,
                 'section' => trim(($e->section?->grade?->name_ar ?? '').' / '.($e->section?->name ?? ''), ' /'),
+                'section_en' => trim(((($e->section?->grade?->name_en ?: $e->section?->grade?->name_ar)) ?? '').' / '.((($e->section?->name_en ?: $e->section?->name)) ?? ''), ' /'),
                 'room'    => $e->room,
             ]]);
         $load = TimetableEntry::where('teacher_id', $teacher->id)->count();

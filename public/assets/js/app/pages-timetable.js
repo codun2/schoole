@@ -89,9 +89,9 @@
             if (!(S.local && S.local.timetableTeacher && S.local.isOfflineError(e))) { wrap.innerHTML = S.emptyHtml('تعذّر تحميل الجدول', e.message, 'alert'); return; }
             d = await S.local.timetableTeacher(tid, cfg);
           }
-          wrap.innerHTML = `<div class="toolbar"><span class="bdg l-info">نصاب أسبوعي: ${d.load} حصة</span><div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة</button></div>
+          wrap.innerHTML = `<div class="toolbar"><span class="bdg l-info">${S.isEn() ? 'Weekly load: ' + d.load + ' lessons' : 'نصاب أسبوعي: ' + d.load + ' حصة'}</span><div class="sp"></div><button class="btn ghost" id="pr">${ic('printer')} طباعة</button></div>
             <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl tt"><thead><tr><th>اليوم \\ الحصة</th>${Array.from({ length: d.periods }, (_, i) => `<th>${S.isEn() ? 'Period' : 'الحصة'} ${i + 1}</th>`).join('')}</tr></thead><tbody>
-            ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const c = d.entries[day + '-' + (pi + 1)]; return `<td>${c ? `<div class="b sm acc-t">${esc(c.subject || '')}</div><div class="muted xs">${esc(c.section || '')}${c.room ? ' · ' + esc(c.room) : ''}</div>` : '<span class="muted xs">—</span>'}</td>`; }).join('')}</tr>`).join('')}
+            ${d.days.map((day) => `<tr><td class="s b" style="background:var(--soft)">${DAYS[day]}</td>${Array.from({ length: d.periods }, (_, pi) => { const c = d.entries[day + '-' + (pi + 1)]; return `<td>${c ? `<div class="b sm acc-t">${esc(c.subject || '')}</div><div class="muted xs">${esc(S.enT(c.section, c.section_en) || '')}${c.room ? ' · ' + esc(c.room) : ''}</div>` : '<span class="muted xs">—</span>'}</td>`; }).join('')}</tr>`).join('')}
             </tbody></table></div></div>`;
           wrap.querySelector('#pr').onclick = () => printTeacher(d);
         };

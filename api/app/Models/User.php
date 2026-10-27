@@ -39,6 +39,11 @@ class User extends Authenticatable
         return $this->role === 'teacher';
     }
 
+    public function isStudent(): bool
+    {
+        return $this->role === 'student';
+    }
+
     public function hasPerm(string $key): bool
     {
         if ($this->role === 'admin') {

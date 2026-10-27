@@ -70,11 +70,21 @@ class StudentController extends ResourceController
             'notes'         => ['nullable', 'string'],
             'photo'         => ['nullable', 'image', 'max:5120'], // optional student photo (≤5MB)
             'remove_photo'  => ['nullable', 'boolean'],
+            'login_password' => ['nullable', 'string', 'min:6'], // student-portal login (username = student_no)
         ];
+    }
+
+    /** Optional student-portal login, created/updated after the record (and its student_no) exists. */
+    protected function afterSave(Model $record, Request $request, bool $created): void
+    {
+        if ($request->filled('login_password')) {
+            \App\Support\StudentLogin::attach($record, $request->login_password);
+        }
     }
 
     protected function prepare(array $data, Request $request, ?Model $record): array
     {
+        unset($data['login_password']); // handled in afterSave, never a column
         if (! $record) {
             $data['registered_at'] = $data['registered_at'] ?? now()->toDateString();
             $data['status'] = $data['status'] ?? 'active';
@@ -115,6 +125,7 @@ class StudentController extends ResourceController
 
     protected function transform(Model $record, bool $detail = false)
     {
+        $record->has_login = $record->user_id !== null;
         if ($detail) {
             $record->contracts = Contract::where('student_id', $record->id)->orderByDesc('id')->get(['id', 'number', 'date', 'total', 'paid', 'remaining', 'status']);
             $att = StudentAttendance::where('student_id', $record->id)->selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status');

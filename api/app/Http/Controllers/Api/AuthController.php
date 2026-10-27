@@ -104,6 +104,7 @@ class AuthController extends Controller
                 'super'    => '/super/',
                 'guardian' => '/parent/',
                 'teacher'  => '/teacher/',
+                'student'  => '/student/',
                 default    => '/app/',
             },
             'user' => [

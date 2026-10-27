@@ -235,6 +235,7 @@ class TeacherController extends Controller
             'birth_date'     => ['nullable', 'date'],
             'guardian_name'  => ['nullable', 'string', 'max:255'],
             'guardian_phone' => ['nullable', 'string', 'max:40'],
+            'login_password' => ['nullable', 'string', 'min:6'],
         ]);
         $this->assertHomeroom($e, (int) $data['section_id']);
         $section = Section::findOrFail($data['section_id']);
@@ -258,6 +259,9 @@ class TeacherController extends Controller
             'status'           => 'active',
             'registered_at'    => now()->toDateString(),
         ]);
+        if ($request->filled('login_password')) {
+            \App\Support\StudentLogin::attach($student, $request->login_password);
+        }
         Activity::log('create', $student, 'طالب (أضافه المعلم): '.$student->name);
 
         return response()->json($student->load('guardian:id,name,phone'), 201);
@@ -280,8 +284,13 @@ class TeacherController extends Controller
             }],
             'birth_date'  => ['nullable', 'date'],
             'status'      => ['nullable', 'in:active,suspended'],
+            'login_password' => ['nullable', 'string', 'min:6'],
         ]);
+        unset($data['login_password']);
         $student->fill($data)->save();
+        if ($request->filled('login_password')) {
+            \App\Support\StudentLogin::attach($student, $request->login_password); // homeroom teacher may enable the student's portal login
+        }
         Activity::log('update', $student, 'طالب (عدّله المعلم): '.$student->name);
 
         return response()->json($student->load('guardian:id,name,phone'));

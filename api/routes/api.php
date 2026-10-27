@@ -224,6 +224,19 @@ Route::middleware(['auth:sanctum', 'guardian', 'company'])->prefix('portal')->gr
 
 /*
 |--------------------------------------------------------------------------
+| Student portal (role=student) — a student sees only their own data
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'student', 'company'])->prefix('student')->group(function () {
+    Route::get('home', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'home']);
+    Route::get('timetable', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'timetable']);
+    Route::get('assignments', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'assignments']);
+    Route::get('attendance', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'attendance']);
+    Route::get('report-card', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'reportCard']);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Teacher portal (role=teacher) — row-scoped to their own sections/students
 |--------------------------------------------------------------------------
 */

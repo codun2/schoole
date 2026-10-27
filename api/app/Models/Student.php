@@ -9,6 +9,7 @@ class Student extends TenantModel
 {
     protected $casts = ['custom' => 'array', 'birth_date' => 'date:Y-m-d', 'registered_at' => 'date:Y-m-d'];
     public function guardian(): BelongsTo { return $this->belongsTo(Guardian::class); }
+    public function user(): BelongsTo { return $this->belongsTo(User::class); } // optional portal login
     public function grade(): BelongsTo { return $this->belongsTo(Grade::class); }
     public function section(): BelongsTo { return $this->belongsTo(Section::class); }
     public function bus(): BelongsTo { return $this->belongsTo(Bus::class); }

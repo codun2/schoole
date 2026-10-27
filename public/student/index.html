@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بوابة الطالب — سكوول</title>
+<link rel="stylesheet" href="/assets/css/app.css">
+<style>
+  .ptop{background:linear-gradient(140deg,var(--accent),#2bb3a3);color:#fff;padding:18px 16px 70px}
+  .ptop .in{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .ptop .lg{width:46px;height:46px;border-radius:13px;background:#fff;color:var(--accent);display:grid;place-items:center;overflow:hidden}
+  .ptop .lg img{width:100%;height:100%;object-fit:cover}.ptop .lg svg{width:24px;height:24px}
+  .ptop h1{font-size:18px}.ptop small{opacity:.85}
+  .ptop button{color:#fff;opacity:.9}.ptop .tbtn:hover{background:rgba(255,255,255,.15);color:#fff}
+  .pwrap{max-width:1040px;margin:-50px auto 40px;padding:0 14px}
+  .ptabs{display:flex;gap:6px;margin-bottom:14px;background:var(--card);padding:5px;border-radius:12px;border:1px solid var(--line);width:fit-content;max-width:100%;overflow:auto}
+  .ptabs a{padding:7px 16px;border-radius:9px;font-weight:600;color:var(--text-2);white-space:nowrap}.ptabs a.on{background:var(--accent);color:#fff}
+  .selrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+  .selrow label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--text-2)}
+  .selrow select,.selrow input{min-width:150px}
+</style>
+</head>
+<body>
+<div class="spin" style="margin-top:30vh"></div>
+<script src="/assets/js/core.js"></script>
+<script src="/assets/js/i18n-dict.js"></script>
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/student-view.js"></script>
+<script>
+(async () => {
+  const { esc, ic } = S;
+  if (!S.token()) return (location.href = '/login.html');
+  let me; try { me = await S.get('/auth/me'); } catch { return; }
+  if (me.user.role !== 'student') return (location.href = me.home);
+  S.setSession(null, me);
+
+  document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة الطالب — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="lng" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button><button class="tbtn" id="mode" title="الوضع الليلي">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div>
+    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/assignments" data-r="assignments">الواجبات والاختبارات</a><a href="#/attendance" data-r="attendance">حضوري</a><a href="#/grades" data-r="grades">درجاتي</a></div><div id="v"><div class="spin"></div></div></div>`;
+  document.getElementById('mode').onclick = S.toggleMode;
+  const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
+  S.i18nStart && S.i18nStart();
+  document.getElementById('out').onclick = async () => { try { await S.post('/auth/logout'); } catch {} S.clearSession(); location.href = '/login.html'; };
+  const v = document.getElementById('v');
+  const stat = S.sv.stat;
+
+  // --------------------------------------------------------------- home
+  async function home() {
+    const d = await S.get('/student/home');
+    const s = d.student, st = d.stats;
+    v.innerHTML = `<div class="card pad mb16"><div class="profile-h" style="margin:0">${S.avatarHtml ? S.avatarHtml(s.photo, s.name) : `<span class="avatar">${esc(S.initials(s.name))}</span>`}<div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.grade?.name_ar || '')} — ${esc(s.section?.name || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div></div></div>
+      <div class="grid g4 mb16">${stat('c-blue', 'calendar', S.num(st.lessons_today), 'حصص اليوم')}${stat(st.pending ? 'c-amber' : 'c-green', 'edit', S.num(st.pending), 'واجبات بانتظار التسليم')}${stat(st.upcoming ? 'c-red' : 'c-teal', 'clock', S.num(st.upcoming), 'اختبارات قريبة')}${stat('c-violet', 'calCheck', st.attendance_rate != null ? S.fmtN(st.attendance_rate, 1) + '%' : '—', 'نسبة الحضور')}</div>
+      ${d.today.length ? `<div class="sec-t">${ic('calendar')} حصص اليوم</div><div class="card mb16"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>الحصة</th><th class="s">المادة</th><th>المعلّم</th><th>الغرفة</th></tr></thead><tbody>${d.today.map((t) => `<tr><td class="num b">${t.period}</td><td class="s b">${esc(t.subject || '—')}</td><td>${esc(t.teacher || '—')}</td><td>${esc(t.room || '—')}</td></tr>`).join('')}</tbody></table></div></div>` : `<div class="card pad mb16 muted sm">${ic('calendar')} لا حصص اليوم. <a class="acc-t" href="#/timetable">عرض جدولي الأسبوعي</a></div>`}
+      <div class="grid g2 mb16">
+        <div class="card"><div class="hd"><h3>${ic('edit')} واجبات بانتظار التسليم</h3><div class="sp"></div><span class="bdg ${st.pending ? 'l-warn' : 'l-ok'}">${S.num(st.pending)}</span></div><div class="bd">${d.pending.length ? d.pending.map((a) => `<a class="row" href="#/assignments" style="padding:7px 0;border-bottom:1px solid var(--line);gap:10px;color:inherit"><div class="grow"><b class="sm">${esc(a.title)}</b><div class="muted xs">${esc(a.subject || '')} · ${S.badge(S.sv.ATYPE, a.type)}</div></div><span class="num sm ${a.overdue ? 'bad-t b' : ''}">${esc(a.due_date || '')}</span></a>`).join('') : '<div class="muted sm">لا توجد واجبات معلّقة — أحسنت!</div>'}</div></div>
+        <div class="card"><div class="hd"><h3>${ic('clock')} اختبارات قريبة</h3><div class="sp"></div><span class="bdg ${st.upcoming ? 'l-bad' : 'l-mut'}">${S.num(st.upcoming)}</span></div><div class="bd">${d.upcoming.length ? d.upcoming.map((a) => `<a class="row" href="#/assignments" style="padding:7px 0;border-bottom:1px solid var(--line);gap:10px;color:inherit"><div class="grow"><b class="sm">${esc(a.title)}</b><div class="muted xs">${esc(a.subject || '')} · ${S.badge(S.sv.ATYPE, a.type)}${a.duration_minutes ? ` · ${a.duration_minutes} د` : ''}</div></div><span class="num sm b">${esc(a.due_date)}${a.due_time ? ' ' + esc(a.due_time) : ''}</span></a>`).join('') : '<div class="muted sm">لا اختبارات قريبة.</div>'}</div></div>
+      </div>
+      ${d.announcements.length ? `<div class="sec-t">${ic('megaphone')} إعلانات المدرسة</div>${d.announcements.map((a) => `<div class="card pad mb8"><b>${esc(a.title)}</b><p class="t2 sm" style="white-space:pre-line">${esc(a.body || '')}</p><span class="muted xs">${S.ago(a.created_at)}</span></div>`).join('')}` : ''}`;
+  }
+
+  // --------------------------------------------------------------- timetable
+  async function timetable() {
+    const d = await S.get('/student/timetable');
+    v.innerHTML = `<div class="sec-t">${ic('calendar')} جدولي الأسبوعي</div>${S.sv.timetable(d)}`;
+  }
+
+  // --------------------------------------------------------------- assignments
+  async function assignments(q) {
+    const d = await S.get('/student/assignments');
+    let type = q.get('type') || '';
+    const draw = () => {
+      const list = d.data.filter((a) => !type || a.type === type);
+      v.innerHTML = `<div class="selrow"><div class="chips">${[['', 'الكل'], ...Object.entries(S.sv.ATYPE).map(([k, x]) => [k, x[0]])].map(([k, l]) => `<button class="chip ${type === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('')}</div><div class="grow"></div><span class="bdg l-warn">بانتظار التسليم ${d.data.filter((a) => a.status === 'open' && !a.submitted && a.mark == null).length}</span><span class="bdg l-ok">مصحّح ${d.data.filter((a) => a.mark != null).length}</span></div>${S.sv.assignments(list, { emptySub: 'ستظهر هنا واجبات واختبارات شعبتك عندما ينشئها المعلّم.' })}`;
+      v.querySelectorAll('[data-t]').forEach((b) => (b.onclick = () => { type = b.dataset.t; draw(); }));
+    };
+    draw();
+  }
+
+  // --------------------------------------------------------------- attendance
+  async function attendance() {
+    v.innerHTML = `<div class="selrow"><label>الشهر<input type="month" id="m" class="inp" value="${S.today().slice(0, 7)}" dir="ltr"></label><button class="btn ghost" id="all">كل الفترة</button></div><div id="out"><div class="spin"></div></div>`;
+    const out = v.querySelector('#out');
+    const load = async (all) => {
+      const m = v.querySelector('#m').value; let p = {};
+      if (!all && m) { const [y, mo] = m.split('-').map(Number); p = { from: `${m}-01`, to: `${m}-${String(new Date(y, mo, 0).getDate()).padStart(2, '0')}` }; }
+      out.innerHTML = '<div class="spin"></div>';
+      try { out.innerHTML = S.sv.attendance(await S.get('/student/attendance', p)); } catch (er) { out.innerHTML = S.emptyHtml('تعذّر التحميل', er.message, 'alert'); }
+    };
+    v.querySelector('#m').onchange = () => load(false);
+    v.querySelector('#all').onclick = () => load(true);
+    load(false);
+  }
+
+  // --------------------------------------------------------------- grades
+  async function grades() {
+    const d = await S.get('/student/report-card');
+    const has = d && d.rows && d.rows.some((r) => r.percent != null);
+    v.innerHTML = `<div class="selrow"><div class="sec-t" style="margin:0">${ic('book')} درجاتي وكشف النتائج</div><div class="grow"></div>${has && S.printReportCard ? `<button class="btn ghost" id="pr">${ic('printer')} طباعة / PDF</button>` : ''}</div>${S.sv.reportCard(d)}`;
+    const pr = v.querySelector('#pr'); if (pr) pr.onclick = () => S.printReportCard(d);
+  }
+
+  // --------------------------------------------------------------- router
+  const routes = { '': home, timetable, assignments, attendance, grades };
+  async function route() {
+    const raw = location.hash.replace(/^#\//, '');
+    const [path, qs] = raw.split('?');
+    const fn = routes[path] || home;
+    document.querySelectorAll('.ptabs a').forEach((a) => a.classList.toggle('on', a.dataset.r === (path || '')));
+    v.innerHTML = '<div class="spin"></div>';
+    try { await fn(new URLSearchParams(qs || '')); } catch (er) { if (er.message !== 'unauth') v.innerHTML = S.emptyHtml('حدث خطأ', er.message, 'alert'); }
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

@@ -64,6 +64,7 @@ class PortalController extends Controller
 
         return response()->json([
             'student'    => $s,
+            'assignments' => \App\Support\StudentView::assignments($s), // same view the student portal shows
             'attendance' => StudentAttendance::where('student_id', $s->id)->orderByDesc('date')->limit(60)->get(['date', 'status', 'note']),
             'contracts'  => Contract::with('installments')->where('student_id', $s->id)->whereIn('status', ['active', 'completed'])->orderByDesc('id')->get(),
             'report'     => $report,

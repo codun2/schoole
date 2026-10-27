@@ -114,6 +114,8 @@
       { k: 'gender', l: 'الجنس', t: 'select', opts: S.opts(S.LBL.gender), def: 'male' }, { k: 'national_id', l: 'رقم الهوية', dir: 'ltr' }, { k: 'birth_date', l: 'تاريخ الميلاد', t: 'date' },
       ...(row ? [{ k: 'status', l: 'الحالة', t: 'select', opts: [['active', 'نشط'], ['suspended', 'موقوف']] }]
         : [{ t: 'sec', l: 'ولي الأمر (اختياري)' }, { k: 'guardian_name', l: 'اسم ولي الأمر', full: true }, { k: 'guardian_phone', l: 'جوال ولي الأمر', t: 'tel' }]),
+      { t: 'sec', l: 'دخول الطالب للبوابة (اختياري)' },
+      { k: 'login_password', l: row && row.user_id ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة مرور الدخول', t: 'password', full: true, help: 'يدخل الطالب بوابته برقمه المدرسي' + (row && row.student_no ? ' «' + row.student_no + '»' : '') + ' وكلمة المرور هذه.' },
     ];
     const m = S.modal({ title: row ? 'تعديل طالب' : 'إضافة طالب', body: S.formHtml(fields, row || {}), foot: `<button class="btn ghost" data-close>إلغاء</button><button class="btn" id="sv">${ic('check')} حفظ</button>` });
     m.$('#sv').onclick = async (ev) => {

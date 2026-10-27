@@ -63,6 +63,7 @@
     if (w.grades && d.report) tabs.push(['grades', 'الدرجات']);
     if (w.attendance && d.attendance) tabs.push(['attendance', 'الحضور']);
     if (w.timetable && d.timetable) tabs.push(['timetable', 'الجدول']);
+    if (w.behavior && d.notes) tabs.push(['behavior', 'السلوك']);
     if (w.finance && d.contracts && d.contracts.length) tabs.push(['fees', 'الرسوم']);
     if (!tabs.some(([k]) => k === tab)) tab = 'overview';
     v.innerHTML = `<a href="#/" class="btn ghost sm mb16">${ic('chevR')} رجوع لأبنائي</a>
@@ -78,6 +79,7 @@
     if (tab === 'grades') return (ct.innerHTML = S.sv.reportCard(d.report));
     if (tab === 'attendance') return (ct.innerHTML = S.sv.attendance(d.attendance));
     if (tab === 'timetable') return (ct.innerHTML = S.sv.timetable(d.timetable));
+    if (tab === 'behavior') return (ct.innerHTML = S.sv.notes(d.notes, { emptySub: 'لا توجد ملاحظات سلوكية مسجّلة.' }));
     if (tab === 'fees') return (ct.innerHTML = d.contracts.map(contractCard).join(''));
     // overview: quick KPIs + today's lessons + bus
     const stats = [];
@@ -103,7 +105,7 @@
   };
   function childSwitch(id, tab) {
     const d = CHILD.data, w = d.view || {};
-    const ok = tab === 'overview' || (tab === 'assignments' && w.assignments && d.assignments) || (tab === 'grades' && w.grades && d.report) || (tab === 'attendance' && w.attendance && d.attendance) || (tab === 'timetable' && w.timetable && d.timetable) || (tab === 'fees' && w.finance && d.contracts && d.contracts.length);
+    const ok = tab === 'overview' || (tab === 'assignments' && w.assignments && d.assignments) || (tab === 'grades' && w.grades && d.report) || (tab === 'attendance' && w.attendance && d.attendance) || (tab === 'timetable' && w.timetable && d.timetable) || (tab === 'behavior' && w.behavior && d.notes) || (tab === 'fees' && w.finance && d.contracts && d.contracts.length);
     if (!ok) tab = 'overview';
     v.querySelectorAll('.ptabs a[data-sub]').forEach((a) => a.classList.toggle('on', a.dataset.sub === tab));
     childTab(d, tab);

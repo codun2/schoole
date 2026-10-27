@@ -4,11 +4,16 @@
   const { esc, ic } = S;
   const ATYPE = { homework: ['واجب', 'l-info'], quiz: ['اختبار قصير', 'l-warn'], exam: ['اختبار', 'l-bad'] };
   const ATT = { present: ['حاضر', 'l-ok'], absent: ['غائب', 'l-bad'], late: ['متأخر', 'l-warn'], excused: ['بعذر', 'l-info'] };
+  const NOTE = { positive: ['إيجابية', 'l-ok'], negative: ['سلبية', 'l-bad'], note: ['ملاحظة', 'l-info'] };
   const stat = (cls, i, val, k) => `<div class="stat ${cls}"><div class="ic">${ic(i)}</div><div><div class="v num">${val}</div><div class="k">${k}</div></div></div>`;
   const aStatus = (a) => a.mark != null ? `<span class="bdg l-ok">مصحّح</span>` : a.submitted ? '<span class="bdg l-info">سُلّم — بانتظار التصحيح</span>' : a.overdue ? '<span class="bdg l-bad">متأخر — لم يُسلَّم</span>' : a.status === 'closed' ? '<span class="bdg l-mut">مغلق</span>' : '<span class="bdg l-warn">بانتظار التسليم</span>';
 
   S.sv = {
-    ATYPE, ATT, stat, aStatus,
+    ATYPE, ATT, NOTE, stat, aStatus,
+    notes(list, o = {}) {
+      if (!list || !list.length) return S.emptyHtml(o.emptyTitle || 'لا توجد ملاحظات سلوكية', o.emptySub || '', 'smile');
+      return `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>النوع</th><th class="s">الملاحظة</th><th>المعلّم</th></tr></thead><tbody>${list.map((n) => `<tr><td class="num">${S.d(n.date)}</td><td>${S.badge(NOTE, n.type)}</td><td class="s">${esc(n.note)}</td><td class="sm muted">${esc(n.teacher || '—')}</td></tr>`).join('')}</tbody></table></div></div>`;
+    },
     assignments(list, o = {}) {
       if (!list || !list.length) return S.emptyHtml(o.emptyTitle || 'لا توجد واجبات أو اختبارات', o.emptySub || '', 'book');
       return `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>النوع</th><th class="s">العنوان</th><th>المادة / المعلّم</th><th>الموعد</th><th>الدرجة</th><th>الحالة</th></tr></thead><tbody>${list.map((a) => `<tr${a.overdue ? ' style="background:var(--bad-bg)"' : ''}><td>${S.badge(ATYPE, a.type)}</td><td class="s"><b>${esc(a.title)}</b>${a.description ? `<div class="muted xs" style="white-space:pre-line">${esc(a.description)}</div>` : ''}${a.attachment ? `<div><a class="acc-t xs" target="_blank" href="${esc(a.attachment)}">${ic('file')} فتح المرفق</a></div>` : ''}${a.note ? `<div class="xs mt8" style="color:var(--accent)">ملاحظة المعلّم: ${esc(a.note)}</div>` : ''}</td><td class="sm">${esc(a.subject || '—')}<div class="muted xs">${esc(a.teacher || '')}</div></td><td class="num">${esc(a.due_date || '—')}${a.due_time ? `<div class="muted xs">${esc(a.due_time)}${a.duration_minutes ? ` · ${a.duration_minutes} د` : ''}</div>` : ''}</td><td class="num b">${a.mark != null ? S.fmtN(a.mark, 1) : '—'} <span class="muted xs">/ ${S.fmtN(a.max_mark, 1)}</span></td><td>${aStatus(a)}</td></tr>`).join('')}</tbody></table></div></div>`;

@@ -42,4 +42,9 @@ class StudentPortalController extends Controller
     {
         return app(MarkController::class)->reportCard($request, $this->student($request)->id);
     }
+
+    public function notes(Request $request)
+    {
+        return response()->json(['data' => StudentView::notes($this->student($request))]);
+    }
 }

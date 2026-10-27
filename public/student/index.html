@@ -35,7 +35,7 @@
   S.setSession(null, me);
 
   document.body.innerHTML = `<div class="ptop"><div class="in"><div class="lg">${me.company.logo ? `<img src="${esc(me.company.logo)}">` : S.LOGO}</div><div class="grow"><h1>${esc(me.company.name)}</h1><small>بوابة الطالب — مرحباً ${esc(me.user.name)}</small></div><button class="tbtn" id="lng" title="English / العربية" style="font-weight:800;font-size:12px">${S.isEn && S.isEn() ? 'ع' : 'EN'}</button><button class="tbtn" id="mode" title="الوضع الليلي">${ic('moon')}</button><button class="tbtn" id="out" title="خروج">${ic('logout')}</button></div></div>
-    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/assignments" data-r="assignments">الواجبات والاختبارات</a><a href="#/attendance" data-r="attendance">حضوري</a><a href="#/grades" data-r="grades">درجاتي</a></div><div id="v"><div class="spin"></div></div></div>`;
+    <div class="pwrap"><div class="ptabs"><a href="#/" data-r="">الرئيسية</a><a href="#/timetable" data-r="timetable">جدولي</a><a href="#/assignments" data-r="assignments">الواجبات والاختبارات</a><a href="#/attendance" data-r="attendance">حضوري</a><a href="#/grades" data-r="grades">درجاتي</a><a href="#/notes" data-r="notes">السلوك</a></div><div id="v"><div class="spin"></div></div></div>`;
   document.getElementById('mode').onclick = S.toggleMode;
   const _lng = document.getElementById('lng'); if (_lng) _lng.onclick = () => S.toggleLang();
   S.i18nStart && S.i18nStart();
@@ -98,8 +98,14 @@
     const pr = v.querySelector('#pr'); if (pr) pr.onclick = () => S.printReportCard(d);
   }
 
+  // --------------------------------------------------------------- behavioural notes
+  async function notes() {
+    const d = await S.get('/student/notes');
+    v.innerHTML = `<div class="sec-t" style="margin-top:0">${ic('smile')} ملاحظاتي السلوكية</div>${S.sv.notes(d.data, { emptySub: 'لا توجد ملاحظات سلوكية مسجّلة من معلّميك.' })}`;
+  }
+
   // --------------------------------------------------------------- router
-  const routes = { '': home, timetable, assignments, attendance, grades };
+  const routes = { '': home, timetable, assignments, attendance, grades, notes };
   async function route() {
     const raw = location.hash.replace(/^#\//, '');
     const [path, qs] = raw.split('?');

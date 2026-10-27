@@ -29,7 +29,7 @@ class PortalController extends Controller
         $pv = $request->user()->company->settings['parent_view'] ?? [];
         $on = fn ($k) => (bool) ($pv[$k] ?? true);
 
-        return ['grades' => $on('grades'), 'attendance' => $on('attendance'), 'assignments' => $on('assignments'), 'timetable' => $on('timetable'), 'finance' => $on('finance')];
+        return ['grades' => $on('grades'), 'attendance' => $on('attendance'), 'assignments' => $on('assignments'), 'timetable' => $on('timetable'), 'behavior' => $on('behavior'), 'finance' => $on('finance')];
     }
 
     public function home(Request $request)
@@ -86,6 +86,7 @@ class PortalController extends Controller
             'attendance'  => $view['attendance'] ? StudentView::attendance($s) : null,
             'report'      => $view['grades'] ? $report : null,
             'timetable'   => $view['timetable'] ? StudentView::timetable($s, $request->user()->company->settings ?? []) : null,
+            'notes'       => $view['behavior'] ? StudentView::notes($s) : null,
             'contracts'   => $view['finance'] ? Contract::with('installments')->where('student_id', $s->id)->whereIn('status', ['active', 'completed'])->orderByDesc('id')->get() : [],
         ]);
     }

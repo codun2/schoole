@@ -27,6 +27,7 @@
 <script src="/assets/js/core.js"></script>
 <script src="/assets/js/i18n-dict.js"></script>
 <script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/student-view.js"></script>
 <script>
 (async () => {
   const { esc, ic } = S;
@@ -99,8 +100,9 @@
       const sid = v.querySelector('#sec').value;
       list.innerHTML = '<div class="spin"></div>';
       const d = await S.get('/teacher/students', { section_id: sid });
-      list.innerHTML = d.data.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>الرقم</th><th class="s">الطالب</th><th>ولي الأمر</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>${d.data.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="num">${esc(s.student_no || '—')}</td><td class="s"><b>${esc(s.name)}</b>${s.national_id ? `<div class="muted xs num">${esc(s.national_id)}</div>` : ''}</td><td>${esc(s.guardian?.name || '—')}${s.guardian?.phone ? ` <span class="muted xs num">${esc(s.guardian.phone)}</span>` : ''}</td><td>${S.badge(S.ST.student, s.status)}</td><td><div class="acts"><button class="ibtn" data-report="${s.id}" title="بطاقة الدرجات">${ic('book')}</button><button class="ibtn v" data-edit="${s.id}" title="تعديل">${ic('edit')}</button></div></td></tr>`).join('')}</tbody></table></div></div>` : S.emptyHtml('لا طلاب في هذا الفصل', 'اضغط «إضافة طالب» لتسجيل أول طالب.', 'users');
+      list.innerHTML = d.data.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>الرقم</th><th class="s">الطالب</th><th>ولي الأمر</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>${d.data.map((s, i) => `<tr><td class="muted">${i + 1}</td><td class="num">${esc(s.student_no || '—')}</td><td class="s"><b>${esc(s.name)}</b>${s.national_id ? `<div class="muted xs num">${esc(s.national_id)}</div>` : ''}</td><td>${esc(s.guardian?.name || '—')}${s.guardian?.phone ? ` <span class="muted xs num">${esc(s.guardian.phone)}</span>` : ''}</td><td>${S.badge(S.ST.student, s.status)}</td><td><div class="acts"><button class="ibtn" data-note="${s.id}" title="ملاحظة سلوكية">${ic('smile')}</button><button class="ibtn" data-report="${s.id}" title="بطاقة الدرجات">${ic('book')}</button><button class="ibtn v" data-edit="${s.id}" title="تعديل">${ic('edit')}</button></div></td></tr>`).join('')}</tbody></table></div></div>` : S.emptyHtml('لا طلاب في هذا الفصل', 'اضغط «إضافة طالب» لتسجيل أول طالب.', 'users');
       list.querySelectorAll('[data-report]').forEach((b) => (b.onclick = () => reportCard(b.dataset.report)));
+      list.querySelectorAll('[data-note]').forEach((b) => (b.onclick = () => notesModal(d.data.find((x) => String(x.id) === b.dataset.note))));
       list.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => studentForm(sid, d.data.find((x) => String(x.id) === b.dataset.edit))));
     };
     v.querySelector('#sec').onchange = load;
@@ -203,6 +205,19 @@
       const bindSave = () => { const b = sh.querySelector('#sv'); if (b) b.onclick = async (ev) => { const _btn = ev.currentTarget; S.btnBusy(_btn, true); try { await S.post('/teacher/attendance', { section_id, date, marks: rows.map((r) => ({ student_id: r.id, status: r.status, note: r.note || null })) }); S.toast('تم حفظ الحضور', 'ok'); } catch (er) { S.toast(er.message, 'bad'); } S.btnBusy(_btn, false); }; };
       render();
     }
+  }
+
+  // --------------------------------------------------------------- behavioural notes (modal)
+  function notesModal(student) {
+    const m = S.modal({ title: 'الملاحظات السلوكية — ' + student.name, size: 'wide', body: S.spinner, foot: '<button class="btn ghost" data-close>إغلاق</button>' });
+    const load = async () => {
+      let d; try { d = await S.get('/teacher/notes', { student_id: student.id }); } catch (e) { m.body.innerHTML = S.emptyHtml('تعذّر التحميل', e.message, 'alert'); return; }
+      m.body.innerHTML = `<div class="card pad mb16"><div class="fgrid"><label class="fld"><span>النوع</span><select class="inp" id="nt"><option value="positive">إيجابية (تحفيز)</option><option value="note" selected>ملاحظة عامة</option><option value="negative">سلبية</option></select></label><label class="fld"><span>التاريخ</span><input class="inp" type="date" id="nd" value="${S.today()}" dir="ltr"></label></div><label class="fld mt8" style="display:block"><span>الملاحظة</span><textarea class="inp" id="nn" rows="2" placeholder="اكتب الملاحظة السلوكية..."></textarea></label><div class="row mt8" style="justify-content:flex-end"><button class="btn" id="nadd">${ic('plus')} إضافة ملاحظة</button></div></div>
+        ${d.data.length ? `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>التاريخ</th><th>النوع</th><th class="s">الملاحظة</th><th>المعلّم</th><th></th></tr></thead><tbody>${d.data.map((n) => `<tr><td class="num">${S.d(n.date)}</td><td>${S.badge(S.sv.NOTE, n.type)}</td><td class="s">${esc(n.note)}</td><td class="sm muted">${esc(n.teacher || '—')}</td><td>${n.mine ? `<button class="ibtn d" data-del="${n.id}" title="حذف">${ic('trash')}</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>` : S.emptyHtml('لا توجد ملاحظات بعد', 'أضف أول ملاحظة من الأعلى.', 'smile')}`;
+      m.$('#nadd').onclick = async (ev) => { const note = m.$('#nn').value.trim(); if (!note) return S.toast('اكتب الملاحظة', 'bad'); const _b = ev.currentTarget; S.btnBusy(_b, true); try { await S.post('/teacher/notes', { student_id: student.id, type: m.$('#nt').value, note, date: m.$('#nd').value }); S.toast('تمت إضافة الملاحظة', 'ok'); load(); } catch (e) { S.toast(e.message, 'bad'); S.btnBusy(_b, false); } };
+      m.body.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => { if (!(await S.confirm('حذف هذه الملاحظة؟', 'حذف'))) return; try { await S.del('/teacher/notes/' + b.dataset.del); S.toast('تم الحذف', 'ok'); load(); } catch (e) { S.toast(e.message, 'bad'); } }));
+    };
+    load();
   }
 
   // --------------------------------------------------------------- homework / quizzes / exams

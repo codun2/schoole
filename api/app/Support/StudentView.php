@@ -90,6 +90,12 @@ class StudentView
         ];
     }
 
+    public static function notes(Student $s)
+    {
+        return \App\Models\StudentNote::with('teacher:id,name')->where('student_id', $s->id)->orderByDesc('date')->orderByDesc('id')->limit(80)->get()
+            ->map(fn ($n) => ['type' => $n->type, 'note' => $n->note, 'date' => $n->date?->format('Y-m-d'), 'teacher' => $n->teacher?->name])->values();
+    }
+
     public static function todayLessons(Student $s)
     {
         if (! $s->section_id) {

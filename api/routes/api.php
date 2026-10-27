@@ -233,6 +233,7 @@ Route::middleware(['auth:sanctum', 'student', 'company'])->prefix('student')->gr
     Route::get('assignments', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'assignments']);
     Route::get('attendance', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'attendance']);
     Route::get('report-card', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'reportCard']);
+    Route::get('notes', [\App\Http\Controllers\Api\Student\StudentPortalController::class, 'notes']);
 });
 
 /*
@@ -254,6 +255,9 @@ Route::middleware(['auth:sanctum', 'teacher', 'company'])->prefix('teacher')->gr
     Route::get('class-results', [TeacherController::class, 'classResults']);
     Route::get('attendance/sheet', [TeacherController::class, 'attendanceSheet']);
     Route::get('attendance/report', [TeacherController::class, 'attendanceReport']);
+    Route::get('notes', [TeacherController::class, 'notes']);
+    Route::post('notes', [TeacherController::class, 'noteStore']);
+    Route::delete('notes/{id}', [TeacherController::class, 'noteDestroy'])->whereNumber('id');
     // homework / quizzes / exams
     Route::get('assignments', [Teacher\AssignmentController::class, 'index']);
     Route::post('assignments', [Teacher\AssignmentController::class, 'store']);

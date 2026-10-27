@@ -14,6 +14,7 @@ use App\Models\Guardian;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentAttendance;
+use App\Models\StudentNote;
 use App\Models\Subject;
 use App\Models\TimetableEntry;
 use App\Support\Activity;
@@ -60,6 +61,47 @@ class TeacherController extends Controller
     private function assertMySection(Employee $e, int $sectionId): void
     {
         abort_unless($this->mySectionIds($e)->contains($sectionId), 403, 'لا تملك صلاحية على هذه الشعبة.');
+    }
+
+    private function assertMyStudent(Employee $e, Student $s): void
+    {
+        abort_unless($this->mySectionIds($e)->contains($s->section_id), 403, 'هذا الطالب ليس من طلابك.');
+    }
+
+    // ---------------------------------------------------------------- behavioural notes
+
+    public function notes(Request $request)
+    {
+        $e = $this->emp($request);
+        $s = Student::findOrFail($request->query('student_id'));
+        $this->assertMyStudent($e, $s);
+
+        return response()->json(['data' => StudentNote::with('teacher:id,name')->where('student_id', $s->id)->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($n) => ['id' => $n->id, 'type' => $n->type, 'note' => $n->note, 'date' => $n->date?->format('Y-m-d'), 'teacher' => $n->teacher?->name, 'mine' => (int) $n->teacher_id === (int) $e->id])]);
+    }
+
+    public function noteStore(Request $request)
+    {
+        $e = $this->emp($request);
+        $data = $request->validate([
+            'student_id' => ['required', 'integer'],
+            'type'       => ['required', 'in:'.implode(',', StudentNote::TYPES)],
+            'note'       => ['required', 'string', 'max:1000'],
+            'date'       => ['nullable', 'date'],
+        ]);
+        $s = Student::findOrFail($data['student_id']);
+        $this->assertMyStudent($e, $s);
+        $n = StudentNote::create(['student_id' => $s->id, 'teacher_id' => $e->id, 'type' => $data['type'], 'note' => $data['note'], 'date' => $data['date'] ?? now()->toDateString()]);
+
+        return response()->json($n, 201);
+    }
+
+    public function noteDestroy(Request $request, $id)
+    {
+        $e = $this->emp($request);
+        StudentNote::where('teacher_id', $e->id)->findOrFail($id)->delete(); // a teacher deletes only their own notes
+
+        return response()->json(['message' => 'تم حذف الملاحظة.']);
     }
 
     /** Marks allowed if the section is my homeroom, or I teach that subject there. */

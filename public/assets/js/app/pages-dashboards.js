@@ -24,13 +24,13 @@
         ['#/tasks', 'tasks', 'المهام', 'admin_affairs'], ['#/schools', 'cap', 'المدارس', 'school'], ['#/settings', 'gear', 'الإعدادات العامة', 'settings'],
       ].filter((t) => S.can(t[3]));
       el.innerHTML = `
-        <div class="greet"><h2>أهلاً <span class="acc-t">${esc(me.user.name)}</span>، مرحباً بعودتك 👋</h2><span>${S.longDate()}</span></div>
+        <div class="greet"><h2>${S.isEn() ? 'Welcome back,' : 'أهلاً'} <span class="acc-t">${esc(me.user.name)}</span>${S.isEn() ? '' : '، مرحباً بعودتك'} 👋</h2><span>${S.longDate()}</span></div>
         <div class="row between wrap mb16"><div class="seg" id="per"><button data-p="month">هذا الشهر</button><button data-p="year">هذا العام</button></div>
           <div class="row wrap gap4"><a class="btn ghost sm" href="#/students?new=1">${ic('userPlus')} طالب جديد</a><a class="btn ghost sm" href="#/contracts?new=1">${ic('contract')} عقد جديد</a><a class="btn sm" href="#/installments?state=overdue">${ic('coins')} تحصيل الأقساط</a></div></div>
         <div class="grid g5" id="kpis">${'<div class="kpi skel" style="height:110px"></div>'.repeat(5)}</div>
         <div class="grid g-1-2 mt16">
           <div class="card"><div class="hd"><h3>${ic('star')} الوصول السريع</h3></div><div class="bd"><div class="tiles">${tiles.map(([h, i, l]) => `<a class="tile" href="${h}">${ic(i)}<span>${l}</span></a>`).join('')}</div></div></div>
-          <div class="card"><div class="hd"><h3>${ic('chart')} الإيرادات والمصاريف — آخر ٦ أشهر</h3></div><div class="bd"><div id="ch" style="min-height:270px"></div></div></div>
+          <div class="card"><div class="hd"><h3>${ic('chart')} ${S.isEn() ? 'Revenue & Expenses — last 6 months' : 'الإيرادات والمصاريف — آخر ٦ أشهر'}</h3></div><div class="bd"><div id="ch" style="min-height:270px"></div></div></div>
         </div>
         <div class="grid g4 mt16" id="counts"></div>`;
       const seg = el.querySelector('#per');
@@ -38,13 +38,13 @@
         seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.p === period));
         let d;
         try { d = await S.get('/app/dashboard/main', { period }); } catch (e) { el.querySelector('#kpis').innerHTML = S.emptyHtml('لا تملك صلاحية عرض الملخص المالي', e.message, 'lock'); return; }
-        const lbl = period === 'year' ? 'هذا العام' : 'هذا الشهر';
+        const lbl = S.isEn() ? (period === 'year' ? 'This Year' : 'This Month') : (period === 'year' ? 'هذا العام' : 'هذا الشهر');
         el.querySelector('#kpis').innerHTML =
-          kpi('c-blue', 'trendUp', `الإيرادات (${lbl})`, money(d.revenue.value), 'من العقود والفواتير المعتمدة، وليس المبلغ المحصّل فعلياً', chg(d.revenue.change)) +
-          kpi('c-red', 'trendDown', `المصاريف (${lbl})`, money(d.expenses.value), 'المصروفات والرواتب المعتمدة', chg(d.expenses.change, true)) +
-          kpi('c-green', 'smile', `صافي الربح (${lbl})`, `<span class="${d.profit.value < 0 ? 'bad-t' : 'ok-t'}">${money(d.profit.value)}</span>`, 'الإيرادات ناقص المصروفات', chg(d.profit.change)) +
+          kpi('c-blue', 'trendUp', `${S.isEn() ? 'Revenue' : 'الإيرادات'} (${lbl})`, money(d.revenue.value), 'من العقود والفواتير المعتمدة، وليس المبلغ المحصّل فعلياً', chg(d.revenue.change)) +
+          kpi('c-red', 'trendDown', `${S.isEn() ? 'Expenses' : 'المصاريف'} (${lbl})`, money(d.expenses.value), 'المصروفات والرواتب المعتمدة', chg(d.expenses.change, true)) +
+          kpi('c-green', 'smile', `${S.isEn() ? 'Net Profit' : 'صافي الربح'} (${lbl})`, `<span class="${d.profit.value < 0 ? 'bad-t' : 'ok-t'}">${money(d.profit.value)}</span>`, 'الإيرادات ناقص المصروفات', chg(d.profit.change)) +
           kpi('c-orange', 'wallet', 'المستحقات غير المحصّلة', money(d.outstanding), 'رصيد مستحق متراكم وليس خاصاً بهذا الشهر فقط') +
-          kpi('c-teal', 'money', `المقبوضات الفعلية (${lbl})`, money(d.receipts.value), 'المبالغ التي دخلت فعلاً بتاريخ سند القبض', chg(d.receipts.change));
+          kpi('c-teal', 'money', `${S.isEn() ? 'Actual Collections' : 'المقبوضات الفعلية'} (${lbl})`, money(d.receipts.value), 'المبالغ التي دخلت فعلاً بتاريخ سند القبض', chg(d.receipts.change));
         const chEl = el.querySelector('#ch') || el.querySelector('#mainch');
         const draw = () => S.chart.area(chEl, { labels: d.chart.map((c) => S.monthLabel(c.month, true)), series: [{ name: 'الإيرادات', color: '#14a06b', data: d.chart.map((c) => c.revenue) }, { name: 'المصاريف', color: '#e0384c', data: d.chart.map((c) => c.expenses) }, { name: 'المقبوضات', color: '#2f7ae5', data: d.chart.map((c) => c.receipts) }], money: true });
         chEl.id = 'mainch'; draw(); S.onResize(draw);

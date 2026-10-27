@@ -190,6 +190,27 @@ class AuthController extends Controller
         foreach (\App\Models\EvaluationPeriod::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
             $map[$x->name] = $x->name_en;
         }
+        foreach (\App\Models\License::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            if (trim((string) $x->name) !== '') $map[trim($x->name)] = $x->name_en;
+        }
+        foreach (\App\Models\License::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('issuer_en')->where('issuer_en', '!=', '')->get(['issuer', 'issuer_en']) as $x) {
+            if (trim((string) $x->issuer) !== '') $map[trim($x->issuer)] = $x->issuer_en;
+        }
+        foreach (\App\Models\Task::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('title_en')->where('title_en', '!=', '')->get(['title', 'title_en']) as $x) {
+            if (trim((string) $x->title) !== '') $map[trim($x->title)] = $x->title_en;
+        }
+        foreach (\App\Models\Announcement::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('title_en')->where('title_en', '!=', '')->get(['title', 'title_en']) as $x) {
+            if (trim((string) $x->title) !== '') $map[trim($x->title)] = $x->title_en;
+        }
+        foreach (\App\Models\Announcement::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('body_en')->where('body_en', '!=', '')->get(['body', 'body_en']) as $x) {
+            if (trim((string) $x->body) !== '') $map[trim($x->body)] = $x->body_en;
+        }
+        foreach (\App\Models\User::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('name_en')->where('name_en', '!=', '')->get(['name', 'name_en']) as $x) {
+            if (trim((string) $x->name) !== '') $map[trim($x->name)] = $x->name_en;
+        }
+        foreach (\App\Models\User::withoutGlobalScopes()->where('company_id', $company->id)->whereNotNull('title_en')->where('title_en', '!=', '')->get(['title', 'title_en']) as $x) {
+            if (trim((string) $x->title) !== '') $map[trim($x->title)] = $x->title_en;
+        }
         foreach ((array) ($company->settings['translations'] ?? []) as $ar => $en) {
             if (is_string($ar) && is_string($en) && trim($ar) !== '' && trim($en) !== '') {
                 $map[trim($ar)] = trim($en);

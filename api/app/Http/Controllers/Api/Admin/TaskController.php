@@ -31,6 +31,8 @@ class TaskController extends ResourceController
     {
         return [
             'title'       => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
+            'title_en'    => ['nullable', 'string', 'max:255'],
+            'description_en' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'branch_id'   => ['nullable', 'integer', $this->owned('branches')],
             'priority'    => ['nullable', 'in:normal,important,urgent'],

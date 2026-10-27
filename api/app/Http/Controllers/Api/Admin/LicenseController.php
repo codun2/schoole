@@ -30,8 +30,10 @@ class LicenseController extends ResourceController
     {
         return [
             'name'        => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
+            'name_en'     => ['nullable', 'string', 'max:255'],
             'number'      => ['nullable', 'string', 'max:80'],
             'issuer'      => ['nullable', 'string', 'max:255'],
+            'issuer_en'   => ['nullable', 'string', 'max:255'],
             'issue_date'  => ['nullable', 'date'],
             'expiry_date' => ['nullable', 'date'],
             'cost'        => ['nullable', 'numeric', 'min:0'],

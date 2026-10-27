@@ -48,7 +48,9 @@ class NotificationController extends Controller
     {
         $data = $request->validate([
             'title'     => ['required', 'string', 'max:255'],
+            'title_en'  => ['nullable', 'string', 'max:255'],
             'body'      => ['nullable', 'string'],
+            'body_en'   => ['nullable', 'string'],
             'audience'  => ['required', 'in:staff,guardians,all'],
             'is_active' => ['boolean'],
         ]);
@@ -61,7 +63,9 @@ class NotificationController extends Controller
         $a = Announcement::where('company_id', $request->user()->company_id)->findOrFail($id);
         $a->update($request->validate([
             'title'     => ['sometimes', 'string', 'max:255'],
+            'title_en'  => ['nullable', 'string', 'max:255'],
             'body'      => ['nullable', 'string'],
+            'body_en'   => ['nullable', 'string'],
             'audience'  => ['sometimes', 'in:staff,guardians,all'],
             'is_active' => ['boolean'],
         ]));

@@ -38,9 +38,11 @@ class UserController extends ResourceController
 
         return [
             'name'          => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
+            'name_en'       => ['nullable', 'string', 'max:255'],
             'email'         => [$record ? 'sometimes' : 'required', 'email', Rule::unique('users', 'email')->where('company_id', $cid)->ignore($record?->id)],
             'phone'         => ['nullable', 'string', 'max:40'],
             'title'         => ['nullable', 'string', 'max:120'],
+            'title_en'      => ['nullable', 'string', 'max:120'],
             'role'          => ['nullable', 'in:admin,staff'],
             'status'        => ['nullable', 'in:active,suspended'],
             'permissions'   => ['nullable', 'array'],

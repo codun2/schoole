@@ -52,23 +52,41 @@
       ${d.announcements.length ? `<div class="sec-t">${ic('megaphone')} إعلانات المدرسة</div>${d.announcements.map((a) => `<div class="card pad mb8"><b>${esc(a.title)}</b><p class="t2 sm" style="white-space:pre-line">${esc(a.body || '')}</p><span class="muted xs">${S.ago(a.created_at)}</span></div>`).join('')}` : ''}`;
     v.querySelectorAll('.kid>svg').forEach((s) => (s.style.cssText = 'width:18px;height:18px;color:var(--muted)'));
   }
-  async function child(id) {
-    const d = await S.get('/portal/children/' + id);
-    const s = d.student, w = d.view || {}, m = d.monitor || {};
+  let CHILD = { id: null, data: null };
+  const contractCard = (c) => `<div class="card mb16"><div class="hd"><h3>${ic('contract')} عقد <span class="num">${esc(c.number)}</span></h3><span class="grow"></span>${S.badge(S.ST.contract, c.status)}</div><div class="bd"><div class="grid g3 mb16">${stat('c-violet', 'coins', S.money(c.total, true), 'الإجمالي')}${stat('c-green', 'check', S.money(c.paid, true), 'المدفوع')}${stat('c-red', 'timer', S.money(c.remaining, true), 'المتبقي')}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>القسط</th><th>تاريخ الاستحقاق</th><th>المبلغ</th><th>المدفوع</th><th>الحالة</th></tr></thead><tbody>${c.installments.map((i) => `<tr class="${i.is_overdue ? 'warn-row' : ''}"><td>${i.seq}</td><td class="num">${S.d(i.due_date)}</td><td class="num">${S.fmtN(i.amount)}</td><td class="num ok-t">${S.fmtN(i.paid)}</td><td>${S.badge(S.ST.inst, i.is_overdue ? 'overdue' : i.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+
+  async function child(id, tab) {
+    if (String(CHILD.id) !== String(id) || !CHILD.data) CHILD = { id, data: await S.get('/portal/children/' + id) };
+    const d = CHILD.data, s = d.student, w = d.view || {};
+    const tabs = [['overview', 'نظرة عامة']];
+    if (w.assignments && d.assignments) tabs.push(['assignments', 'الواجبات والاختبارات']);
+    if (w.grades && d.report) tabs.push(['grades', 'الدرجات']);
+    if (w.attendance && d.attendance) tabs.push(['attendance', 'الحضور']);
+    if (w.timetable && d.timetable) tabs.push(['timetable', 'الجدول']);
+    if (w.finance && d.contracts && d.contracts.length) tabs.push(['fees', 'الرسوم']);
+    if (!tabs.some(([k]) => k === tab)) tab = 'overview';
+    v.innerHTML = `<a href="#/" class="btn ghost sm mb16">${ic('chevR')} رجوع لأبنائي</a>
+      <div class="card pad mb16"><div class="profile-h" style="margin:0">${S.avatarHtml ? S.avatarHtml(s.photo, s.name) : `<span class="avatar">${esc(S.initials(s.name))}</span>`}<div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.grade?.name_ar || '')} — ${esc(s.section?.name || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div></div>
+      <div class="ptabs">${tabs.map(([k, l]) => `<a href="#/child/${id}/${k}" data-sub="${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
+      <div id="ct"></div>`;
+    childTab(d, tab);
+  }
+
+  function childTab(d, tab) {
+    const ct = v.querySelector('#ct'), s = d.student, m = d.monitor || {}, w = d.view || {};
+    if (tab === 'assignments') return (ct.innerHTML = S.sv.assignments(d.assignments, { emptySub: 'لم ينشئ المعلّمون واجبات لهذه الشعبة بعد.' }));
+    if (tab === 'grades') return (ct.innerHTML = S.sv.reportCard(d.report));
+    if (tab === 'attendance') return (ct.innerHTML = S.sv.attendance(d.attendance));
+    if (tab === 'timetable') return (ct.innerHTML = S.sv.timetable(d.timetable));
+    if (tab === 'fees') return (ct.innerHTML = d.contracts.map(contractCard).join(''));
+    // overview: quick KPIs + today's lessons + bus
     const stats = [];
     if (w.attendance) stats.push(stat('c-green', 'calCheck', m.attendance_rate != null ? S.fmtN(m.attendance_rate, 1) + '%' : '—', 'نسبة الحضور'), stat('c-red', 'x', S.num(m.absences || 0), 'أيام الغياب'));
     if (w.assignments) stats.push(stat(m.pending ? 'c-amber' : 'c-teal', 'edit', S.num(m.pending || 0), 'واجبات معلّقة'), stat(m.upcoming ? 'c-blue' : 'c-violet', 'clock', S.num(m.upcoming || 0), 'اختبارات قريبة'));
-    const contract = (c) => `<div class="card mb16"><div class="hd"><h3>${ic('contract')} عقد <span class="num">${esc(c.number)}</span></h3><span class="grow"></span>${S.badge(S.ST.contract, c.status)}</div><div class="bd"><div class="grid g3 mb16">${stat('c-violet', 'coins', S.money(c.total, true), 'الإجمالي')}${stat('c-green', 'check', S.money(c.paid, true), 'المدفوع')}${stat('c-red', 'timer', S.money(c.remaining, true), 'المتبقي')}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>القسط</th><th>تاريخ الاستحقاق</th><th>المبلغ</th><th>المدفوع</th><th>الحالة</th></tr></thead><tbody>${c.installments.map((i) => `<tr class="${i.is_overdue ? 'warn-row' : ''}"><td>${i.seq}</td><td class="num">${S.d(i.due_date)}</td><td class="num">${S.fmtN(i.amount)}</td><td class="num ok-t">${S.fmtN(i.paid)}</td><td>${S.badge(S.ST.inst, i.is_overdue ? 'overdue' : i.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
-    v.innerHTML = `<a href="#/" class="btn ghost sm mb16">${ic('chevR')} رجوع</a>
-      <div class="card pad mb16"><div class="profile-h" style="margin:0">${S.avatarHtml ? S.avatarHtml(s.photo, s.name) : `<span class="avatar">${esc(S.initials(s.name))}</span>`}<div class="grow"><h3>${esc(s.name)}</h3><div class="muted">${esc(s.grade?.name_ar || '')} — ${esc(s.section?.name || '')} · <span class="num">${esc(s.student_no || '')}</span></div></div>${S.badge(S.ST.student, s.status)}</div></div>
-      ${stats.length ? `<div class="grid g4 mb16">${stats.join('')}</div>` : ''}
-      ${(w.timetable && d.today && d.today.length) ? `<div class="sec-t">${ic('calendar')} حصص اليوم</div><div class="card mb16"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>الحصة</th><th class="s">المادة</th><th>المعلّم</th><th>الغرفة</th></tr></thead><tbody>${d.today.map((t) => `<tr><td class="num b">${t.period}</td><td class="s b">${esc(t.subject || '—')}</td><td>${esc(t.teacher || '—')}</td><td>${esc(t.room || '—')}</td></tr>`).join('')}</tbody></table></div></div>` : ''}
-      ${(w.assignments && d.assignments) ? `<div class="sec-t">${ic('book')} الواجبات والاختبارات${d.assignments.some((a) => a.overdue) ? ` <span class="bdg l-bad">${d.assignments.filter((a) => a.overdue).length} متأخرة</span>` : ''}</div><div class="mb16">${S.sv.assignments(d.assignments, { emptySub: 'لم ينشئ المعلّمون واجبات لهذه الشعبة بعد.' })}</div>` : ''}
-      ${(w.grades && d.report) ? `<div class="sec-t">${ic('book')} النتيجة الأكاديمية</div><div class="mb16">${S.sv.reportCard(d.report)}</div>` : ''}
-      ${(w.attendance && d.attendance) ? `<div class="sec-t">${ic('calCheck')} سجل الحضور</div><div class="mb16">${S.sv.attendance(d.attendance, { stats: false })}</div>` : ''}
-      ${(w.timetable && d.timetable) ? `<div class="sec-t">${ic('calendar')} الجدول الأسبوعي</div><div class="mb16">${S.sv.timetable(d.timetable)}</div>` : ''}
-      ${s.bus ? `<div class="sec-t">${ic('bus')} الحافلة</div><div class="card pad mb16">${S.kv([['الحافلة', esc(s.bus.number)], ['السائق', esc(s.bus.driver_name || '—')], ['هاتف السائق', `<a class="num acc-t" href="tel:${esc(s.bus.driver_phone || '')}">${esc(s.bus.driver_phone || '—')}</a>`], ['خط السير', esc(s.bus.route || '—')]])}</div>` : ''}
-      ${(w.finance && d.contracts && d.contracts.length) ? `<div class="sec-t">${ic('coins')} الرسوم والأقساط</div>${d.contracts.map(contract).join('')}` : ''}`;
+    ct.innerHTML = `${stats.length ? `<div class="grid g4 mb16">${stats.join('')}</div>` : ''}
+      ${(w.timetable && d.today && d.today.length) ? `<div class="sec-t" style="margin-top:0">${ic('calendar')} حصص اليوم</div><div class="card mb16"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>الحصة</th><th class="s">المادة</th><th>المعلّم</th><th>الغرفة</th></tr></thead><tbody>${d.today.map((t) => `<tr><td class="num b">${t.period}</td><td class="s b">${esc(t.subject || '—')}</td><td>${esc(t.teacher || '—')}</td><td>${esc(t.room || '—')}</td></tr>`).join('')}</tbody></table></div></div>` : ''}
+      ${s.bus ? `<div class="sec-t">${ic('bus')} الحافلة</div><div class="card pad">${S.kv([['الحافلة', esc(s.bus.number)], ['السائق', esc(s.bus.driver_name || '—')], ['هاتف السائق', `<a class="num acc-t" href="tel:${esc(s.bus.driver_phone || '')}">${esc(s.bus.driver_phone || '—')}</a>`], ['خط السير', esc(s.bus.route || '—')]])}</div>` : ''}
+      ${(!stats.length && !(d.today && d.today.length) && !s.bus) ? S.emptyHtml('اختر تبويباً من الأعلى لعرض تفاصيل المتابعة') : ''}`;
   }
   async function payments() {
     const d = await S.get('/portal/payments');
@@ -76,11 +94,21 @@
     v.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => { const p = d.data[+b.dataset.p]; S.printReceipt ? S.printReceipt(p) : S.print('سند ' + p.number, `<h2>سند قبض ${esc(p.number)}</h2><div class="kv"><div><span>التاريخ</span><b>${S.d(p.date)}</b></div><div><span>الطالب</span><b>${esc(p.student_name || '')}</b></div><div><span>رقم العقد</span><b>${esc(p.contract_number || '')}</b></div><div><span>الطريقة</span><b>${S.LBL.method[p.method] || ''}</b></div></div><div class="big">${S.moneyT(p.amount)}</div><p style="text-align:center">${esc(p.description || '')}</p>`); }));
   }
   const route = async () => {
-    const h = location.hash.replace('#/', ''), [k, id] = h.split('/');
-    document.querySelectorAll('.ptabs a').forEach((a) => a.classList.toggle('on', a.dataset.r === (k === 'payments' ? 'payments' : '')));
+    const h = location.hash.replace('#/', ''), parts = h.split('/'), k = parts[0];
+    // top nav (الرئيسية/المدفوعات) only — child sub-tabs mark their own active state
+    document.querySelectorAll('.ptabs a[data-r]').forEach((a) => a.classList.toggle('on', a.dataset.r === (k === 'payments' ? 'payments' : '')));
+    if (k === 'child' && parts[1] && String(CHILD.id) === String(parts[1]) && CHILD.data) return childSwitch(parts[1], parts[2] || 'overview'); // same child → just swap the tab, no refetch/spinner
     v.innerHTML = S.spinner;
-    try { k === 'child' ? await child(id) : k === 'payments' ? await payments() : await home(); } catch (e) { v.innerHTML = S.emptyHtml('تعذّر التحميل', e.message, 'alert'); }
+    try { k === 'child' ? await child(parts[1], parts[2]) : k === 'payments' ? await payments() : await home(); } catch (e) { v.innerHTML = S.emptyHtml('تعذّر التحميل', e.message, 'alert'); }
   };
+  function childSwitch(id, tab) {
+    const d = CHILD.data, w = d.view || {};
+    const ok = tab === 'overview' || (tab === 'assignments' && w.assignments && d.assignments) || (tab === 'grades' && w.grades && d.report) || (tab === 'attendance' && w.attendance && d.attendance) || (tab === 'timetable' && w.timetable && d.timetable) || (tab === 'fees' && w.finance && d.contracts && d.contracts.length);
+    if (!ok) tab = 'overview';
+    v.querySelectorAll('.ptabs a[data-sub]').forEach((a) => a.classList.toggle('on', a.dataset.sub === tab));
+    childTab(d, tab);
+    window.scrollTo(0, 0);
+  }
   window.onhashchange = route; route();
 })();
 </script>

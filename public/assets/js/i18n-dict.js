@@ -242,6 +242,7 @@ window.SCH_DICT = {
   'لا يوجد أبناء': 'No children',
   'لا توجد عقود': 'No contracts',
   'current': 'current',
+  'السبب بالإنجليزية': 'English Reason',
   'أضف حقولاً إضافية تظهر في نموذج الطالب أو ولي الأمر (مثل: الحساسية الغذائية، مقاس الزي، رقم الملف الصحي).': 'Add extra fields that appear in the student or guardian form (e.g. food allergy, uniform size, health file number).',
   'اختر الموظف وحدّد نوع العقد ومدته وراتبه التعاقدي، وأرفق نسخة العقد. يُولّد رقم العقد تلقائياً عند الحفظ.': 'Select the employee, set the contract type, duration and contractual salary, and attach a copy of the contract. The contract number is generated automatically.',
   'أدخل بيانات الحافلة والسائق وخط السير. بعد الحفظ يمكنك إسناد الطلاب إليها من شاشة الطلاب.': 'Enter the bus, driver and route details. After saving you can assign students to it from the Students screen.',

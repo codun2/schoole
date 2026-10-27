@@ -23,8 +23,10 @@ class EmployeeAttendanceController extends Controller
             'id'         => $e->id,
             'number'     => $e->number,
             'name'       => $e->name,
+            'name_en'    => $e->name_en,
             'department' => $e->department?->name,
             'job_title'  => $e->jobTitle?->name,
+            'job_title_en' => $e->jobTitle?->name_en,
             'status'     => $marks[$e->id]->status ?? ($e->status === 'on_leave' ? 'leave' : null),
             'check_in'   => isset($marks[$e->id]) ? substr((string) $marks[$e->id]->check_in, 0, 5) : null,
             'check_out'  => isset($marks[$e->id]) ? substr((string) $marks[$e->id]->check_out, 0, 5) : null,
@@ -60,10 +62,11 @@ class EmployeeAttendanceController extends Controller
             ->selectRaw("employee_id, SUM(status='present') present, SUM(status='absent') absent, SUM(status='late') late, SUM(status='leave') `leave`")
             ->groupBy('employee_id')->get()->keyBy('employee_id');
 
-        return response()->json(Employee::where('status', '!=', 'terminated')->orderBy('name')->get(['id', 'number', 'name'])->map(fn ($e) => [
+        return response()->json(Employee::where('status', '!=', 'terminated')->orderBy('name')->get(['id', 'number', 'name', 'name_en'])->map(fn ($e) => [
             'id'      => $e->id,
             'number'  => $e->number,
             'name'    => $e->name,
+            'name_en' => $e->name_en,
             'present' => (int) ($rows[$e->id]->present ?? 0),
             'absent'  => (int) ($rows[$e->id]->absent ?? 0),
             'late'    => (int) ($rows[$e->id]->late ?? 0),

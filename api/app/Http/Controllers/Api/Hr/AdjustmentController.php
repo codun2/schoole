@@ -28,6 +28,7 @@ class AdjustmentController extends ResourceController
             'employee_id' => [$req, 'integer', $this->owned('employees')],
             'type'        => [$req, 'in:bonus,deduction'],
             'title'       => [$req, 'string', 'max:120'],
+            'title_en'    => ['nullable', 'string', 'max:120'],
             'amount'      => [$req, 'numeric', 'min:0.001'],
             'month'       => [$req, 'date_format:Y-m'],
             'notes'       => ['nullable', 'string', 'max:255'],

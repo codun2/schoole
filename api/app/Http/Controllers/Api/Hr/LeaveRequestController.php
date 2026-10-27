@@ -33,6 +33,7 @@ class LeaveRequestController extends ResourceController
             'from_date'     => [$req, 'date'],
             'to_date'       => [$req, 'date', 'after_or_equal:from_date'],
             'reason'        => ['nullable', 'string', 'max:255'],
+            'reason_en'     => ['nullable', 'string', 'max:255'],
         ];
     }
 

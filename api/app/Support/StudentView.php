@@ -89,7 +89,8 @@ class StudentView
     {
         $assignments = self::assignments($s);
         $today = now()->toDateString();
-        $pending = $assignments->filter(fn ($a) => $a['status'] === 'open' && ! $a['submitted'] && $a['mark'] === null)->values();
+        // homework the student still has to hand in (quizzes/exams are "upcoming", not "pending")
+        $pending = $assignments->filter(fn ($a) => $a['type'] === 'homework' && $a['status'] === 'open' && ! $a['submitted'] && $a['mark'] === null)->values();
         $upcoming = $assignments->filter(fn ($a) => in_array($a['type'], ['quiz', 'exam'], true) && $a['status'] === 'open' && $a['due_date'] && $a['due_date'] >= $today)
             ->sortBy('due_date')->take(5)->values();
         $att = self::attendance($s)['totals'];

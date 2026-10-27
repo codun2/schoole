@@ -142,9 +142,11 @@ class PayrollController extends Controller
             'category'        => 'salary',
             'party_type'      => 'employee',
             'party_name'      => 'رواتب الموظفين',
+            'party_name_en'   => 'Staff salaries',
             'source_type'     => 'payroll',
             'source_id'       => $p->id,
             'description'     => 'صرف رواتب شهر '.$p->month.' ('.$p->employees_count.' موظف)',
+            'description_en'  => 'Salary disbursement '.$p->month.' ('.$p->employees_count.' employees)',
         ]);
         $p->update(['status' => 'paid', 'paid_at' => now(), 'voucher_id' => $v->id]);
         Activity::log('pay', $p, 'صرف رواتب '.$p->month);

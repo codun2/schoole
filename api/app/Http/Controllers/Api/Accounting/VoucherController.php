@@ -49,7 +49,9 @@ class VoucherController extends ResourceController
             'category'        => ['nullable', 'in:'.implode(',', self::CATEGORIES)],
             'party_type'      => ['nullable', 'in:guardian,customer,supplier,employee,other'],
             'party_name'      => ['nullable', 'string', 'max:255'],
+            'party_name_en'   => ['nullable', 'string', 'max:255'],
             'description'     => ['nullable', 'string', 'max:255'],
+            'description_en'  => ['nullable', 'string', 'max:255'],
         ];
     }
 

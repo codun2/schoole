@@ -7,7 +7,7 @@
   S.printReceipt = function (v, extra = {}) {
     S.print('سند قبض ' + v.number, `<h2>${v.type === 'payment' ? 'سند صرف' : 'سند قبض'}</h2>
       <div class="kv"><div><span>رقم السند</span><b>${esc(v.number)}</b></div><div><span>التاريخ</span><b>${S.d(v.date)}</b></div>
-      <div><span>${v.type === 'payment' ? 'صُرف إلى' : 'استلمنا من'}</span><b>${esc(v.party_name || '—')}</b></div><div><span>طريقة الدفع</span><b>${S.LBL.method[v.method] || v.method}${v.reference ? ' — ' + esc(v.reference) : ''}</b></div>
+      <div><span>${v.type === 'payment' ? 'صُرف إلى' : 'استلمنا من'}</span><b>${esc(S.enT(v.party_name, v.party_name_en) || '—')}</b></div><div><span>طريقة الدفع</span><b>${S.LBL.method[v.method] || v.method}${v.reference ? ' — ' + esc(v.reference) : ''}</b></div>
       ${extra.student ? `<div><span>الطالب</span><b>${esc(extra.student)}</b></div>` : ''}${extra.contract ? `<div><span>رقم العقد</span><b>${esc(extra.contract)}</b></div>` : ''}</div>
       <div class="big">${S.moneyT(v.amount)}</div>
       <p style="text-align:center">وذلك عن: ${esc(v.description || '')}</p>

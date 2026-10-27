@@ -22,6 +22,7 @@ class SupplierController extends ResourceController
         return [
             'name'           => [$record ? 'sometimes' : 'required', 'string', 'max:255'],
             'name_en'        => ['nullable', 'string', 'max:255'],
+            'contact_person_en' => ['nullable', 'string', 'max:255'],
             'contact_person' => ['nullable', 'string', 'max:120'],
             'phone'          => ['nullable', 'string', 'max:40'],
             'email'          => ['nullable', 'email'],

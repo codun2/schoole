@@ -66,9 +66,11 @@ class AdvanceController extends ResourceController
                 'party_type'      => 'employee',
                 'party_id'        => $record->employee_id,
                 'party_name'      => $record->employee?->name,
+                'party_name_en'   => $record->employee?->name_en,
                 'source_type'     => 'advance',
                 'source_id'       => $record->id,
                 'description'     => 'سلفة موظف — '.$record->employee?->name,
+                'description_en'  => 'Employee advance — '.($record->employee?->name_en ?: $record->employee?->name),
             ]);
         }
     }

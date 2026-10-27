@@ -123,9 +123,11 @@ class ServiceInvoiceController extends ResourceController
             'party_type'      => 'customer',
             'party_id'        => $inv->customer_id,
             'party_name'      => $inv->customer_name,
+            'party_name_en'   => $inv->customer?->name_en ?: $inv->customer_name,
             'source_type'     => 'service_invoice',
             'source_id'       => $inv->id,
             'description'     => 'تحصيل فاتورة خدمات '.$inv->number,
+            'description_en'  => 'Service invoice collection '.$inv->number,
         ]);
         Finance::syncInvoice($inv);
         Activity::log('payment', $inv, 'سند قبض '.$v->number.' لفاتورة '.$inv->number);

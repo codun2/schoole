@@ -131,10 +131,12 @@ class Finance
                 'party_type'      => 'guardian',
                 'party_id'        => $c->guardian_id,
                 'party_name'      => $c->guardian?->name,
+                'party_name_en'   => $c->guardian?->name_en,
                 'source_type'     => 'contract',
                 'source_id'       => $c->id,
                 'installment_id'  => $installment?->id,
                 'description'     => $data['description'] ?? ('دفعة رسوم دراسية — '.$c->student?->name.' — عقد '.$c->number),
+                'description_en'  => $data['description_en'] ?? ('Tuition payment — '.($c->student?->name_en ?: $c->student?->name).' — contract '.$c->number),
             ]);
             self::syncContract($c);
 

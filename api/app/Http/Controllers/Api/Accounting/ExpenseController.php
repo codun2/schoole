@@ -43,6 +43,7 @@ class ExpenseController extends ResourceController
             'branch_id'           => ['nullable', 'integer', $this->owned('branches')],
             'date'                => [$req, 'date'],
             'description'         => [$req, 'string', 'max:255'],
+            'description_en'      => ['nullable', 'string', 'max:255'],
             'amount'              => [$req, 'numeric', 'min:0'],
             'tax'                 => ['nullable', 'numeric', 'min:0'],
             'pay_now'             => ['boolean'],
@@ -107,9 +108,11 @@ class ExpenseController extends ResourceController
             'party_type'      => $e->supplier_id ? 'supplier' : 'other',
             'party_id'        => $e->supplier_id,
             'party_name'      => $e->supplier?->name,
+            'party_name_en'   => $e->supplier?->name_en,
             'source_type'     => 'expense',
             'source_id'       => $e->id,
             'description'     => 'سداد مصروف '.$e->number.' — '.$e->description,
+            'description_en'  => 'Expense payment '.$e->number.' — '.($e->description_en ?: $e->description),
         ]);
         Activity::log('payment', $e, 'سند صرف '.$v->number.' لمصروف '.$e->number);
 

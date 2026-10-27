@@ -121,7 +121,7 @@ class TeacherController extends Controller
         $e = $this->emp($request);
         $homeroom = Section::with('grade:id,name_ar,name_en')->where('teacher_id', $e->id)
             ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])->get();
-        $teaching = Section::with('grade:id,name_ar,name_en')->whereIn('id', $this->teachingSectionIds($e))->get(['id', 'name', 'grade_id']);
+        $teaching = Section::with('grade:id,name_ar,name_en')->whereIn('id', $this->teachingSectionIds($e))->get(['id', 'name', 'name_en', 'grade_id']);
         $subjectIds = TimetableEntry::where('teacher_id', $e->id)->distinct()->pluck('subject_id');
         $subjects = Subject::whereIn('id', $subjectIds)->orderBy('sort')->get(['id', 'name_ar', 'name_en']);
 
